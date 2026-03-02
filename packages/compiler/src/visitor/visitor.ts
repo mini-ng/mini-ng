@@ -1,5 +1,6 @@
 import * as ts from "typescript";
 import {
+  classHasDecorator,
   createDefineComponentStatic,
   createFactoryStatic,
   extractComponentMetadata,
@@ -9,6 +10,9 @@ import {
 } from "../transformer/transformer";
 import {createDefineDirectiveStatic, createHostBinding, hasDirectiveDecorator} from "./directive_visitor";
 import {stripQuotes} from "../utils/utils";
+import {isClassDeclaration} from "typescript";
+import {createDefinePipeStatic} from "./pipe_visitor";
+import {createDefineInjectableStatic} from "./injectable_visitor";
 
 export type DirectivesToInject = { fromMiniNgCore: boolean; parameter: ts.ParameterDeclaration; }
 
@@ -32,7 +36,9 @@ export function transformPlugin(
         return ts.visitEachChild(node, visit, context);
       }
 
-      if (ts.isClassDeclaration(node) && (hasComponentDecorator(node) || hasDirectiveDecorator(node))) {
+      const { isClassDecorator, isComponent, isDirective, isPipe, isInjectable} = hasClassDecorator(node)
+
+      if (ts.isClassDeclaration(node) && isClassDecorator) {
 
         // we need to check if the constructor has arguments
         const directivesToInject: DirectivesToInject[]  = []
@@ -50,16 +56,23 @@ export function transformPlugin(
           }
         })
 
-        const isComponent = hasComponentDecorator(node)
-        const isDirective = !isComponent
-
         const componentName = node.name?.text;
 
         const metadata = extractComponentMetadata(getComponentDecorator(node));
 
         const factoryNode = createFactoryStatic(node.name?.text, node, directivesToInject);
 
-        const cmpDefNode = isDirective ? createDefineDirectiveStatic(componentName, metadata, node, hoisted, createHostBinding(node, metadata)) : createDefineComponentStatic(componentName, metadata, node, hoisted);
+        let cmpDefNode = null;
+
+        if (isDirective) {
+          cmpDefNode = createDefineDirectiveStatic(componentName, metadata, node, hoisted, createHostBinding(node, metadata))
+        } else if (isComponent) {
+          cmpDefNode = createDefineComponentStatic(componentName, metadata, node, hoisted);
+        } else if (isInjectable) {
+          cmpDefNode = createDefineInjectableStatic(componentName, metadata, node, hoisted)
+        } else if (isPipe) {
+          cmpDefNode = createDefinePipeStatic(componentName, metadata, node, hoisted)
+        }
 
         miniNgCoreImports = []
 
@@ -172,4 +185,25 @@ function isFromMiniNgCore(
   const fileName = declarations[0].getSourceFile().fileName;
 
   return fileName.includes("node_modules/@mini-ng/core");
+}
+
+function hasClassDecorator(node: ts.Node | ts.ClassDeclaration) {
+
+  if (!ts.isClassDeclaration(node)) {
+    return {}
+  }
+
+  const isComponent =  hasComponentDecorator(node);
+  const isDirective = hasDirectiveDecorator(node);
+  const isPipe = classHasDecorator(node, "Pipe");
+  const isInjectable = classHasDecorator(node, "Injectable");
+
+  return {
+    isClassDecorator: isComponent || isDirective || isPipe || isInjectable,
+    isComponent,
+    isDirective,
+    isInjectable,
+    isPipe
+  }
+
 }

@@ -12,7 +12,7 @@ import {
   ɵɵconditional,
   ɵɵelementEnd,
   ɵɵelementStart,
-  ɵɵlistener,
+  ɵɵlistener, ɵɵpipe, ɵɵpipeBind,
   ɵɵproperty,
   ɵɵrepeater,
   ɵɵrepeaterCreate,
@@ -30,8 +30,9 @@ export interface ViewGeneratorOptions {
 }
 
 type InterpolationType = {
-  type: 'text' | 'expression',
-  content: string
+  type: 'text' | 'expression' | 'statement',
+  statement?: ts.ExpressionStatement;
+  content?: string
 }
 
 const templatesNodeNames = ["ng-if", "ng-for", /*"ng-else", "ng-else-if",*/ /* "ng-empty", "ng-case", */ "ng-switch" /*, "ng-default"*/, "ng-while", "ng-template", "ng-for-empty"]
@@ -109,6 +110,10 @@ export class ViewGenerator {
       const tag = node.tagName;
       if(templatesNodeNames.includes(tag)) {
         return this.processTemplateElement(tag, node, index)
+      }
+      
+      if (tag === "ng-pipe-chain") {
+        return this.processPipe(node, index)
       }
 
       return this.processElement(node, index);
@@ -337,7 +342,7 @@ export class ViewGenerator {
     // ng-cloak
 
     if (tag === "ng-template") {
-
+      return this.processNgTemplate(node, index);
     }
 
     return {creation: "", update: ""};
@@ -723,6 +728,68 @@ export class ViewGenerator {
   private setIndex(index: number = 0) {
     this.index = index;
   }
+
+  private processPipe(node: Element, index: number) {
+
+    this.stmts.push(generateTextNode(index, ""))
+    let slotIndex = this.slot + 1
+
+    let expr = null
+    let pipeIndices = []
+
+    for (const attrib in node.attribs) {
+
+      const attribValue = node.attribs[attrib];
+
+      if (attrib === "expr") {
+        expr = attribValue;
+      } else {
+
+        slotIndex = ++this.slot
+        pipeIndices.push(slotIndex);
+        this.stmts.push(generatePipeNode(slotIndex, attribValue));
+
+      }
+
+    }
+
+    // advance node
+    const exprParser = ExpressionParser.instance;
+    expr = exprParser.parseToExpression(expr, [])
+
+    pipeIndices.sort().forEach(pipeIndex => {
+
+      expr = factory.createCallExpression(
+          factory.createPropertyAccessExpression(
+          factory.createIdentifier(i0),
+          ɵɵpipeBind
+      ), undefined,
+          [
+              ts.factory.createNumericLiteral(pipeIndex),
+              ts.factory.createNull(),
+              expr
+          ]
+      )
+
+    })
+
+    this.updateStmts.push(generateAdvanceNode(index.toString()))
+    this.updateStmts.push(generateTextInterpolateNode(
+      [
+        {
+          type: "statement",
+          statement: expr
+        }
+      ],
+        null
+    ))
+
+    return {creation: "", update: ""};
+  }
+
+  private processNgTemplate(node: Element, index: number) {
+    return undefined;
+  }
 }
 
 function generateElementStartNode(
@@ -767,7 +834,6 @@ function generateElementEndNode() {
 function generateTextNode(index: number, text?: string) {
   const params: ts.Expression[] = [
     ts.factory.createNumericLiteral(index),
-    //ts.factory.createStringLiteral(text),
   ];
 
   if (text) {
@@ -783,6 +849,24 @@ function generateTextNode(index: number, text?: string) {
       undefined,
       params
     )
+  );
+}
+
+function generatePipeNode(index: number, text: string) {
+  const params: ts.Expression[] = [
+    ts.factory.createNumericLiteral(index),
+    ts.factory.createStringLiteral(text),
+  ];
+
+  return ts.factory.createExpressionStatement(
+      ts.factory.createCallExpression(
+          ts.factory.createPropertyAccessExpression(
+              ts.factory.createIdentifier(i0),
+              ts.factory.createIdentifier(ɵɵpipe)
+          ),
+          undefined,
+          params
+      )
   );
 }
 
@@ -887,6 +971,8 @@ function generateTextInterpolateNode(bindingExpressions: InterpolationType[], im
       const transformedNode = exprParser.parse(binding.content, implicitVariables);
       // @ts-ignore
       return transformedNode.statements[0].expression;
+    } else if (binding.type === 'statement') {
+      return binding.statement
     }
   }).filter(Boolean)
 
