@@ -19,8 +19,8 @@ export function createNewProject(projectName: string) {
 
     createProjectStructure(projectPath, projectName);
 
-    // console.log("📦 Installing dependencies...");
-    // execSync("npm install", { cwd: projectPath, stdio: "inherit" });
+    console.log("📦 Installing dependencies...");
+    execSync("npm install", { cwd: projectPath, stdio: "inherit" });
 
     console.log("✅ Project created successfully!");
 
@@ -43,8 +43,8 @@ function createPackageJson(projectPath: string, name: string) {
         name,
         version: "1.0.0",
         scripts: {
-            build: "tsc",
-            start: "node dist/main.js"
+            build: "mngc build",
+            start: "mngc serve"
         },
         dependencies: {
             "@mini-ng/core": "latest",
