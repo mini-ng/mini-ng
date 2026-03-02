@@ -2,6 +2,13 @@ interface Type<T> {}
 const ANNOTATIONS = "__annotations__";
 const PROP_METADATA = "__prop__metadata__";
 
+export interface TypeDecorator {
+        <T extends Type<any>>(type: T): T;
+
+    (target: Object, propertyKey?: string | symbol, parameterIndex?: number): void;
+    (target: unknown, context: unknown): void;
+}
+
 export function noSideEffects<T>(fn: () => T): T {
     return {toString: fn}.toString() as unknown as T;
 }
@@ -117,13 +124,13 @@ export function makePropDecorator(
 export interface DirectiveDecorator {}
 export interface Directive {}
 
-// export const Directive: DirectiveDecorator = makeDecorator(
-//     'Directive',
-//     (dir: Directive = {}) => dir,
-//     undefined,
-//     undefined,
-//     (type: Type<any>, meta: Directive) => null, //compileDirective(type, meta),
-// );
+export const Directive: DirectiveDecorator = makeDecorator(
+    'Directive',
+    (dir: Directive = {}) => dir,
+    undefined,
+    undefined,
+    (type: Type<any>, meta: Directive) => null, //compileDirective(type, meta),
+);
 
 export interface Component extends Directive {}
 
@@ -184,3 +191,43 @@ export function Output() {
         return initialValue;
     };
 }
+
+export interface Pipe extends Directive {}
+
+export interface ComponentDecorator {
+
+    (obj: Component): TypeDecorator;
+    new (obj: Component): Component;
+
+}
+
+function compileComponent(type: Type<any>, meta: Component) {
+    console.log("Component", type, meta);
+}
+
+let ChangeDetectionStrategy;
+
+export const Component: ComponentDecorator = makeDecorator(
+    'Component',
+    (c: Component = {}) => ({changeDetection: ChangeDetectionStrategy.Default, ...c}),
+    Directive,
+    undefined,
+    (type: Type<any>, meta: Component) => compileComponent(type, meta),
+);
+
+export interface PipeDecorator {
+    (obj: Pipe): TypeDecorator;
+    new (obj: Pipe): Pipe;
+}
+
+function compilePipe(type: Type<any>, meta: Pipe) {
+    
+}
+
+export const Pipe: PipeDecorator = makeDecorator(
+    'Pipe',
+    (p: Pipe) => ({pure: true, ...p}),
+    undefined,
+    undefined,
+    (type: Type<any>, meta: Pipe) => compilePipe(type, meta),
+);

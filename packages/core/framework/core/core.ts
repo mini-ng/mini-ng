@@ -1,6 +1,7 @@
 import {AttributeMarker} from "./attribute_marker";
 import {RenderFlags} from "./render_flags";
 import {LViewFlags, Writable} from "./type";
+import {PipeDef} from "./pipe";
 
 export interface LQuery<T> {}
 
@@ -23,6 +24,13 @@ export const enum TNodeFlags {
   isFormCheckboxControl = 1 << 11,
   isPassThroughControl = 1 << 12,
 }
+
+export interface PipeTransform {
+  transform(value: any, ...args: any[]): any;
+}
+
+export type PipeDefList = PipeDef<any>[];
+export type PipeDefListOrFactory = (() => PipeDefList) | PipeDefList;
 
 export type TConstantsOrFactory = (AttributeMarker | string)[][] | (() => (AttributeMarker | string)[][]);
 
@@ -81,6 +89,7 @@ export interface ComponentDef<T> extends DirectiveDef<T> {
   readonly onPush: boolean;
   readonly signals: boolean;
   directiveDefs: DirectiveDefListOrFactory | null;
+  pipeDefs: PipeDefListOrFactory | null;
   dependencies: TypeOrFactory<DependencyTypeList> | null;
   tView: TView | null;
   getExternalStyles: ((encapsulationId?: string) => string[]) | null;
@@ -120,7 +129,6 @@ interface DirectiveDefinition<T> {
   hostBindings?: HostBindingsFunction<T>;
   hostVars?: number;
   exportAs?: string[];
-  standalone?: boolean;
   signals?: boolean;
   declaredInputs: Record<string, string>;
 }
@@ -157,7 +165,7 @@ export const enum TNodeType {
   AnyContainer = 0b1100, // Container | ElementContainer
 }
 
-export type TData = (number | TNode  )[]
+export type TData = (number | TNode | PipeDef<any>)[]
 
 export enum TViewType {
   Root,
@@ -171,6 +179,7 @@ export type TView = {
   firstCreatePass: boolean;
   template: TemplateFn;
   directiveRegistry: any[];
+  pipeRegistry: any[];
   consts: any[][];
   styles: string[];
   id: string;
@@ -192,6 +201,7 @@ export interface LView {
   flags: LViewFlags,
   id: number,
   directive_instances?: any[]
+  pipe_instances?: PipeTransform[]
 }
 
 type NodeOutputBindings = {
@@ -319,12 +329,13 @@ export function ɵɵdefineComponent<T>(componentDefinition: ComponentDefinition<
     styles: componentDefinition.styles,
     tView: null,
     template: componentDefinition.template,
+    pipeDefs: null!,
   }
 
   def.id = getComponentId(def);
   const dependencies = componentDefinition.dependencies;
   def.directiveDefs = extractDefListOrFactory(dependencies, extractDirectiveDef);
-  // def.pipeDefs = extractDefListOrFactory(dependencies, getPipeDef);
+  def.pipeDefs = extractDefListOrFactory(dependencies, getPipeDef);
 
   return def;
 }
@@ -377,12 +388,12 @@ export function extractDirectiveDef(type: Type<any>): DirectiveDef<any> | Compon
 }
 
 export function getComponentDef<T>(type: any): ComponentDef<T> | null {
-  let NG_COMP_DEF = "ɵcmp";
+  const NG_COMP_DEF = "ɵcmp";
   return type[NG_COMP_DEF] || null;
 }
 
 export function getDirectiveDef<T>(type: any): DirectiveDef<T> | null {
-  let NG_DIR_DEF = "ɵdir";
+  const NG_DIR_DEF = "ɵdir";
   return type[NG_DIR_DEF] || null;
 }
 
@@ -466,4 +477,9 @@ function parseAndConvertOutputsForDefinition<T>(
     }
   }
   return newLookup;
+}
+
+function getPipeDef<T>(type: any): PipeDef<T> | null {
+  const NG_PIPE_DEF = "ɵpipe";
+  return type[NG_PIPE_DEF] || null;
 }

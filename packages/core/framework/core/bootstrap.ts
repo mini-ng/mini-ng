@@ -84,6 +84,7 @@ function createRootTView(
       1,
       varsToAllocate,
       directivesToApply,//componentDef.directiveDefs,
+      null,
       [tAttributes],
       null
   );
