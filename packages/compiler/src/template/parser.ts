@@ -1,5 +1,4 @@
 import ts = require("typescript");
-import { parse } from "node-html-parser";
 import { ViewGenerator } from "./view_generator";
 import {factory} from "typescript";
 
@@ -45,7 +44,6 @@ export class Parser {
   }
 
   parse() {
-    // const el = parse(this.template, parseConfig);
 
     const html = this.template;
 
