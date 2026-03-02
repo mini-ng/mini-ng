@@ -1,4 +1,6 @@
-import {Type} from "./core";
+import {LView, PipeTransform, TView, Type} from "./core";
+import {getLView, getTView} from "./state";
+import {getFactoryDef} from "./shared";
 
 export type FactoryFn<T> = {
         <U extends T>(t?: Type<U>): U;
@@ -9,20 +11,62 @@ export interface PipeDef<T> {
     type: Type<T>;
     readonly name: string;
     factory: FactoryFn<T> | null;
-    readonly pure: boolean;
     onDestroy: (() => void) | null;
 }
 
 export function ɵɵdefinePipe<T>(pipeDef: {
     name: string;
     type: Type<T>;
-    pure?: boolean;
 }) {
     return <PipeDef<T>>{
         type: pipeDef.type,
         name: pipeDef.name,
         factory: null,
-        pure: pipeDef.pure !== false,
         onDestroy: pipeDef.type.prototype.ngOnDestroy || null,
     };
+}
+
+export function ɵɵpipe(index: number, pipeName: string): any {
+
+    const tView = getTView();
+    let pipeDef: PipeDef<any>;
+
+    if (tView.firstCreatePass) {
+
+        pipeDef = tView.pipeRegistry.find(registery => registery.name === name);
+        tView.data[index] = pipeDef;
+
+    } else {
+        pipeDef = tView.data[index] as PipeDef<any>;
+    }
+
+    const pipeFactory = pipeDef.factory || (pipeDef.factory = getFactoryDef(pipeDef.type, true));
+
+    const pipeInstance = pipeFactory();
+
+    store(tView, getLView(), index, pipeInstance);
+
+    return pipeInstance;
+
+}
+
+function store<T>(tView: TView, lView: LView, index: number, pipeInstance: PipeTransform) {
+    (lView.pipe_instances ??= [])[index] = pipeInstance
+}
+
+export function ɵɵpipeBind(
+    index: number,
+    offset: number,
+    v1: any
+) {
+    const lView = getLView();
+
+    function load<T>(lView: LView, index: any) {
+        return lView.pipe_instances[index];
+    }
+
+    const pipeInstance = load<PipeTransform>(lView, index);
+
+    return pipeInstance?.transform(v1);
+
 }

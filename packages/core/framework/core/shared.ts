@@ -6,7 +6,7 @@ import {
     DirectiveDefListOrFactory,
     getComponentDef,
     getDirectiveDef,
-    LView,
+    LView, PipeDefListOrFactory,
     runtime,
     SelectorFlags,
     TAttributes,
@@ -20,6 +20,9 @@ import {AttributeMarker} from "./attribute_marker";
 import {RenderFlags} from "./render_flags";
 import {setCurrentTNode} from "./state";
 import {getUniqueLViewId, LViewFlags} from "./type";
+import {FactoryFn} from "./pipe";
+
+export const NG_FACTORY_DEF: string = "ɵfac";
 
 export function findDirectiveDefMatches(
     tView: TView,
@@ -156,6 +159,7 @@ export function getOrCreateComponentTView(def: ComponentDef<any>): TView {
             def.decls,
             def.vars,
             def.directiveDefs,
+            def.pipeDefs,
             def.consts,
             def.id,
         ));
@@ -193,6 +197,7 @@ export function createTView(
     decls: number,
     vars: number,
     directives: DirectiveDefListOrFactory | null,
+    pipes: PipeDefListOrFactory | null,
     constsOrFactory: TConstantsOrFactory | null,
     ssrId: string | null,
 ): TView {
@@ -206,6 +211,7 @@ export function createTView(
         data: blueprint.slice().fill(null, 0),
         firstCreatePass: true,
         directiveRegistry: typeof directives === 'function' ? directives() : directives,
+        pipeRegistry: typeof pipes === 'function' ? pipes() : pipes,
         consts: consts,
         styles: [],
         id: ssrId,
@@ -331,4 +337,12 @@ export function createTNode(
         directiveStart: -1,
         directiveEnd: -1,
     }
+}
+
+export function getFactoryDef<T>(type: any, throwNotFound?: boolean): FactoryFn<T> | null {
+    const hasFactoryDef = type.hasOwnProperty(NG_FACTORY_DEF);
+    if (!hasFactoryDef && throwNotFound === true) {
+        throw new Error(`Type ${(type).toString()} does not have 'ɵfac' property.`);
+    }
+    return hasFactoryDef ? type[NG_FACTORY_DEF] : null;
 }
