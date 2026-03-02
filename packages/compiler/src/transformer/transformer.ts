@@ -13,7 +13,7 @@ import {extractInputsOutputs} from "./input_output_transformer";
 
 export type ComponentMetadata = {
   selector: ts.PropertyAssignment;
-  standalone: ts.ObjectLiteralElementLike;
+  name: ts.PropertyAssignment;
   template: ts.PropertyAssignment;
   templateUrl: ts.PropertyAssignment;
   styleUrl: ts.PropertyAssignment;
@@ -58,10 +58,15 @@ export function hasComponentDecorator(node: ts.ClassDeclaration) {
 export function getComponentDecorator(node: ts.ClassDeclaration): ts.Decorator {
   const decorators = ts.getDecorators(node);
   return decorators.find(
-    (decorator) =>
-      ts.isCallExpression(decorator.expression) &&
+    (decorator) => {
+      return ts.isCallExpression(decorator.expression) &&
       ts.isIdentifier(decorator.expression.expression) &&
-        (decorator.expression.expression.text === "Component" || decorator.expression.expression.text === "Directive")
+      (decorator.expression.expression.text === "Component" ||
+          decorator.expression.expression.text === "Directive" ||
+          decorator.expression.expression.text === "Pipe" ||
+          decorator.expression.expression.text === "Injectable"
+      )
+    }
   );
 }
 
@@ -75,7 +80,6 @@ export function extractComponentMetadata(
     metadata.properties,
     "selector"
   ) as ts.PropertyAssignment;
-  const standalone = getMetadataProperty(metadata.properties, "standalone");
   const template = getMetadataProperty(
     metadata.properties,
     "template"
@@ -110,9 +114,11 @@ export function extractComponentMetadata(
 
   const host = getMetadataProperty(metadata.properties, "host") as ts.PropertyAssignment;
 
+  const name = getMetadataProperty(metadata.properties, "name") as ts.PropertyAssignment;
+
   return {
     selector,
-    standalone,
+    name,
     template,
     templateUrl,
     styleUrls,
@@ -278,19 +284,20 @@ export function createCmpDefinitionPropertiesNode(
     );
   }
 
+  // TODO: there is no need for standalone since that's the general purpose of mini-ng
   // standalone
-  if (metadata.standalone) {
-    properties.push(
-      ts.factory.createPropertyAssignment("standalone", ts.factory.createTrue())
-    );
-  } else {
-    properties.push(
-      ts.factory.createPropertyAssignment(
-        "standalone",
-        ts.factory.createFalse()
-      )
-    );
-  }
+  // if (metadata.standalone) {
+  //   properties.push(
+  //     ts.factory.createPropertyAssignment("standalone", ts.factory.createTrue())
+  //   );
+  // } else {
+  //   properties.push(
+  //     ts.factory.createPropertyAssignment(
+  //       "standalone",
+  //       ts.factory.createFalse()
+  //     )
+  //   );
+  // }
 
   if (metadata.dependencies) {
     

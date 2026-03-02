@@ -31,8 +31,58 @@ const replaceDirective = (str: string, directive: string, ngDirective: string, w
 const replacePipesInInterpolations = (str: string) => {
     const interpolationRegex = /\{\{([^}]+)\|([^}]+)\}\}/g;
     return str.replace(interpolationRegex, (_match, expr, pipe) => {
-        return `<ng-pipe expr="${expr.trim()}" pipe="${pipe.trim()}"></ng-pipe>`;
+
+        let matches = _match;
+
+        if (matches[0] == "{" && matches[1] == "{") {
+            matches = matches.slice(2, matches.length - 2).trim().toString()
+        }
+
+        let _expr, pipes;
+
+        if (matches.startsWith('"')) {
+
+            let text = ""
+
+            let index = 0;
+            let currentStr = matches[index];
+            text += currentStr;
+
+            index++;
+            currentStr = matches[index]
+
+            while (currentStr != '"') {
+                text += currentStr
+                index++
+                currentStr = matches[index]
+            }
+            text += currentStr
+            index++
+
+            pipes = matches.slice(index).split("|").map(pipe => pipe.trim()).filter(Boolean);
+
+            _expr = text
+
+        } else {
+
+            const pipeParts = matches.split("|");
+            _expr = pipeParts[0];
+            pipes = pipeParts.slice(1);
+
+        }
+
+        let node = "<ng-pipe-chain expr='" + _expr + "' "
+
+        for (let i = 0; i < pipes.length; i++) {
+            node += "pipe" + i + "='" + pipes[i] + "' "
+        }
+
+        node += "/>"
+
+        return node
+
     });
+
 };
 
 export function replaceCustomDirectivesAndPipes(html: string){
