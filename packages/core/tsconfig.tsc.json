@@ -1,0 +1,15 @@
+{
+  "compilerOptions": {
+    "target": "es2021",
+    "module": "esnext",
+    "declaration": true,
+    "emitDeclarationOnly": true,
+    "declarationMap": false,
+    "outDir": "./dist",
+    "rootDir": "./framework",
+    "moduleResolution": "node",
+    "skipLibCheck": true,
+    "stripInternal": true
+  },
+  "include": ["framework/core"]
+}

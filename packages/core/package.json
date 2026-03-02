@@ -3,7 +3,7 @@
   "version": "0.1.2",
   "main": "./dist/core.cjs.js",
   "module": "./dist/core.mjs",
-  "types": "./dist/index.d.ts",
+  "types": "./dist/core/index.d.ts",
   "exports": {
     "./core": {
       "import": "./dist/core.mjs",
@@ -36,6 +36,7 @@
     "istanbul": "^0.4.5",
     "mocha": "^4.0.1",
     "rollup": "^4.57.1",
+    "rollup-plugin-dts": "^6.3.0",
     "ts-node": "^3.3.0",
     "typescript": "^5.3.3"
   },
@@ -50,7 +51,7 @@
     "webpack": "^5.89.0"
   },
   "scripts": {
-    "build:types": "tsc -p tsconfig.json",
+    "build:types": "tsc -p tsconfig.tsc.json && rollup -c tsc_rollup.config.mjs",
     "build:core": "rollup -c rollup.config.mjs",
     "build": "npm run build:core",
     "prepublishOnly": "npm run build"
@@ -58,6 +59,6 @@
   "dependencies": {
     "tslib": "^2.8.1"
   },
-  "typings": "./dist/index.d.ts",
+  "typings": "./dist/core/index.d.ts",
   "type": "module"
 }
