@@ -2,7 +2,6 @@ import {parseDocument} from "htmlparser2";
 import {Element, Node, Text} from "domhandler";
 import {factory, SourceFile} from "typescript";
 import {ExpressionParser} from "../expr_parser/expr_parser";
-import {RenderFlags} from "../render/flags";
 import {AttributeMarker} from "./attribute_marker";
 import {
   $event,
@@ -74,9 +73,6 @@ export class ViewGenerator {
     const document = parseDocument(ngHtmlString);
     const nodes = document.childNodes;
 
-    let creationCode = "";
-    let updateCode = "";
-
     for (; this.index < nodes.length; this.index++) {
       const node = nodes[this.index];
 
@@ -84,10 +80,8 @@ export class ViewGenerator {
 
       if (this.skipNode === this.index) { this.skipNode = -1; continue; }
 
-      const { creation, update } = this.processNode(node, this.index);
+      this.processNode(node, this.index);
 
-      creationCode += creation;
-      updateCode += update;
     }
 
     return {
@@ -95,7 +89,6 @@ export class ViewGenerator {
       updateStmts: this.updateStmts,
       templateStmts: this.templateStmts,
       consts: this.consts,
-      codeString: this.wrapCode(creationCode, updateCode),
     };
   }
 
@@ -134,7 +127,6 @@ export class ViewGenerator {
   ): { creation: string; update: string, attrArray: string[] } {
     const tag = this.rewriteTagExactDomName(element.tagName);
     const attributes = element.attribs;
-    // const attrArray = [];
     let attrIndex;
 
     const tempStmts = [];
@@ -307,18 +299,6 @@ export class ViewGenerator {
     }
 
     return result;
-  }
-
-  private wrapCode(creationCode: string, updateCode: string): string {
-    return `
-    if (rf & ${RenderFlags.CREATE}) {
-      ${creationCode}
-    }
-    
-    if (rf & ${RenderFlags.UPDATE}) {
-      ${updateCode}
-    }
-    `;
   }
 
   private processTemplateElement(tag: string, node: Element, index: number) {
@@ -783,7 +763,6 @@ export class ViewGenerator {
       ],
         null
     ))
-
     return {creation: "", update: ""};
   }
 
