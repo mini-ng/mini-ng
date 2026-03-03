@@ -1,0 +1,5 @@
+import { bootstrapApplication } from '@mini-ng/core';
+import { AppComponent } from './app/app.component';
+
+bootstrapApplication(AppComponent)
+  .catch((err: any) => console.error(err));
