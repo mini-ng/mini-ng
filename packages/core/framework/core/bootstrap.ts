@@ -172,6 +172,8 @@ export class ComponentFactory<T> {
     const componentInstance = rootLView.directive_instances[hostTNode.index]
     rootLView.context = componentInstance;
 
+    rootTView.pipeRegistry = cmpDef.tView.pipeRegistry
+
     setupZone(() => {
       tick();
     });

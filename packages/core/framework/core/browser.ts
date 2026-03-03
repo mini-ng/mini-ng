@@ -155,16 +155,7 @@ export class DefaultDomRenderer2 {
     // );
   }
   decoratePreventDefault(eventHandler) {
-    // `DebugNode.triggerEventHandler` needs to know if the listener was created with
-    // decoratePreventDefault or is a listener added outside the Angular context so it can handle
-    // the two differently. In the first case, the special '__ngUnwrap__' token is passed to the
-    // unwrap the listener (see below).
     return (event) => {
-      // Ivy uses '__ngUnwrap__' as a special token that allows us to unwrap the function
-      // so that it can be invoked programmatically by `DebugNode.triggerEventHandler`. The
-      // debug_node can inspect the listener toString contents for the existence of this special
-      // token. Because the token is a string literal, it is ensured to not be modified by compiled
-      // code.
       if (event === "__ngUnwrap__") {
         return eventHandler;
       }

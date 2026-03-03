@@ -33,7 +33,7 @@ export function ɵɵpipe(index: number, pipeName: string): any {
 
     if (tView.firstCreatePass) {
 
-        pipeDef = tView.pipeRegistry.find(registery => registery.name === name);
+        pipeDef = tView.pipeRegistry.find(registry => registry.name === pipeName);
         tView.data[index] = pipeDef;
 
     } else {

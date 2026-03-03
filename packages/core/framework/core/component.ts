@@ -93,7 +93,7 @@ export function makePropDecorator(
                 // target is undefined with standard decorators. This case is not supported and will throw
                 // if this decorator is used in JIT mode with standard decorators.
                 if (target === undefined) {
-                    throw new Error('Standard Angular field decorators are not supported in JIT mode.');
+                    throw new Error('Standard MiniNg field decorators are not supported in JIT mode.');
                 }
 
                 const constructor = target.constructor;
@@ -124,12 +124,16 @@ export function makePropDecorator(
 export interface DirectiveDecorator {}
 export interface Directive {}
 
+function compileDirective(type: Type<any>, meta: Directive) {
+    
+}
+
 export const Directive: DirectiveDecorator = makeDecorator(
     'Directive',
     (dir: Directive = {}) => dir,
     undefined,
     undefined,
-    (type: Type<any>, meta: Directive) => null, //compileDirective(type, meta),
+    (type: Type<any>, meta: Directive) => compileDirective(type, meta),
 );
 
 export interface Component extends Directive {}
@@ -201,9 +205,7 @@ export interface ComponentDecorator {
 
 }
 
-function compileComponent(type: Type<any>, meta: Component) {
-    console.log("Component", type, meta);
-}
+function compileComponent(type: Type<any>, meta: Component) {}
 
 let ChangeDetectionStrategy;
 
@@ -220,9 +222,7 @@ export interface PipeDecorator {
     new (obj: Pipe): Pipe;
 }
 
-function compilePipe(type: Type<any>, meta: Pipe) {
-    
-}
+function compilePipe(type: Type<any>, meta: Pipe) {}
 
 export const Pipe: PipeDecorator = makeDecorator(
     'Pipe',
