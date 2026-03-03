@@ -101,44 +101,23 @@ function createTsConfig(projectPath: string) {
 
 function createMainFile(projectPath: string) {
 
-    const content = `
+    const packageRoot = path.resolve(__dirname, "");
 
-    import { bootstrapApplication } from '@mini-ng/core';
-    import { AppComponent } from './app/app.component';
-    
-    bootstrapApplication(AppComponent)
-      .catch((err) => console.error(err));
+    const mainTemplate = path.join(packageRoot, "template/main.template");
 
-    `;
+    const mainTemplateString = fs.readFileSync(mainTemplate, "utf-8");
 
     fs.writeFileSync(
         path.join(projectPath, "src/main.ts"),
-        content
+        mainTemplateString
     );
 }
 
 function createAppComponent(projectPath: string) {
-    const content = `
-    import { Component } from "@mini-ng/core";
-
-    @Component({
-      selector: 'app-root',
-      templateUrl: './app.component.html',
-      styleUrl: './app.component.css'
-    })
-    export class AppComponent {
-        title = "mini-ng"
-      items = [
-        { title: "Explore the Docs", link: "https://github.com/philipszdavido/mini-ng" }
-      ];
-
-      constructor() {
-        console.log("AppComponent initialized");
-      }
-    }
-`;
 
     const packageRoot = path.resolve(__dirname, "");
+
+    const appComponentTemplate = path.join(packageRoot, "template/app.component.template");
 
     const templateHTMLDir = path.join(packageRoot, "template/template-html.html");
     const templateCSSDir = path.join(packageRoot, "template/template-css.css");
@@ -147,9 +126,11 @@ function createAppComponent(projectPath: string) {
 
     let css = fs.readFileSync(templateCSSDir, "utf8");
 
+    const appComponentString = fs.readFileSync(appComponentTemplate, "utf-8");
+
     fs.writeFileSync(
         path.join(projectPath, "src/app/app.component.ts"),
-        content
+        appComponentString
     );
 
     fs.writeFileSync(
