@@ -1,5 +1,5 @@
 let helpText = `
-mngc - Minimal Angular Compiler CLI
+mngc - Minimal MiniNg Compiler CLI
 
 Commands:
   new <name>        Create new project
