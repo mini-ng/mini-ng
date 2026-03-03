@@ -1,0 +1,17 @@
+import { Component } from "@mini-ng/core";
+
+@Component({
+    selector: 'app-root',
+    templateUrl: './app.component.html',
+    styleUrl: './app.component.css'
+})
+export class AppComponent {
+    title = "mini-ng"
+    items = [
+        { title: "Explore the Docs", link: "https://github.com/philipszdavido/mini-ng" }
+    ];
+
+    constructor() {
+        console.log("AppComponent initialized");
+    }
+}
