@@ -77,7 +77,7 @@ const replacePipesInInterpolations = (str: string) => {
             node += "pipe" + i + "='" + pipes[i] + "' "
         }
 
-        node += "/>"
+        node += "></ng-pipe-chain>"
 
         return node
 
