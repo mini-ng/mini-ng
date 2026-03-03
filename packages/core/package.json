@@ -1,6 +1,6 @@
 {
   "name": "@mini-ng/core",
-  "version": "0.1.2",
+  "version": "0.0.1",
   "main": "./dist/core.cjs.js",
   "module": "./dist/core.mjs",
   "types": "./dist/core/index.d.ts",
@@ -54,11 +54,32 @@
     "build:types": "tsc -p tsconfig.tsc.json && rollup -c tsc_rollup.config.mjs",
     "build:core": "rollup -c rollup.config.mjs",
     "build": "npm run build:core",
-    "prepublishOnly": "npm run build"
+    "prepublishOnly": "npm run build && npm run build:types",
+    "dry-run": "npm publish --dry-run",
+    "publish-npm": "npm publish --access public",
+    "access-public": "npm publish --access public",
+    "version": "npm version patch",
+    "minor": "npm version minor",
+    "major": "npm version major"
   },
   "dependencies": {
     "tslib": "^2.8.1"
   },
   "typings": "./dist/core/index.d.ts",
-  "type": "module"
+  "type": "module",
+  "keywords": [
+    "framework",
+    "compiler",
+    "component",
+    "typescript",
+    "javascript"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mini-ng/mini-ng"
+  },
+  "author": {
+    "email": "kurtwanger40@gmail.com",
+    "name": "Chidume Nnamdi"
+  }
 }
