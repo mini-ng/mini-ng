@@ -1,6 +1,6 @@
 {
   "name": "@mini-ng/core",
-  "version": "0.0.1",
+  "version": "0.0.3",
   "main": "./dist/core.cjs.js",
   "module": "./dist/core.mjs",
   "types": "./dist/core/index.d.ts",
@@ -60,7 +60,8 @@
     "access-public": "npm publish --access public",
     "version": "npm version patch",
     "minor": "npm version minor",
-    "major": "npm version major"
+    "major": "npm version major",
+    "release": "npm version patch && npm publish"
   },
   "dependencies": {
     "tslib": "^2.8.1"
