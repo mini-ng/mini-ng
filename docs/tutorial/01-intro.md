@@ -1,6 +1,6 @@
 # Tutorial — Part 1: Introduction
 
-This tutorial mirrors Angular's Tour-of-Heroes style: step-by-step build of a small app using components, templates, DI and routing.
+This tutorial mirrors the famous Tour-of-Heroes style: step-by-step build of a small app using components, templates, DI and routing.
 
 Steps
 

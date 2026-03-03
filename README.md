@@ -2,7 +2,7 @@
 
 ![](/logo.png)
 
-A JavaScript framework with a huge inspiration from the Angular framework.
+A JavaScript framework.
 
 # How it works
 

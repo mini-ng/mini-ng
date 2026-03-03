@@ -1,6 +1,6 @@
-mini-ng — Documentation (Angular-style)
+mini-ng — Documentation
 
-This documentation mirrors the structure of Angular's docs: Getting Started, Tutorial, Guides, API Reference, CLI, Cookbook, and Advanced topics. Use these pages as a developer portal for authoring, building and extending mini-ng apps.
+This documentation is structured as follows: Getting Started, Tutorial, Guides, API Reference, CLI, Cookbook, and Advanced topics. Use these pages as a developer portal for authoring, building and extending mini-ng apps.
 
 Primary sections
 

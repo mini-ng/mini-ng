@@ -2,7 +2,7 @@
 
 Overview
 
-- mini-ng is a lightweight component framework and compiler inspired by Angular. It provides a runtime in `core/` and a TypeScript transform-based compiler in `compiler/`.
+- mini-ng is a lightweight component framework and compiler. It provides a runtime in `core/` and a TypeScript transform-based compiler in `compiler/`.
 
 Install & Local dev
 
