@@ -1,0 +1,8 @@
+#!/usr/bin/env node
+"use strict";
+
+console.log("mngc CLI is running 🚀");
+
+require("./../dist/index.js")
+
+
