@@ -3,9 +3,9 @@ import {TemplateRef} from "./TemplateRef";
 import {ViewContainerRef} from "./ViewContainerRef";
 
 @Directive({
-    selector: '[ngIf]'
+    selector: '[miniNgIf]'
 })
-export class NgIf {
+export class MiniNgIf {
 
     private hasView = false;
 
@@ -15,7 +15,7 @@ export class NgIf {
     ) {}
 
     @Input()
-    set myIf(condition: boolean) {
+    set miniNgIf(condition: boolean) {
         if (condition && !this.hasView) {
             this.vcr.createEmbeddedView(this.tpl);
             this.hasView = true;

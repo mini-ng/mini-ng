@@ -1,6 +1,8 @@
+import {TemplateRef} from "./TemplateRef";
+
 export class ViewContainerRef {
 
-    createEmbeddedView() {
+    createEmbeddedView(templateRef: TemplateRef<any>) {
 
     }
 

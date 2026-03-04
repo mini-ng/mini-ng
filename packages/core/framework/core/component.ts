@@ -121,11 +121,15 @@ export function makePropDecorator(
     });
 }
 
-export interface DirectiveDecorator {}
+export interface DirectiveDecorator {
+    (obj?: Directive): TypeDecorator;
+    new (obj?: Directive): Directive;
+}
+
 export interface Directive {}
 
 function compileDirective(type: Type<any>, meta: Directive) {
-    
+    console.log(type, meta)
 }
 
 export const Directive: DirectiveDecorator = makeDecorator(
@@ -138,37 +142,21 @@ export const Directive: DirectiveDecorator = makeDecorator(
 
 export interface Component extends Directive {}
 
-export interface InputDecorator {}
-export interface Input {}
+export interface InputDecorator {
+    (arg?: string | Input): any;
+    new (arg?: string | Input): any;
+}
 
-// export const Input: InputDecorator = makePropDecorator(
-//     'Input',
-//     (arg?: string | {alias?: string; required?: boolean}) => {
-//         if (!arg) {
-//             return {};
-//         }
-//         return typeof arg === 'string' ? {alias: arg} : arg;
-//     },
-// );
+export interface Input {
+    alias?: string;
+    required?: boolean;
+    transform?: (value: any) => any;
+}
 
 export interface OutputDecorator {}
 export interface Output {}
 
 // export const Output: OutputDecorator = makePropDecorator('Output', (alias?: string) => ({alias}));
-
-// export function Input(alias?: string) {
-//     return function (initialValue: any, context: ClassFieldDecoratorContext) {
-//         if (context.kind !== 'field') return;
-//
-//         context.addInitializer(function () {
-//             const ctor = this.constructor;
-//             ctor.ɵinputs ??= {};
-//             ctor.ɵinputs[context.name] = alias ?? context.name;
-//         });
-//
-//         return initialValue;
-//     };
-// }
 
 // export function Output(alias?: string) {
 //     return function (initialValue: any, context: ClassFieldDecoratorContext) {
@@ -184,11 +172,21 @@ export interface Output {}
 //     };
 // }
 
-export function Input() {
-    return function (initialValue: any) {
-        return initialValue;
-    };
-}
+// export function Input() {
+//     return function (initialValue: any) {
+//         return initialValue;
+//     };
+// }
+
+export const Input: InputDecorator = makePropDecorator(
+    'Input',
+    (arg?: string | {alias?: string; required?: boolean}) => {
+        if (!arg) {
+            return {};
+        }
+        return typeof arg === 'string' ? {alias: arg} : arg;
+    },
+);
 
 export function Output() {
     return function (initialValue: any) {
@@ -205,7 +203,9 @@ export interface ComponentDecorator {
 
 }
 
-function compileComponent(type: Type<any>, meta: Component) {}
+function compileComponent(type: Type<any>, meta: Component) {
+    console.log(type, meta)
+}
 
 let ChangeDetectionStrategy;
 

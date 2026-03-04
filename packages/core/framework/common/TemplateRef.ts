@@ -1,3 +1,3 @@
-export class TemplateRef {
+export class TemplateRef<T> {
 
 }
