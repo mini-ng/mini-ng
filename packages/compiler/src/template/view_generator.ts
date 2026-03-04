@@ -136,9 +136,9 @@ export class ViewGenerator {
     const tag = this.rewriteTagExactDomName(element.tagName);
     const attributes = element.attribs;
 
-    const { attrIndex, tempStmts} = this.processAttributes(tag, index, attributes)
+    const { attrIndex, tempStmts, localRefIndex } = this.processAttributes(tag, index, attributes)
 
-    this.stmts.push(generateElementStartNode(index, tag, /* Object.keys(attributes).length == 0 ? null : index + 1,*/ attrIndex), ...tempStmts);
+    this.stmts.push(generateElementStartNode(index, tag, /* Object.keys(attributes).length == 0 ? null : index + 1,*/ attrIndex, localRefIndex), ...tempStmts);
 
     // Process children
     // let childIndex = index + 1;
@@ -230,6 +230,8 @@ export class ViewGenerator {
     const tempConstsStmts = []
 
     const implicitVariables = [];
+    const localNames = []
+    let localRefIndex
 
     // Process attributes
     for (const attr in attributes) {
@@ -248,22 +250,16 @@ export class ViewGenerator {
         this.updateStmts.push(generateAdvanceNode(index.toString()));
         this.updateStmts.push(generatePropertyNode(propertyName, attributes[attr], this.implicitVariables));
 
-        tempConstsStmts.push(
-            ts.factory.createArrayLiteralExpression(
-                [
-                  ts.factory.createNumericLiteral(attr_marker),
-                  ts.factory.createStringLiteral(propertyName)
-                ]
-            )
-        )
-        attrIndex = this.consts.length;
+        tempConstsStmts.push(ts.factory.createNumericLiteral(attr_marker))
+        tempConstsStmts.push(ts.factory.createStringLiteral(propertyName))
+
+        // attrIndex = this.consts.length;
 
       } else if (attr.startsWith("#")) {
-
+        localNames.push(attr.slice(1));
       } else if (attr.startsWith("let-")) {
         implicitVariables.push(attr.slice(4));
       } else {
-        // attrArray.push(`"${attr}", "${attributes[attr]}"`);
 
         let attr_marker: AttributeMarker;
 
@@ -283,26 +279,35 @@ export class ViewGenerator {
           }
         }
 
-        tempConstsStmts.push(
-            ts.factory.createArrayLiteralExpression(
-                [
-                  !attr_marker ? ts.factory.createStringLiteral(attr) : ts.factory.createNumericLiteral(attr_marker),
-                  ts.factory.createStringLiteral(attributes[attr])
-                ]
-            )
-        )
-        attrIndex = this.consts.length;
+        tempConstsStmts.push(!attr_marker ? ts.factory.createStringLiteral(attr) : ts.factory.createNumericLiteral(attr_marker))
+        tempConstsStmts.push(ts.factory.createStringLiteral(attributes[attr]))
+        // attrIndex = this.consts.length;
       }
     }
 
     // here, push consts
-    this.consts.push(
-        ts.factory.createArrayLiteralExpression(
-            tempConstsStmts
-        )
-    )
+    if (tempConstsStmts.length > 0) {
+      this.consts.push(
+          ts.factory.createArrayLiteralExpression(
+              tempConstsStmts
+          )
+      )
+      attrIndex = this.consts.length - 1
+    }
 
-    return { tempStmts, attrIndex, implicitVariables }
+    if (localNames.length > 0) {
+      this.consts.push(
+          ts.factory.createArrayLiteralExpression(
+              [
+                  ...localNames.map((attr) => ts.factory.createStringLiteral(attr)),
+                  ts.factory.createStringLiteral("")
+                  ]
+          )
+      );
+      localRefIndex = this.consts.length - 1;
+    }
+
+    return { tempStmts, attrIndex, implicitVariables, localNames, localRefIndex }
 
   }
 
@@ -838,19 +843,18 @@ export class ViewGenerator {
     let tag = node.tagName;
     const functionName = "Template_" + index.toString() + "_Function";
 
-    const { attrIndex, tempStmts, implicitVariables} = this.processAttributes(tag, index, node.attribs);
-    const templateNode = generateTemplateNode(index, functionName, node.tagName, attrIndex);
+    const { attrIndex, tempStmts, implicitVariables, localRefIndex} = this.processAttributes(tag, index, node.attribs);
+    const templateNode = generateTemplateNode(index, functionName, node.tagName, attrIndex, localRefIndex);
     this.stmts.push(templateNode, ...tempStmts)
 
     const viewGenerator = new ViewGenerator();
-    viewGenerator.consts = [...viewGenerator.consts]
     implicitVariables.forEach(variableName => {
       viewGenerator.setImplicitVariables(variableName, this.implicitVariables)
     })
-    this.consts = []
+    viewGenerator.consts = this.consts;
 
     viewGenerator.processChildren(node.childNodes);
-    this.consts = [...viewGenerator.consts];
+    this.consts = viewGenerator.consts;
 
     this.templateStmts.push({
       functionName: functionName,
@@ -858,13 +862,6 @@ export class ViewGenerator {
       stmts: [...viewGenerator.stmts],
       templateStmts: [...viewGenerator.templateStmts]
     });
-
-    // this.updateStmts.push(generateAdvanceNode(index.toString()))
-
-    // i0.ɵɵadvance();
-    // i0.ɵɵproperty("ngForOf", ctx.title);
-
-    // this.updateStmts.push(generatePropertyNode(name, ))
 
     return undefined;
   }
@@ -954,7 +951,8 @@ export class ViewGenerator {
 function generateElementStartNode(
   index: number,
   element: string,
-  attrsIndex?: number
+  attrsIndex?: number,
+  localRefIndex?: number,
 ) {
   const params = [
     ts.factory.createNumericLiteral(index),
@@ -963,6 +961,10 @@ function generateElementStartNode(
 
   if (attrsIndex !== undefined && attrsIndex >= 0) {
     params.push(ts.factory.createNumericLiteral(attrsIndex));
+  }
+
+  if (localRefIndex) {
+    params.push(ts.factory.createNumericLiteral(localRefIndex));
   }
 
   return ts.factory.createExpressionStatement(
