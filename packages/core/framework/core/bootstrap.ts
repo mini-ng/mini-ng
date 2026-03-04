@@ -6,7 +6,6 @@ import {
   leaveView,
   LView,
   runtime,
-  TNode,
   TNodeType,
   TView,
   TViewType,
@@ -14,7 +13,6 @@ import {
 } from "./core";
 import {DefaultDomRenderer2} from "./browser";
 import {setupZone} from "./zone";
-import {getUniqueLViewId, LViewFlags} from "./type";
 import {detectChanges} from "./change_detection";
 import {createTView} from "./shared";
 import {RenderFlags} from "./render_flags";
@@ -83,7 +81,7 @@ function createRootTView(
       null,
       1,
       varsToAllocate,
-      directivesToApply,//componentDef.directiveDefs,
+      directivesToApply,
       null,
       [tAttributes],
       null

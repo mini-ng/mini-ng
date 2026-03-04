@@ -4,6 +4,7 @@ import {createLView, getLView, getSelectedIndex, getTView, setCurrentTNode} from
 import {RenderFlags} from "./render_flags";
 import {cloneObject} from "./utils";
 import {createTNode} from "./shared";
+import {resolveDirectives} from "./directive";
 
 export function ɵɵtemplate<T>(
     index: number,
@@ -27,7 +28,7 @@ export function ɵɵtemplate<T>(
         pipeRegistry: declarationTView.pipeRegistry,
         consts: consts,
         styles: declarationTView.styles,
-        id: declarationTView.id, // index.toString(),
+        id: declarationTView.id,
         type: TViewType.Embedded,
         data: [],
         components: declarationTView.components,
@@ -45,6 +46,8 @@ export function ɵɵtemplate<T>(
     setCurrentTNode(tNode, false)
 
     const context = declarationLView.context;
+
+    // resolveDirectives()
 
     const embeddedLView = createLView<T>(
         declarationLView,
@@ -332,5 +335,3 @@ export function ɵɵrepeater(iterable: Array<any>) {
     })
 
 }
-
-export function ɵɵpipeBind1() {}

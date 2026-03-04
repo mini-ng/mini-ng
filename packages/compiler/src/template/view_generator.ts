@@ -11,13 +11,16 @@ import {
   ɵɵconditional,
   ɵɵelementEnd,
   ɵɵelementStart,
-  ɵɵlistener, ɵɵpipe, ɵɵpipeBind,
+  ɵɵlistener,
+  ɵɵpipe,
+  ɵɵpipeBind,
   ɵɵproperty,
   ɵɵrepeater,
   ɵɵrepeaterCreate,
   ɵɵtext,
   ɵɵtextInterpolate,
-  ɵɵtextStyle
+  ɵɵtextStyle,
+  ɵɵtemplate
 } from "../constants/constants";
 import {CSSParser} from "../css_parser/css_parser";
 import {ElementType} from "domelementtype";
@@ -101,6 +104,11 @@ export class ViewGenerator {
 
     if (node instanceof Element) {
       const tag = node.tagName;
+
+      if (this.isElementContainingStructuralDirectives(node)) {
+        return this.processStructuralDirective(node, index)
+      }
+
       if(templatesNodeNames.includes(tag)) {
         return this.processTemplateElement(tag, node, index)
       }
@@ -127,77 +135,8 @@ export class ViewGenerator {
   ): { creation: string; update: string, attrArray: string[] } {
     const tag = this.rewriteTagExactDomName(element.tagName);
     const attributes = element.attribs;
-    let attrIndex;
 
-    const tempStmts = [];
-    const tempConstsStmts = []
-
-    // Process attributes
-    for (const attr in attributes) {
-      if (attr.startsWith("(")) {
-        // Event binding
-        const eventName = attr.slice(1, -1);
-        tempStmts.push(
-            generateListenerNode(eventName, tag, index + 1, attributes[attr])
-        )
-      } else if (attr.startsWith("[")) {
-        let attr_marker = AttributeMarker.Bindings;
-
-        // Property binding
-        const propertyName = attr.slice(1, -1);
-
-        this.updateStmts.push(generateAdvanceNode(index.toString()));
-        this.updateStmts.push(generatePropertyNode(propertyName, attributes[attr], this.implicitVariables));
-
-        tempConstsStmts.push(
-            ts.factory.createArrayLiteralExpression(
-                [
-                  ts.factory.createNumericLiteral(attr_marker),
-                  ts.factory.createStringLiteral(propertyName)
-                ]
-            )
-        )
-        attrIndex = this.consts.length;
-
-      } else {
-        // attrArray.push(`"${attr}", "${attributes[attr]}"`);
-
-        let attr_marker: AttributeMarker;
-
-        switch (attr) {
-          case 'style': {
-            attr_marker = AttributeMarker.Styles;
-            break;
-          }
-
-          case 'class': {
-            attr_marker = AttributeMarker.Classes;
-            break;
-          }
-
-          default: {
-            break;
-          }
-        }
-
-        tempConstsStmts.push(
-            ts.factory.createArrayLiteralExpression(
-                [
-                  !attr_marker ? ts.factory.createStringLiteral(attr) : ts.factory.createNumericLiteral(attr_marker),
-                  ts.factory.createStringLiteral(attributes[attr])
-                ]
-            )
-        )
-        attrIndex = this.consts.length;
-      }
-    }
-
-    // here, push consts
-    this.consts.push(
-        ts.factory.createArrayLiteralExpression(
-            tempConstsStmts
-        )
-    )
+    const { attrIndex, tempStmts} = this.processAttributes(tag, index, attributes)
 
     this.stmts.push(generateElementStartNode(index, tag, /* Object.keys(attributes).length == 0 ? null : index + 1,*/ attrIndex), ...tempStmts);
 
@@ -281,6 +220,90 @@ export class ViewGenerator {
       }
     }
     return { creation: "", update: "" };
+  }
+
+  processAttributes(tag: string, index: number, attributes:  { [p: string]: string }) {
+
+    let attrIndex;
+
+    const tempStmts = [];
+    const tempConstsStmts = []
+
+    const implicitVariables = [];
+
+    // Process attributes
+    for (const attr in attributes) {
+      if (attr.startsWith("(")) {
+        // Event binding
+        const eventName = attr.slice(1, -1);
+        tempStmts.push(
+            generateListenerNode(eventName, tag, index + 1, attributes[attr])
+        )
+      } else if (attr.startsWith("[")) {
+        let attr_marker = AttributeMarker.Bindings;
+
+        // Property binding
+        const propertyName = attr.slice(1, -1);
+
+        this.updateStmts.push(generateAdvanceNode(index.toString()));
+        this.updateStmts.push(generatePropertyNode(propertyName, attributes[attr], this.implicitVariables));
+
+        tempConstsStmts.push(
+            ts.factory.createArrayLiteralExpression(
+                [
+                  ts.factory.createNumericLiteral(attr_marker),
+                  ts.factory.createStringLiteral(propertyName)
+                ]
+            )
+        )
+        attrIndex = this.consts.length;
+
+      } else if (attr.startsWith("#")) {
+
+      } else if (attr.startsWith("let-")) {
+        implicitVariables.push(attr.slice(4));
+      } else {
+        // attrArray.push(`"${attr}", "${attributes[attr]}"`);
+
+        let attr_marker: AttributeMarker;
+
+        switch (attr) {
+          case 'style': {
+            attr_marker = AttributeMarker.Styles;
+            break;
+          }
+
+          case 'class': {
+            attr_marker = AttributeMarker.Classes;
+            break;
+          }
+
+          default: {
+            break;
+          }
+        }
+
+        tempConstsStmts.push(
+            ts.factory.createArrayLiteralExpression(
+                [
+                  !attr_marker ? ts.factory.createStringLiteral(attr) : ts.factory.createNumericLiteral(attr_marker),
+                  ts.factory.createStringLiteral(attributes[attr])
+                ]
+            )
+        )
+        attrIndex = this.consts.length;
+      }
+    }
+
+    // here, push consts
+    this.consts.push(
+        ts.factory.createArrayLiteralExpression(
+            tempConstsStmts
+        )
+    )
+
+    return { tempStmts, attrIndex, implicitVariables }
+
   }
 
   parseInterpolations(input: string): Array<InterpolationType> {
@@ -766,9 +789,166 @@ export class ViewGenerator {
     return {creation: "", update: ""};
   }
 
+  private processStructuralDirective(node: Element, index: number) {
+
+    let directiveName, directiveValue;
+
+    // remove the structural directive
+    const attribs = {}
+
+    for (const attrib in node.attribs) {
+
+      if (attrib.startsWith("*")) {
+        directiveName = attrib.slice(1);
+        directiveValue = node.attribs[attrib];
+        continue;
+      }
+
+      if (!attrib.startsWith("*")) {
+        attribs[attrib] = node.attribs[attrib];
+      }
+    }
+
+    node.attribs = attribs;
+
+    const templateAttribs = this.parseMicroSyntax(directiveName, directiveValue)
+
+    const templateElement = new Element(
+        "ng-template",
+        templateAttribs,
+        [
+            node
+        ],
+        ElementType.Tag
+    );
+
+    templateElement.next = node.next
+    templateElement.prev = node.prev
+    templateElement.parent = node.parent;
+
+    node.parent = templateElement
+    node.next = null;
+    node.prev = null;
+
+    return this.processNgTemplate(templateElement, index);
+
+  }
+
   private processNgTemplate(node: Element, index: number) {
+    let tag = node.tagName;
+    const functionName = "Template_" + index.toString() + "_Function";
+
+    const { attrIndex, tempStmts, implicitVariables} = this.processAttributes(tag, index, node.attribs);
+    const templateNode = generateTemplateNode(index, functionName, node.tagName, attrIndex);
+    this.stmts.push(templateNode, ...tempStmts)
+
+    const viewGenerator = new ViewGenerator();
+    viewGenerator.consts = [...viewGenerator.consts]
+    implicitVariables.forEach(variableName => {
+      viewGenerator.setImplicitVariables(variableName, this.implicitVariables)
+    })
+    this.consts = []
+
+    viewGenerator.processChildren(node.childNodes);
+    this.consts = [...viewGenerator.consts];
+
+    this.templateStmts.push({
+      functionName: functionName,
+      updateStmts: [...viewGenerator.updateStmts],
+      stmts: [...viewGenerator.stmts],
+      templateStmts: [...viewGenerator.templateStmts]
+    });
+
+    // this.updateStmts.push(generateAdvanceNode(index.toString()))
+
+    // i0.ɵɵadvance();
+    // i0.ɵɵproperty("ngForOf", ctx.title);
+
+    // this.updateStmts.push(generatePropertyNode(name, ))
+
     return undefined;
   }
+
+  isElementContainingStructuralDirectives(node: Element) {
+    const attribs = node.attribs
+
+    for (const attrib in attribs) {
+      if (attrib.startsWith("*")) {
+        return true;
+      }
+    }
+
+    return false;
+
+  }
+
+  // | Keyword   | Becomes          |
+  // | --------- | ---------------- |
+  // | `of`      | prefix + Of      |
+  // | `trackBy` | prefix + TrackBy |
+  // | `when`    | prefix + When    |
+  // | `else`    | prefix + Else    |
+  // | Part           | Meaning           |
+  // | -------------- | ----------------- |
+  // | `tpl`          | main expression   |
+  // | `context: ctx` | secondary binding |
+
+  parseMicroSyntax(directiveName: string, directiveValue: string) {
+
+    const attribs = {}
+
+    if (directiveValue.startsWith("let ")) {
+      // this is a Of
+
+      const parts = directiveValue.split(";")
+      const forOfPart = parts[0];
+
+      const forOfParts = forOfPart.split(" ").map(part => part.trim())
+
+      if (forOfParts.length < 4) {
+        throw new Error("This attribute must be in the format: let user of users");
+      }
+
+      const letOf = forOfParts[0];
+      const iterOf = forOfParts[1];
+      const arrayOf = forOfParts[3];
+
+      if (letOf !== "let") throw new Error("This attribute must be in the format: let user of users");
+
+      attribs["let-" + iterOf] = "";
+      attribs["[" + directiveName + "Of]"] = arrayOf;
+      attribs["" + directiveName + ""] = ""
+
+      return attribs
+
+    }
+
+    if (directiveValue.split(";").length > 1) {
+
+
+      // prefix secondary bindings with directive name.
+
+      directiveValue.split(";").forEach(part => {
+        part = part.trim();
+
+        if (part.startsWith("context") && part.split(":").length > 1) {
+          attribs["[" + directiveName + "Context]"] = part.split(":")[1];
+        } else {
+          attribs["[" + directiveName + "]"] = part.trim();
+        }
+
+      })
+
+      return attribs;
+
+    }
+
+    attribs["[" + directiveName + "]"] = directiveValue;
+
+    return attribs;
+
+  }
+
 }
 
 function generateElementStartNode(
@@ -970,19 +1150,38 @@ function generateTextInterpolateNode(bindingExpressions: InterpolationType[], im
     return expressionStatement
 }
 
-function generateTemplateNode(index: number, functionName: string, templateName: string) {
+function generateTemplateNode(
+    index: number,
+    functionName: string,
+    templateName: string,
+    attrsIndex?: number | null,
+    localRefsIndex?: number | null
+) {
+
+  const nodeArguments = [
+    ts.factory.createNumericLiteral(index),
+    ts.factory.createIdentifier(functionName),
+    ts.factory.createStringLiteral(templateName)
+  ];
+
+  if (attrsIndex) {
+    nodeArguments.push(
+        ts.factory.createNumericLiteral(index)
+    )
+  }
+
+  if (localRefsIndex) {
+    nodeArguments.push(ts.factory.createNumericLiteral(localRefsIndex))
+  }
+
   return ts.factory.createExpressionStatement(
       ts.factory.createCallExpression(
           ts.factory.createPropertyAccessExpression(
               ts.factory.createIdentifier(i0),
-              ts.factory.createIdentifier("ɵɵtemplate")
+              ts.factory.createIdentifier(ɵɵtemplate)
           ),
           undefined,
-          [
-            ts.factory.createNumericLiteral(index),
-            ts.factory.createIdentifier(functionName),
-            ts.factory.createStringLiteral(templateName)
-          ]
+          nodeArguments
       )
   )
 }
