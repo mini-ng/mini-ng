@@ -274,7 +274,9 @@ export function createCmpDefinitionPropertiesNode(
             ts.factory.createArrayLiteralExpression(
                 [
                   ts.factory.createArrayLiteralExpression(
-                      selectorArray.map(currentSelector => typeof currentSelector === "string" ? ts.factory.createStringLiteral(currentSelector) : ts.factory.createNumericLiteral(currentSelector)),
+                      selectorArray.map(currentSelector => {
+                        return typeof currentSelector === "string" ? ts.factory.createStringLiteral(currentSelector) : ts.factory.createNumericLiteral(currentSelector)
+                      }),
                       false
                   ),
                 ],
@@ -695,7 +697,7 @@ export function parseSelector(selector: string): any[] {
 }
 
 export function parseTemplateSelector(selector: string) {
-  return [parseSelector(selector)];
+  return parseSelector(selector);
 }
 
 function readTemplate(tsFilePath: string, templateUrl: string) {
