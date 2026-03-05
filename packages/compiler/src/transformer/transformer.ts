@@ -467,13 +467,6 @@ function parseDirectiveSelector(selector: string) {
 
 }
 
-// export enum SelectorFlags {
-//   ELEMENT,
-//   CLASS,
-//   ATTRIBUTE,
-//   NOT
-// }
-
 // Expresses a single CSS Selector.
 //     Beginning of array
 // First index: element name
@@ -487,107 +480,6 @@ function parseDirectiveSelector(selector: string) {
 // e. g. SelectorFlags. NOT | SelectorFlags. ELEMENT
 // Example: Original: div. foo. bar[attr1=val1][attr2] Parsed: ['div', 'attr1', 'val1', 'attr2', '', SelectorFlags. CLASS, 'foo', 'bar']
 // Original: 'div[attr1]:not(.foo[attr2]) Parsed: [ 'div', 'attr1', '', SelectorFlags. NOT | SelectorFlags. ATTRIBUTE 'attr2', '', SelectorFlags. CLASS, 'foo' ]
-
-// function parseTemplateSelector(selectorString: string) {
-//
-//   // . is a class
-//   // [ is an attribute
-//   // : css thing
-//   // otherwise a html tag
-//
-//   const attributes = []
-//   const classes = []
-//
-//   let text = ""
-//
-//   const char = selectorString[0]
-//   let type: SelectorFlags
-//
-//   if (char === ".") {
-//     type = SelectorFlags.CLASS
-//   } else if (char === "[") {
-//     type = SelectorFlags.ATTRIBUTE
-//   } else if (char === ":") {
-//     type = SelectorFlags.NOT
-//   } else {
-//     // html tag
-//     type = SelectorFlags.ELEMENT
-//   }
-//
-//   const cssSelectors: (string | SelectorFlags)[] = [];
-//
-//   for (let i = 0; i < selectorString.length; i++) {
-//
-//     const char = selectorString[i];
-//
-//     if (char === ".") {
-//
-//       pushSelector(text, type)
-//       text = ""
-//       type = SelectorFlags.CLASS
-//       continue;
-//
-//     } else if (char === "[") {
-//
-//       pushSelector(text, type)
-//       text = ""
-//       type = SelectorFlags.ATTRIBUTE
-//       continue;
-//
-//     } else if (char === "]") {
-//
-//       pushSelector(text, type)
-//       text = ""
-//       type = undefined
-//       continue;
-//
-//     } else if (char === ":") {
-//
-//       pushSelector(text, type)
-//       text = ""
-//       type = SelectorFlags.NOT
-//       continue;
-//
-//     }
-//
-//     text += char.trim()
-//
-//   }
-//
-//   if (text.length > 0) {
-//     pushSelector(text, type)
-//   }
-//
-//   if (classes.length > 0) {
-//     cssSelectors.push(SelectorFlags.CLASS, ...classes)
-//   }
-//
-//   if (attributes.length > 0) {
-//     cssSelectors.push(SelectorFlags.ATTRIBUTE, ...attributes)
-//   }
-//
-//   return cssSelectors;
-//
-//   function pushSelector(text: string, type: SelectorFlags) {
-//     switch (type) {
-//       case SelectorFlags.CLASS:
-//         classes.push(text);
-//         break;
-//       case SelectorFlags.ATTRIBUTE:
-//
-//         const attrParts = text.split("=")
-//         if (attrParts.length === 1) {
-//           attrParts.push("")
-//         }
-//         attributes.push(...attrParts);
-//         break;
-//       case SelectorFlags.NOT:
-//         break;
-//
-//     }
-//   }
-//
-// }
 
 export enum SelectorFlags {
   ELEMENT = 0,
