@@ -100,10 +100,25 @@ function isNodeMatchingSelector(tNode: TNode,
             }
         }
 
+        /* else if (attribute == AttributeMarker.Bindings) {
+
+        } else if (attribute == AttributeMarker.Template) {
+
+        } */
+
     }
 
     return false
 
+}
+
+function findAttrIndexInNode(
+    name: string,
+    attrs: TAttributes | null
+) {
+    for (let i = 0; i < attrs.length; i++) {
+
+    }
 }
 
 export function extractDirectiveDef(type: Type<any>): DirectiveDef<any> | ComponentDef<any> | null {

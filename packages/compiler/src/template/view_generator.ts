@@ -232,9 +232,17 @@ export class ViewGenerator {
     const implicitVariables = [];
     const localNames = []
     let localRefIndex
+    const isTemplate = tag === "ng-template"
+
+    if (isTemplate) {
+      tempConstsStmts.push(ts.factory.createNumericLiteral(AttributeMarker.Template))
+    }
 
     // Process attributes
     for (const attr in attributes) {
+
+      const attributeValue = attributes[attr];
+
       if (attr.startsWith("(")) {
         // Event binding
         const eventName = attr.slice(1, -1);
@@ -250,10 +258,8 @@ export class ViewGenerator {
         this.updateStmts.push(generateAdvanceNode(index.toString()));
         this.updateStmts.push(generatePropertyNode(propertyName, attributes[attr], this.implicitVariables));
 
-        tempConstsStmts.push(ts.factory.createNumericLiteral(attr_marker))
+        !isTemplate && tempConstsStmts.push(ts.factory.createNumericLiteral(attr_marker))
         tempConstsStmts.push(ts.factory.createStringLiteral(propertyName))
-
-        // attrIndex = this.consts.length;
 
       } else if (attr.startsWith("#")) {
         localNames.push(attr.slice(1));
@@ -280,8 +286,11 @@ export class ViewGenerator {
         }
 
         tempConstsStmts.push(!attr_marker ? ts.factory.createStringLiteral(attr) : ts.factory.createNumericLiteral(attr_marker))
-        tempConstsStmts.push(ts.factory.createStringLiteral(attributes[attr]))
-        // attrIndex = this.consts.length;
+
+        !isTemplate && attributeValue.split(" ").forEach(attrValue => {
+          tempConstsStmts.push(ts.factory.createStringLiteral(attrValue))
+        })
+
       }
     }
 

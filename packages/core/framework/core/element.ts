@@ -17,7 +17,12 @@ import {createDirectivesInstances, resolveDirectives} from "./directive";
 import {renderView} from "./change_detection";
 import {COMPONENT_VARIABLE, SVG_NS} from "./constants";
 
-export function ɵɵelementStart(index: number, tag: string, attrsIndex?: number | null,) {
+export function ɵɵelementStart(
+    index: number,
+    tag: string,
+    attrsIndex?: number | null,
+    localRefsIndex?: number | null,
+) {
     const lView = runtime.currentLView!;
     const tView = lView.tView;
 
@@ -55,23 +60,7 @@ export function ɵɵelementStart(index: number, tag: string, attrsIndex?: number
             // get consts
             const attrArray = tView.consts[attrsIndex];
             tNode.attrs = attrArray;
-            for (let i = 0; i < attrArray.length; i++) {
-
-                const attr = attrArray[i];
-                const attribute = attr[0];
-
-                if (attribute == AttributeMarker.Styles) {
-                    (el as HTMLElement).setAttribute("style", attr[1]);
-                } else if (attribute == AttributeMarker.Classes) {
-                    (el as HTMLElement).setAttribute("class", attr[1]);
-                } else if (attribute == AttributeMarker.Bindings) {
-
-                } else if (attribute == AttributeMarker.Template) {
-
-                } else {
-                    (el as HTMLElement).setAttribute(attribute, attr[1]);
-                }
-            }
+            computeStyling(tNode, el as HTMLElement)
         }
 
         const id = lView.tView?.id;
@@ -189,4 +178,32 @@ export function injectStyle(componentId: string, css: string) {
     style.textContent = css;
 
     document.head.appendChild(style);
+}
+
+function computeStyling(tNode: TNode, el: HTMLElement) {
+
+    const attrArray = tNode.attrs;
+
+    const classes = "";
+    const styles = ""
+
+    for (let i = 0; i < attrArray.length; i++) {
+
+        const attr = attrArray[i];
+        let mode: AttributeMarker
+
+        if (typeof attr === "number") {
+            mode = attr;
+            continue;
+        }
+
+        if (mode == AttributeMarker.Styles) {
+            (el as HTMLElement).setAttribute("style", attr as string);
+        } else if (mode == AttributeMarker.Classes) {
+            (el as HTMLElement).setAttribute("class", attr as string);
+        } else if (typeof attr === "string") {
+            (el as HTMLElement).setAttribute(attr, attrArray[++i] as string);
+        }
+    }
+
 }
