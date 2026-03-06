@@ -1,10 +1,6 @@
-import {DirectiveDef, enterView, InputFlags, leaveView, runtime, TNode} from "./core";
-import { isDirectiveHost} from "./element";
+import {DirectiveDef, runtime, TNode} from "./core";
 import {getLView, getSelectedIndex, getTView} from "./state";
-import {getNativeByTNode} from "../common";
-import {RenderFlags} from "./render_flags";
-import {ɵɵInputFlags} from "./input_flags";
-import {isComponentHost, markDirtyIfOnPush} from "./shared";
+import {getNativeByTNode, isComponentHost, markDirtyIfOnPush} from "./shared";
 
 // i0.ɵɵproperty("bind", ctx.name);
 export function ɵɵproperty<T>(

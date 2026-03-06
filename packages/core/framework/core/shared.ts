@@ -3,7 +3,7 @@ import {
     ComponentTemplate,
     CssSelector,
     DirectiveDef,
-    DirectiveDefListOrFactory,
+    DirectiveDefListOrFactory, Element,
     getComponentDef,
     getDirectiveDef,
     LView, PipeDefListOrFactory,
@@ -34,7 +34,7 @@ export function findDirectiveDefMatches(
     if (registry) {
         for (let i = 0; i < registry.length; i++) {
             const def = registry[i];
-            if (isNodeMatchingSelectorList(tNode, def.selectors!, false)) {
+            if (isNodeMatchingSelectorList(tNode, def.selectors!)) {
                 matches ??= [];
 
                 if (isComponentDef(def)) {
@@ -52,11 +52,10 @@ export function findDirectiveDefMatches(
 
 export function isNodeMatchingSelectorList(
     tNode: TNode,
-    selector: any[],
-    isProjectionMode: boolean = false,
+    selector: any[]
 ): boolean {
     for (let i = 0; i < selector.length; i++) {
-        if (isNodeMatchingSelector(tNode, selector[i], isProjectionMode)) {
+        if (isNodeMatchingSelector(tNode, selector[i])) {
             return true;
         }
     }
@@ -68,57 +67,196 @@ export function isComponentDef<T>(def: any) {
     return !!(def).template;
 }
 
-function isNodeMatchingSelector(tNode: TNode,
-                                selector: any[],
-                                isProjectionMode: boolean = false,) {
+// export function isNodeMatchingSelector(tNode: TNode,
+//                                 selector: any[]
+// ) {
+//
+//     const tNodeSelector = tNode.value;
+//     const nodeAttrs = tNode.attrs;
+//
+//     for (let i = 0; i < selector.length; i++) {
+//         const currentSelector = selector[i];
+//         let mode = SelectorFlags.ELEMENT
+//
+//         // if (currentSelector === tNodeSelector) {
+//         //     return true;
+//         // }
+//         //
+//         // if (!nodeAttrs) {
+//         //     return false;
+//         // }
+//         //
+//         // for (let nodeAttrIndex = 0; nodeAttrIndex < nodeAttrs.length; nodeAttrIndex++) {
+//         //     const nodeAttr = nodeAttrs[nodeAttrIndex];
+//         //
+//         //     if (Array.isArray(nodeAttr)) {
+//         //         if (nodeAttr[0].toString().toLowerCase() === currentSelector.toLowerCase()) {
+//         //             return true;
+//         //         }
+//         //
+//         //         if (typeof nodeAttr[0] === "number" && nodeAttr[1].toString().toLowerCase() === currentSelector.toLowerCase()) {
+//         //             return true
+//         //         }
+//         //     }
+//         // }
+//
+//         if (typeof currentSelector === "number") {
+//             mode = currentSelector;
+//             continue;
+//         }
+//
+//         if (mode & SelectorFlags.ELEMENT) {
+//             mode = SelectorFlags.ATTRIBUTE;
+//             if (
+//                 (currentSelector !== '' && !hasTagAndTypeMatch(tNode, currentSelector)) ||
+//                 (currentSelector === '' && selector.length === 1)
+//             ) {
+//                 return false;
+//             }
+//
+//         } else if (mode & SelectorFlags.CLASS) {
+//
+//         } else {
+//
+//         }
+//
+//         /* else if (attribute == AttributeMarker.Bindings) {
+//
+//         } else if (attribute == AttributeMarker.Template) {
+//
+//         } */
+//
+//     }
+//
+//     return false
+//
+// }
 
-    const tNodeSelector = tNode.value;
-    const nodeAttrs = tNode.attrs;
+export function isNodeMatchingSelector(tNode: TNode, selector: any[]): boolean {
+
+    const nodeAttrs = tNode.attrs || [];
+    let mode = SelectorFlags.ELEMENT;
+
+    const nameOnlyMarkerIdx = nodeAttrs !== null ? getNameOnlyMarkerIndex(nodeAttrs) : 0;
 
     for (let i = 0; i < selector.length; i++) {
-        const currentSelector = selector[i]
 
-        if (currentSelector === tNodeSelector) {
-            return true;
+        const currentSelector = selector[i];
+
+        if (typeof currentSelector === "number") {
+            mode = currentSelector;
+            continue;
         }
 
-        if (!nodeAttrs) {
-            return false;
+        if (mode & SelectorFlags.ELEMENT) {
+
+            mode = SelectorFlags.ATTRIBUTE;
+
+            // Fail element matching if:
+            // 1. selector specifies a tag but node tag doesn't match
+            // OR
+            // 2. selector is empty (invalid universal selector)
+
+            if (
+                (currentSelector !== '' && !hasTagAndTypeMatch(tNode, currentSelector)) ||
+                (currentSelector === '' && selector.length === 1)
+            ) {
+                return false;
+            }
+
         }
 
-        for (let nodeAttrIndex = 0; nodeAttrIndex < nodeAttrs.length; nodeAttrIndex++) {
-            const nodeAttr = nodeAttrs[nodeAttrIndex];
+        else if (mode & SelectorFlags.CLASS) {
 
-            if (Array.isArray(nodeAttr)) {
-                if (nodeAttr[0].toString().toLowerCase() === currentSelector.toLowerCase()) {
-                    return true;
+            if (nodeAttrs == null) {
+                return false;
+            }
+
+            if (!isCssClassMatching(tNode, nodeAttrs, currentSelector)) {
+                return false;
+            }
+
+            // const hasClass = nodeAttrs.some(attr =>
+            //     Array.isArray(attr) &&
+            //     attr[0] === 'class' &&
+            //     attr[1].split(' ').includes(currentSelector)
+            // );
+            //
+            // if (!hasClass) {
+            //     return false;
+            // }
+
+        }
+
+        else if (mode & SelectorFlags.ATTRIBUTE) {
+
+            const selectorAttrValue = selector[++i];
+            const attrIndexInNode = findAttrIndexInNode( currentSelector, nodeAttrs)
+
+            if (attrIndexInNode === -1) {
+                return false;
+            }
+
+            if (selectorAttrValue !== '') {
+                let nodeAttrValue: string;
+                if (attrIndexInNode > nameOnlyMarkerIdx) {
+                    nodeAttrValue = '';
+                } else {
+                    nodeAttrValue = (nodeAttrs![attrIndexInNode + 1] as string).toLowerCase();
                 }
 
-                if (typeof nodeAttr[0] === "number" && nodeAttr[1].toString().toLowerCase() === currentSelector.toLowerCase()) {
-                    return true
+                if (mode & SelectorFlags.ATTRIBUTE && selectorAttrValue !== nodeAttrValue) {
+                    return false;
                 }
             }
+
         }
-
-        /* else if (attribute == AttributeMarker.Bindings) {
-
-        } else if (attribute == AttributeMarker.Template) {
-
-        } */
 
     }
 
-    return false
-
+    return true;
 }
+
+// function findAttrIndexInNode(
+//     name: string,
+//     attrs: TAttributes | null
+// ) {
+//     for (let i = 0; i < attrs.length; i++) {
+//
+//     }
+// }
 
 function findAttrIndexInNode(
     name: string,
     attrs: TAttributes | null
-) {
-    for (let i = 0; i < attrs.length; i++) {
+): number {
+    if (attrs === null) return -1;
 
+    let i = 0;
+    let bindingsMode = false;
+
+    while (i < attrs.length) {
+        const maybeAttrName = attrs[i];
+        if (maybeAttrName === name) {          // value‑bearing attr
+            return i;
+        } else if (maybeAttrName === AttributeMarker.Bindings ||
+            maybeAttrName === AttributeMarker.I18n) {
+            bindingsMode = true;                // enter name‑only mode
+        } else if (maybeAttrName === AttributeMarker.Classes ||
+            maybeAttrName === AttributeMarker.Styles) {
+            // skip over class/style entries…
+            //…
+            continue;
+        } else if (maybeAttrName === AttributeMarker.Template) {
+            break;
+        } else if (maybeAttrName === AttributeMarker.NamespaceURI) {
+            i += 4;
+            continue;
+        }
+        // in binding‑mode we consume 1 slot per iteration, otherwise 2
+        i += bindingsMode ? 1 : 2;
     }
+    return -1;
 }
 
 export function extractDirectiveDef(type: Type<any>): DirectiveDef<any> | ComponentDef<any> | null {
@@ -345,6 +483,8 @@ export function createTNode(
         parent: parentNode,
         flags,
         attrs,
+        styles: null,
+        classes: null,
         localNames: null,
         inputs: null,
         outputs: null,
@@ -360,4 +500,35 @@ export function getFactoryDef<T>(type: any, throwNotFound?: boolean): FactoryFn<
         throw new Error(`Type ${(type).toString()} does not have 'ɵfac' property.`);
     }
     return hasFactoryDef ? type[NG_FACTORY_DEF] : null;
+}
+
+function hasTagAndTypeMatch(tNode: TNode, current: string) {
+    return tNode.value === current
+}
+
+// Search the TAttributes to see if it contains cssClassToMatch
+function isCssClassMatching(tNode: TNode, nodeAttrs: TAttributes, current: string) {
+    for (let i = 0; i < nodeAttrs.length; i++) {
+        if (i === 0 && nodeAttrs[i] !== AttributeMarker.Classes) {
+            return false;
+        }
+
+        // this is an attribute classes
+        if (current === nodeAttrs[i]) {
+            return true;
+        }
+    }
+    return false;
+}
+
+export function getNativeByTNode(tNode: TNode, lView: LView): Element {
+    // const node = unwrapRNode(lView[tNode.index]);
+    return lView.data[tNode.index];
+}
+
+export function unwrapRNode(value: LView) {
+    // while (Array.isArray(value)) {
+    //     value = value[HOST] as any;
+    // }
+    // return value as RNode;
 }

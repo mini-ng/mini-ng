@@ -158,6 +158,7 @@ export function ɵɵrepeaterCreate<T>(
         type: TViewType.Embedded,
         data: [],
         components: tView.components,
+        directives: tView.directives,
     }
 
     const attrs = tView.consts[attrsIndex]
