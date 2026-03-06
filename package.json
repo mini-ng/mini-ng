@@ -6,7 +6,7 @@
     "packages/*"
   ],
   "dependencies": {
-    "compiler": "0.0.1",
-    "mini-ng-cli": "1.0.0"
+    "@mini-ng/compiler": "0.0.1",
+    "@mini-ng/cli": "0.0.1"
   }
 }
