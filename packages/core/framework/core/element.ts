@@ -73,6 +73,7 @@ export function ɵɵelementStart(
     let matchedDirectiveDefs = resolveDirectives(tNode, tView, lView, null)
 
     appendChild(el, lView, tView, runtime.currentTNode.parent)
+    setupAttributes(el, tNode);
 
     // check the tag is a component
     // search in tview directive registry
@@ -157,10 +158,6 @@ function renderComponent(def: DirectiveDef<any>, parentTView: TView, el: any, pa
 function shimCss(componentIdentifier: string, styleText: string) {
 
     styleText = styleText.replaceAll(COMPONENT_VARIABLE, componentIdentifier)
-
-    // const style = document.createElement("style");
-    // style.textContent = styleText;
-    // document.head.appendChild(style);
     return styleText;
 }
 
@@ -184,26 +181,54 @@ function computeStyling(tNode: TNode, el: HTMLElement) {
 
     const attrArray = tNode.attrs;
 
-    const classes = "";
-    const styles = ""
+    let classes = "";
+    let styles = ""
+
+    let mode: AttributeMarker = 0
 
     for (let i = 0; i < attrArray.length; i++) {
 
         const attr = attrArray[i];
-        let mode: AttributeMarker
 
         if (typeof attr === "number") {
             mode = attr;
-            continue;
-        }
-
-        if (mode == AttributeMarker.Styles) {
-            (el as HTMLElement).setAttribute("style", attr as string);
+        } else if (mode == AttributeMarker.Styles) {
+            const style = attr;
+            const value = attrArray[++i];
+            styles += style + ":" + value + ";";
         } else if (mode == AttributeMarker.Classes) {
-            (el as HTMLElement).setAttribute("class", attr as string);
-        } else if (typeof attr === "string") {
-            (el as HTMLElement).setAttribute(attr, attrArray[++i] as string);
+            classes += attr + " "
         }
     }
 
+    tNode.styles = styles;
+    tNode.classes = classes
+
+}
+
+function setupAttributes(element: Element | any, tNode: TNode) {
+    const { classes, styles } = tNode
+
+    if (classes != null) {
+        element.setAttribute("class", classes);
+    }
+
+    if (styles == null) {
+        element.setAttribute("style", styles);
+    }
+
+    const attrs = tNode.attrs
+
+    if (attrs == null) return;
+
+    for (let i = 0; i < attrs.length; i++) {
+        const value = attrs[i];
+
+        if (typeof value === "string") {
+            const attrVal = attrs[++i] as string;
+            element.setAttribute(value, attrVal)
+        } else if (typeof value === "number") {
+            return
+        }
+    }
 }

@@ -10,7 +10,6 @@ import {
 } from "../transformer/transformer";
 import {createDefineDirectiveStatic, createHostBinding, hasDirectiveDecorator} from "./directive_visitor";
 import {stripQuotes} from "../utils/utils";
-import {isClassDeclaration} from "typescript";
 import {createDefinePipeStatic} from "./pipe_visitor";
 import {createDefineInjectableStatic} from "./injectable_visitor";
 

@@ -1,6 +1,6 @@
 import * as ts from "typescript";
 import {factory} from "typescript";
-import {i0} from "../constants/constants";
+import {i0, ɵɵInputFlags} from "../constants/constants";
 import {stripQuotes} from "../utils/utils";
 
 export function extractInputsOutputs(node: ts.ClassDeclaration) {
@@ -146,12 +146,12 @@ function isInputOutputDecorator(dec: ts.Decorator, inputOutput: string): boolean
 }
 
 function generateInputFlags(inputType: string) {
-    return      factory.createPropertyAccessExpression(
-            factory.createPropertyAccessExpression(
-                factory.createIdentifier(i0),
-                factory.createIdentifier("ɵɵInputFlags")
-            ),
-            factory.createIdentifier(inputType)
-        )
+    return factory.createPropertyAccessExpression(
+        factory.createPropertyAccessExpression(
+            factory.createIdentifier(i0),
+            factory.createIdentifier(ɵɵInputFlags)
+        ),
+        factory.createIdentifier(inputType)
+    )
 
 }

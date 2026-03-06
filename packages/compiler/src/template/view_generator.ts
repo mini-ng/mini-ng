@@ -285,11 +285,26 @@ export class ViewGenerator {
           }
         }
 
-        tempConstsStmts.push(!attr_marker ? ts.factory.createStringLiteral(attr) : ts.factory.createNumericLiteral(attr_marker))
+        if (!attr_marker) {
+          tempConstsStmts.unshift(ts.factory.createStringLiteral(attributeValue))
+          tempConstsStmts.unshift(ts.factory.createStringLiteral(attr))
+        } else {
+          tempConstsStmts.push(ts.factory.createNumericLiteral(attr_marker))
+        }
 
-        !isTemplate && attributeValue.split(" ").forEach(attrValue => {
-          tempConstsStmts.push(ts.factory.createStringLiteral(attrValue))
-        })
+        if (!isTemplate) {
+          if (attr_marker & AttributeMarker.Classes) {
+            attributeValue.split(" ").forEach(attrValue => {
+              tempConstsStmts.push(ts.factory.createStringLiteral(attrValue))
+            })
+          }
+
+          if (attr_marker & AttributeMarker.Styles) {
+            attributeValue.split(":").forEach(attrValue => {
+              tempConstsStmts.push(ts.factory.createStringLiteral(attrValue))
+            })
+          }
+        }
 
       }
     }

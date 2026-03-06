@@ -1,3 +1,5 @@
 export * from "./element_ref"
 export * from "./NgForOf"
 export * from "./NgIf"
+export * from "./ViewContainerRef"
+export * from "./TemplateRef"

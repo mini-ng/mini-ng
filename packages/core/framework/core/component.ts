@@ -156,27 +156,7 @@ export interface Input {
 export interface OutputDecorator {}
 export interface Output {}
 
-// export const Output: OutputDecorator = makePropDecorator('Output', (alias?: string) => ({alias}));
-
-// export function Output(alias?: string) {
-//     return function (initialValue: any, context: ClassFieldDecoratorContext) {
-//         if (context.kind !== 'field') return;
-//
-//         context.addInitializer(function () {
-//             const ctor = this.constructor;
-//             ctor.ɵoutputs ??= {};
-//             ctor.ɵoutputs[context.name] = alias ?? context.name;
-//         });
-//
-//         return initialValue;
-//     };
-// }
-
-// export function Input() {
-//     return function (initialValue: any) {
-//         return initialValue;
-//     };
-// }
+export const Output: OutputDecorator = makePropDecorator('Output', (alias?: string) => ({alias}));
 
 export const Input: InputDecorator = makePropDecorator(
     'Input',
@@ -188,11 +168,6 @@ export const Input: InputDecorator = makePropDecorator(
     },
 );
 
-export function Output() {
-    return function (initialValue: any) {
-        return initialValue;
-    };
-}
 
 export interface Pipe extends Directive {}
 
@@ -226,6 +201,38 @@ function compilePipe(type: Type<any>, meta: Pipe) {}
 
 export const Pipe: PipeDecorator = makeDecorator(
     'Pipe',
+    (p: Pipe) => ({pure: true, ...p}),
+    undefined,
+    undefined,
+    (type: Type<any>, meta: Pipe) => compilePipe(type, meta),
+);
+
+export const ViewChild = makeDecorator(
+    'ViewChild',
+    (p: Pipe) => ({pure: true, ...p}),
+    undefined,
+    undefined,
+    (type: Type<any>, meta: Pipe) => compilePipe(type, meta),
+);
+
+export const ViewChildren = makeDecorator(
+    'ViewChildren',
+    (p: Pipe) => ({pure: true, ...p}),
+    undefined,
+    undefined,
+    (type: Type<any>, meta: Pipe) => compilePipe(type, meta),
+);
+
+export const ContentChild = makeDecorator(
+    'ContentChild',
+    (p: Pipe) => ({pure: true, ...p}),
+    undefined,
+    undefined,
+    (type: Type<any>, meta: Pipe) => compilePipe(type, meta),
+);
+
+export const ContentChildren = makeDecorator(
+    'ContentChildren',
     (p: Pipe) => ({pure: true, ...p}),
     undefined,
     undefined,

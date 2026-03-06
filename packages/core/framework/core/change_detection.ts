@@ -8,6 +8,12 @@ export function renderView(tView: TView, lView: LView, ctx: any) {
 
     enterView(lView);
 
+    // const viewQuery = tView.viewQuery;
+    // if (viewQuery !== null) {
+    //     executeViewQueryFn<T>(RenderFlags.Create, viewQuery, context);
+    // }
+
+
     if (tView.firstCreatePass) {
         templateFn(RenderFlags.CREATE | RenderFlags.UPDATE, ctx);
         tView.firstCreatePass = false;

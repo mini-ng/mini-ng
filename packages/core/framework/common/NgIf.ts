@@ -1,4 +1,4 @@
-import {Directive, Input} from "../core";
+import {Directive, Input} from "../core/component";
 import {TemplateRef} from "./TemplateRef";
 import {ViewContainerRef} from "./ViewContainerRef";
 

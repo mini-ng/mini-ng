@@ -170,6 +170,11 @@ export class ComponentFactory<T> {
     const componentInstance = rootLView.directive_instances[hostTNode.index]
     rootLView.context = componentInstance;
 
+    if (cmpDef.dependencies.length > 0) {
+      rootTView.directives.push(...cmpDef.tView.directives)
+      rootTView.directiveRegistry.push(...cmpDef.tView.directiveRegistry)
+    }
+
     rootTView.pipeRegistry = cmpDef.tView.pipeRegistry
 
     setupZone(() => {

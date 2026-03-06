@@ -1,6 +1,5 @@
 import * as ts from "typescript";
 import * as fs from "fs"
-import { readFileSync } from 'node:fs';
 import { Parser } from "../template/parser";
 import {CSSParser} from "../css_parser/css_parser";
 import {i0, rf, ɵcmp, ɵfac, ɵɵdefineComponent, ɵɵdirectiveInject} from "../constants/constants";
@@ -10,6 +9,7 @@ import {factory} from "typescript";
 import {getTokenExpression} from "../visitor/directive_visitor";
 import {DirectivesToInject} from "../visitor/visitor";
 import {extractInputsOutputs} from "./input_output_transformer";
+import {extractViewChildViewChildren} from "./viewChild_ViewChildren_transformer";
 
 export type ComponentMetadata = {
   selector: ts.PropertyAssignment;
@@ -409,6 +409,7 @@ export function createCmpDefinitionPropertiesNode(
 
   if (ts.isClassDeclaration(node)) {
     const { inputs, outputs } = extractInputsOutputs(node);
+    const viewQuery = extractViewChildViewChildren(node)
 
     if (inputs.length > 0) {
       properties.push(

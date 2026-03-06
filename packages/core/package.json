@@ -29,25 +29,19 @@
     "@rollup/plugin-node-resolve": "^16.0.3",
     "@rollup/plugin-terser": "^0.4.4",
     "@rollup/plugin-typescript": "^12.3.0",
-    "@types/chai": "^4.0.4",
-    "@types/mocha": "^2.2.43",
+    "@types/chai": "^4.3.20",
+    "@types/mocha": "^2.2.48",
     "chai": "^4.1.2",
     "coveralls": "^3.0.0",
     "istanbul": "^0.4.5",
-    "mocha": "^4.0.1",
+    "mocha": "^10.8.2",
     "rollup": "^4.57.1",
     "rollup-plugin-dts": "^6.3.0",
-    "ts-node": "^3.3.0",
+    "ts-node": "^10.9.2",
     "typescript": "^5.3.3"
   },
   "peerDependencies": {
-    "@types/pluralize": "0.0.27",
-    "commander": "^11.1.0",
-    "html-parse-stringify": "^1.0.2",
-    "html-tags": "^2.0.0",
     "htmlparser2": "^9.0.0",
-    "incremental-dom": "^0.7.0",
-    "pluralize": "^7.0.0",
     "webpack": "^5.89.0"
   },
   "scripts": {
@@ -61,7 +55,8 @@
     "version": "npm version patch",
     "minor": "npm version minor",
     "major": "npm version major",
-    "release": "npm version patch && npm publish"
+    "release": "npm version patch && npm publish",
+    "test": "mocha --loader ts-node/esm \\\"test/**/*.ts\\\""
   },
   "dependencies": {
     "tslib": "^2.8.1"
