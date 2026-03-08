@@ -121,6 +121,9 @@ export interface PipeType<T> extends Type<T> {
   ɵpipe: unknown;
 }
 
+export type ViewQueriesFunction<T> = <U extends T>(rf: RenderFlags, ctx: U) => void;
+export type ContentQueriesFunction<T> = <U extends T>(rf: RenderFlags, ctx: U) => void;
+
 interface DirectiveDefinition<T> {
   type: Type<T>;
   selectors?: CssSelectorList;
@@ -131,6 +134,8 @@ interface DirectiveDefinition<T> {
   exportAs?: string[];
   signals?: boolean;
   declaredInputs: Record<string, string>;
+  contentQueries?: ContentQueriesFunction<T>;
+  viewQuery?: ViewQueriesFunction<T> | null;
 }
 
 interface ComponentDefinition<T> extends DirectiveDefinition<T> {
@@ -173,6 +178,9 @@ export enum TViewType {
   Embedded
 }
 
+class TQueries {
+}
+
 export type TView = {
   type: TViewType;
   blueprint: any[];
@@ -185,7 +193,8 @@ export type TView = {
   id: string;
   data: TData;
   components: number[] | null;
-  directives?: DirectiveDef<any>[]
+  directives?: DirectiveDef<any>[];
+  queries: TQueries | null;
 };
 
 export interface LView {
@@ -224,11 +233,13 @@ export type TNode = {
   tView: TView | null;
   parent: TNode | null;
   attrs: TAttributes | null;
+  styles: string | null;
+  classes: string | null;
   localNames: (string | number)[] | null;
   inputs: NodeInputBindings | null;
   outputs: NodeOutputBindings | null;
   flags: TNodeFlags;
-  componentOffset: number
+  componentOffset: number;
 };
 
 export interface LContainer extends LView {}
@@ -307,6 +318,8 @@ export function getDefinition<T>(def: DirectiveDefinition<any>) : DirectiveDef<T
     inputs: parseAndConvertInputsForDefinition((directiveDefinition as unknown as DirectiveDefinition<T>).inputs, declaredInputs),
     outputs: parseAndConvertOutputsForDefinition((directiveDefinition as unknown as DirectiveDefinition<T>).outputs),
     selectors: (directiveDefinition as unknown as DirectiveDefinition<T>).selectors,
+    viewQuery: directiveDefinition.viewQuery || null,
+    contentQueries: directiveDefinition.contentQueries || null,
   }
 }
 

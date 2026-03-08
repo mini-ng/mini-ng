@@ -32,6 +32,7 @@ export function ɵɵtemplate<T>(
         type: TViewType.Embedded,
         data: [],
         components: declarationTView.components,
+        queries: declarationTView.queries,
     }
 
     const parentTNode = runtime.isParent ? runtime.currentTNode : runtime.currentTNode.parent
@@ -159,6 +160,7 @@ export function ɵɵrepeaterCreate<T>(
         data: [],
         components: tView.components,
         directives: tView.directives,
+        queries: tView.queries,
     }
 
     const attrs = tView.consts[attrsIndex]
@@ -219,6 +221,7 @@ function repeaterForEmpty<T>(
         type: TViewType.Embedded,
         data: [],
         components: tView.components,
+        queries: tView.queries,
     }
 
     const parentTNode = runtime.isParent ? runtime.currentTNode : runtime.currentTNode.parent

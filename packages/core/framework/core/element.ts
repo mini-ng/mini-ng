@@ -12,7 +12,7 @@ import {
     TViewType,
 } from "./core";
 import {getCurrentParentTNode, setCurrentTNode} from "./state";
-import {createTNode, isComponentDef} from "./shared";
+import {createTNode, isComponentDef, saveResolvedLocalsInData} from "./shared";
 import {createDirectivesInstances, resolveDirectives} from "./directive";
 import {renderView} from "./change_detection";
 import {COMPONENT_VARIABLE, SVG_NS} from "./constants";
@@ -58,8 +58,7 @@ export function ɵɵelementStart(
         // set styles
         if (attrsIndex !== undefined && attrsIndex >= 0) {
             // get consts
-            const attrArray = tView.consts[attrsIndex];
-            tNode.attrs = attrArray;
+            tNode.attrs = tView.consts[attrsIndex];
             computeStyling(tNode, el as HTMLElement)
         }
 
@@ -70,7 +69,7 @@ export function ɵɵelementStart(
 
     }
 
-    let matchedDirectiveDefs = resolveDirectives(tNode, tView, lView, null)
+    let matchedDirectiveDefs = resolveDirectives(tNode, tView, lView, null, tView.consts[localRefsIndex])
 
     appendChild(el, lView, tView, runtime.currentTNode.parent)
     setupAttributes(el, tNode);
@@ -81,6 +80,10 @@ export function ɵɵelementStart(
     if (isDirectiveHost(tNode)) {
         createDirectivesInstances(tNode, tView, lView)
         renderComponent(matchedDirectiveDefs[tNode.componentOffset], tView, el, lView, index);
+    }
+
+    if (localRefsIndex != null) {
+        saveResolvedLocalsInData(lView, tNode);
     }
 
 }
@@ -230,5 +233,11 @@ function setupAttributes(element: Element | any, tNode: TNode) {
         } else if (typeof value === "number") {
             return
         }
+    }
+}
+
+function runViewQueries(tView: TView, tNode: TNode) {
+    if (tView.queries !== null) {
+        // tView.queries.elementStart(tView, tNode);
     }
 }

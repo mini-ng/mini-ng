@@ -368,7 +368,8 @@ export function createTView(
         consts: consts,
         styles: [],
         id: ssrId,
-        components: null
+        components: null,
+        queries: null,
     });
 
     return tView;
@@ -531,4 +532,30 @@ export function unwrapRNode(value: LView) {
     //     value = value[HOST] as any;
     // }
     // return value as RNode;
+}
+
+export function saveResolvedLocalsInData(
+    viewData: LView,
+    tNode: TNode,
+    // localRefExtractor: LocalRefExtractor = getNativeByTNode,
+): void {
+    const localNames = tNode.localNames;
+    if (localNames !== null) {
+        let localIndex = tNode.index + 1;
+        for (let i = 0; i < localNames.length; i += 2) {
+            const index = localNames[i + 1] as number;
+    //         const value =
+    //             index === -1
+    //                 ? localRefExtractor(
+    //                     tNode as TElementNode | TContainerNode | TElementContainerNode,
+    //                     viewData,
+    //                 )
+    //                 : viewData[index];
+    //         viewData[localIndex++] = value;
+        }
+    }
+}
+
+export function ɵɵrepeaterTrackByIdentity<T>( _: number, value: T) {
+
 }

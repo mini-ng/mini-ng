@@ -12,7 +12,7 @@ import {
     findDirectiveDefMatches,
     getOrCreateComponentTView,
     invokeDirectivesHostBindings,
-    isComponentDef, isComponentHost
+    isComponentDef, isComponentHost, NG_FACTORY_DEF
 } from "./shared";
 import {getCurrentTNode, setCurrentTNode} from "./state";
 
@@ -65,16 +65,24 @@ export function directiveHostFirstCreatePass(
     const tViewConsts = tView.consts;
     const attrs = getConstant<TAttributes>(tViewConsts, attrsIndex);
     const tNode = getOrCreateTNode(tView, index, type, name, attrs) as TNode
+    const localRefs = getConstant(tViewConsts, localRefsIndex)
 
     // resolve directives
-    resolveDirectives(tNode, tView, lView, directiveMatcher)
+    resolveDirectives(tNode, tView, lView, directiveMatcher, localRefs)
 
     return tNode;
 
 }
 
-export function resolveDirectives(tNode: TNode, tView: TView, lView: LView, matcher) {
+export function resolveDirectives(
+    tNode: TNode,
+    tView: TView,
+    lView: LView,
+    matcher: (arg1: TView, arg2: TNode) => DirectiveDef<unknown>[] | null,
+    localRefs: string[] | null
+) {
 
+    const exportsMap: Record<string, number> | null = localRefs === null ? null : {'': -1};
     const matchedDirectiveDefs = matcher ? matcher(tView, tNode) : findDirectiveDefMatches(tView, tNode)
 
     if (matchedDirectiveDefs !== null) {
@@ -87,6 +95,10 @@ export function resolveDirectives(tNode: TNode, tView: TView, lView: LView, matc
             {},
         );
 
+    }
+
+    if (exportsMap !== null && localRefs !== null) {
+        cacheMatchingLocalNames(tNode, localRefs, exportsMap);
     }
 
     return matchedDirectiveDefs;
@@ -178,7 +190,7 @@ function instantiateAllDirectives(tView: TView, lView: LView, tNode: TNode) {
     for (let i = start; i < end; i++) {
 
         const def = tView.directives[i] as DirectiveDef<any>;
-        const directiveInstance = def.type['ɵfac']();
+        const directiveInstance = def.type[NG_FACTORY_DEF]();
         lView.directive_instances[i] = directiveInstance;
 
         if (isComponentDef(def)) {
@@ -229,5 +241,22 @@ function setupSelectorMatchedInputsOrOutputs<T>(
             bindings[publicName].push(directiveIndex);
             // setShadowStylingInputFlags(tNode, publicName);
         }
+    }
+}
+
+function cacheMatchingLocalNames(
+    tNode: TNode,
+    localRefs: string[],
+    exportsMap: {[key: string]: number},
+): void {
+    const localNames: (string | number)[] = (tNode.localNames = []);
+
+    for (let i = 0; i < localRefs.length; i += 2) {
+        const index = exportsMap[localRefs[i + 1]];
+        if (index == null)
+            throw new Error(
+                `Export of name '${localRefs[i + 1]}' not found!`,
+            );
+        localNames.push(localRefs[i], index);
     }
 }
