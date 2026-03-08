@@ -132,7 +132,7 @@ export function transformPlugin(
   };
 }
 
-function insertStatementAfterLastImportStmt(statements, hoisted) {
+function insertStatementAfterLastImportStmt(statements, hoisted: ts.Statement[]) {
   const lastImportIndex = findLastImportIndex(statements);
 
   const updatedStatements = [

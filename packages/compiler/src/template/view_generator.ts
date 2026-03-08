@@ -174,6 +174,7 @@ export class ViewGenerator {
     this.stmts.push(...viewGenerator.stmts);
     this.updateStmts.push(...viewGenerator.updateStmts);
     this.templateStmts.push(...viewGenerator.templateStmts);
+    this.outsideStatements.push(...viewGenerator.outsideStatements);
 
     this.stmts.push(generateElementEndNode());
 
@@ -431,6 +432,7 @@ export class ViewGenerator {
     this.consts = []
     viewGenerator.processChildren(childNodes);
     this.consts = [...viewGenerator.consts];
+    this.outsideStatements.push(...viewGenerator.outsideStatements);
 
     this.stmts.push(templateNode)
 
@@ -446,6 +448,7 @@ export class ViewGenerator {
       this.consts = []
       viewGenerator.processChildNodes(elseIfNode);
       this.consts = [...viewGenerator.consts];
+      this.outsideStatements.push(...viewGenerator.outsideStatements);
 
       for(const attr in elseIfNode.attribs) {
         if (attr == "condition") {
@@ -489,6 +492,7 @@ export class ViewGenerator {
         stmts: [...viewGenerator.stmts],
         templateStmts: viewGenerator.templateStmts
       });
+      this.outsideStatements.push(...viewGenerator.outsideStatements);
 
     }
 
@@ -622,6 +626,7 @@ export class ViewGenerator {
     this.consts = []
     viewGenerator.processChildren(node.children);
     this.consts = [...viewGenerator.consts]
+    this.outsideStatements.push(...viewGenerator.outsideStatements)
 
     if (trackBy) {
 
@@ -635,7 +640,7 @@ export class ViewGenerator {
 
     }
 
-    const repeaterCreateNode = generateRepeaterCreateNode(node, slotIndex, functionName, emptyTemplateFnName, ɵɵrepeaterTrackByIdentity, _trackByFunctionName);
+    const repeaterCreateNode = generateRepeaterCreateNode(node, slotIndex, functionName, emptyTemplateFnName, trackBy, ɵɵrepeaterTrackByIdentity, _trackByFunctionName);
 
     this.updateStmts.push(generateAdvanceNode(slotIndex.toString()))
 
@@ -666,6 +671,7 @@ export class ViewGenerator {
     this.consts = []
     viewGenerator.processChildren(ngForSibling.children);
     this.consts = [...viewGenerator.consts]
+    this.outsideStatements.push(...viewGenerator.outsideStatements)
 
     return viewGenerator
 
@@ -706,6 +712,7 @@ export class ViewGenerator {
             this.consts = []
             viewGenerator.processChildNodes(childNode);
             this.consts = [...viewGenerator.consts]
+            this.outsideStatements.push(...viewGenerator.outsideStatements)
 
             this.templateStmts.push({
               functionName: functionName,
@@ -736,7 +743,8 @@ export class ViewGenerator {
             viewGenerator.consts = [...viewGenerator.consts]
             this.consts = []
             viewGenerator.processChildNodes(childNode);
-            this.consts = [...viewGenerator.consts]
+            this.consts = [...viewGenerator.consts];
+            this.outsideStatements.push(...viewGenerator.outsideStatements)
 
             this.templateStmts.push({
               functionName: functionName,
@@ -895,6 +903,7 @@ export class ViewGenerator {
       viewGenerator.setImplicitVariables(variableName, this.implicitVariables)
     })
     viewGenerator.consts = this.consts;
+    this.outsideStatements.push(...viewGenerator.outsideStatements)
 
     viewGenerator.processChildren(node.childNodes);
     this.consts = viewGenerator.consts;
@@ -1322,7 +1331,12 @@ function generateConditionalNode(conditionals: any[], containerIndex: number) {
   );
 }
 
-function generateRepeaterCreateNode(node: Element, slotIndex: number, functionName: string, emptyTemplateFnName: string, ɵɵrepeaterTrackByIdentity?, trackByFunctionName?) {
+function generateRepeaterCreateNode(node: Element, slotIndex: number, functionName: string, emptyTemplateFnName: string, trackBy?: string, ɵɵrepeaterTrackByIdentity?, trackByFunctionName?: string) {
+  const trackByFnNode = trackBy ? trackByFunctionName ? ts.factory.createIdentifier(trackByFunctionName) : factory.createPropertyAccessExpression(
+      factory.createIdentifier("i0"),
+      factory.createIdentifier("ɵɵrepeaterTrackByIdentity")
+  ) : ts.factory.createNull();
+
   return ts.factory.createExpressionStatement(
       ts.factory.createCallExpression(
           ts.factory.createPropertyAccessExpression(
@@ -1336,10 +1350,7 @@ function generateRepeaterCreateNode(node: Element, slotIndex: number, functionNa
             ts.factory.createNumericLiteral(0),
             ts.factory.createStringLiteral(node.tagName),
             ts.factory.createNull(),
-            trackByFunctionName ? ts.factory.createIdentifier(trackByFunctionName) : factory.createPropertyAccessExpression(
-                factory.createIdentifier("i0"),
-                factory.createIdentifier("ɵɵrepeaterTrackByIdentity")
-            ), // trackByFn
+            trackByFnNode, // trackByFn
             ts.factory.createNull(),
             emptyTemplateFnName ? ts.factory.createIdentifier(emptyTemplateFnName) : ts.factory.createNull(),
             ts.factory.createNull(),

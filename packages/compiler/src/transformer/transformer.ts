@@ -329,7 +329,11 @@ export function createCmpDefinitionPropertiesNode(
 
     generateTemplateStmts(templateStmts, sourceFile, hoisted)
 
-    hoisted.push(...outsideStatements)
+    if (outsideStatements) {
+      outsideStatements.forEach(outsideStatement => {
+        hoisted.push(outsideStatement)
+      })
+    }
 
   }
 
@@ -345,7 +349,12 @@ export function createCmpDefinitionPropertiesNode(
     properties.push(constsNode);
 
     generateTemplateStmts(templateStmts, sourceFile, hoisted)
-    hoisted.push(...outsideStatements)
+
+    if (outsideStatements) {
+      outsideStatements.forEach(outsideStatement => {
+        hoisted.push(outsideStatement)
+      })
+    }
 
   }
 
