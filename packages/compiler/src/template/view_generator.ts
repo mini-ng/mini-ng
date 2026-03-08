@@ -26,9 +26,10 @@ import {CSSParser} from "../css_parser/css_parser";
 import {ElementType} from "domelementtype";
 import {replaceCustomDirectivesAndPipes} from "../expr_parser/html_string_to_template_ast";
 import ts = require("typescript");
+import {forTrackByParser} from "./for_track_by_parser";
 
 export interface ViewGeneratorOptions {
-  // Add any configuration options here
+  cmpDirNode: ts.Node
 }
 
 type InterpolationType = {
@@ -59,16 +60,18 @@ export class ViewGenerator {
   private readonly updateStmts: ts.ExpressionStatement[] = [];
   private readonly templateStmts: Template[] = []
   private consts: ts.Expression[] = [];
+  private readonly outsideStatements: ts.Statement[] = [];
   private slot = 0;
   private index = 0;
   private readonly implicitVariables = []
   private skipNode: number  = -1;
 
-  constructor(options: ViewGeneratorOptions = {}) {
+  constructor(options?: ViewGeneratorOptions) {
     this.options = options;
     this.stmts = [];
     this.updateStmts = [];
     this.consts = [];
+    this.outsideStatements = [];
   }
 
   generateViewCode(html: string) {
@@ -92,6 +95,7 @@ export class ViewGenerator {
       updateStmts: this.updateStmts,
       templateStmts: this.templateStmts,
       consts: this.consts,
+      outsideStatements: this.outsideStatements,
     };
   }
 
@@ -546,6 +550,9 @@ export class ViewGenerator {
     let iterable: string;
     let trackBy: string;
 
+    let ɵɵrepeaterTrackByIdentity = false
+    let _trackByFunctionName
+
     const keys = Object.keys(node.attribs);
 
     if (keys.length <= 0) {
@@ -616,11 +623,23 @@ export class ViewGenerator {
     viewGenerator.processChildren(node.children);
     this.consts = [...viewGenerator.consts]
 
-    const repeaterCreateNode = generateRepeaterCreateNode(node, slotIndex, functionName, emptyTemplateFnName);
+    if (trackBy) {
+
+      const { trackByFunctionName, functionNode } = forTrackByParser(node, slotIndex, trackBy)
+      if (functionNode) {
+        this.outsideStatements.push(functionNode);
+        _trackByFunctionName = trackByFunctionName
+      } else {
+        ɵɵrepeaterTrackByIdentity = true
+      }
+
+    }
+
+    const repeaterCreateNode = generateRepeaterCreateNode(node, slotIndex, functionName, emptyTemplateFnName, ɵɵrepeaterTrackByIdentity, _trackByFunctionName);
 
     this.updateStmts.push(generateAdvanceNode(slotIndex.toString()))
 
-    const exprParser = new ExpressionParser();
+    const exprParser = ExpressionParser.instance;
     const exprParserSourceFile = exprParser.parse(iterable, this.implicitVariables);
 
     const updateRepeaterNode = generateUpdateRepeaterNode(exprParserSourceFile)
@@ -1303,7 +1322,7 @@ function generateConditionalNode(conditionals: any[], containerIndex: number) {
   );
 }
 
-function generateRepeaterCreateNode(node: Element, slotIndex: number, functionName: string, emptyTemplateFnName: string) {
+function generateRepeaterCreateNode(node: Element, slotIndex: number, functionName: string, emptyTemplateFnName: string, ɵɵrepeaterTrackByIdentity?, trackByFunctionName?) {
   return ts.factory.createExpressionStatement(
       ts.factory.createCallExpression(
           ts.factory.createPropertyAccessExpression(
@@ -1317,7 +1336,10 @@ function generateRepeaterCreateNode(node: Element, slotIndex: number, functionNa
             ts.factory.createNumericLiteral(0),
             ts.factory.createStringLiteral(node.tagName),
             ts.factory.createNull(),
-            ts.factory.createNull(), // trackByFn
+            trackByFunctionName ? ts.factory.createIdentifier(trackByFunctionName) : factory.createPropertyAccessExpression(
+                factory.createIdentifier("i0"),
+                factory.createIdentifier("ɵɵrepeaterTrackByIdentity")
+            ), // trackByFn
             ts.factory.createNull(),
             emptyTemplateFnName ? ts.factory.createIdentifier(emptyTemplateFnName) : ts.factory.createNull(),
             ts.factory.createNull(),

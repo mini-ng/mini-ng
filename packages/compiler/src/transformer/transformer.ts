@@ -323,12 +323,13 @@ export function createCmpDefinitionPropertiesNode(
     // read templateUrlPath
     const templateString = readTemplate(tsFilePath, templateUrlPath);
 
-    const { templateNode, constsNode, templateStmts} = generateTemplateInstructions(componentName, templateString);
+    const { templateNode, constsNode, templateStmts, outsideStatements} = generateTemplateInstructions(componentName, templateString);
     properties.push(templateNode);
     properties.push(constsNode);
 
     generateTemplateStmts(templateStmts, sourceFile, hoisted)
 
+    hoisted.push(...outsideStatements)
 
   }
 
@@ -339,11 +340,12 @@ export function createCmpDefinitionPropertiesNode(
 
     const templateString = (template.initializer as ts.StringLiteral).text;
 
-    const { templateNode, constsNode, templateStmts} = generateTemplateInstructions(componentName, templateString);
+    const { templateNode, constsNode, templateStmts, outsideStatements} = generateTemplateInstructions(componentName, templateString);
     properties.push(templateNode);
     properties.push(constsNode);
 
     generateTemplateStmts(templateStmts, sourceFile, hoisted)
+    hoisted.push(...outsideStatements)
 
   }
 
@@ -409,7 +411,7 @@ export function createCmpDefinitionPropertiesNode(
 
   if (ts.isClassDeclaration(node)) {
     const { inputs, outputs } = extractInputsOutputs(node);
-    const viewQuery = extractViewChildViewChildren(node)
+    const viewQuery = extractViewChildViewChildren(node) as ts.FunctionExpression
 
     if (inputs.length > 0) {
       properties.push(
@@ -429,6 +431,15 @@ export function createCmpDefinitionPropertiesNode(
               ts.factory.createObjectLiteralExpression(
                   outputs.map(output => ts.factory.createPropertyAssignment(output.key, output.value))
               )
+          )
+      )
+    }
+
+    if (viewQuery) {
+      properties.push(
+          ts.factory.createPropertyAssignment(
+              ts.factory.createIdentifier("viewQuery"),
+              viewQuery
           )
       )
     }
@@ -606,7 +617,7 @@ function generateTemplateInstructions(componentName: string, templateString: str
     const functionName = componentName + "_Template";
 
     const parser = new Parser(templateString);
-    const { block, consts, templateStmts} = parser.parse();
+    const { block, consts, templateStmts, outsideStatements} = parser.parse();
 
     const template = ts.factory.createPropertyAssignment(
             "template",
@@ -650,7 +661,8 @@ function generateTemplateInstructions(componentName: string, templateString: str
     return  {
       templateNode: template,
       constsNode: constsExpr,
-      templateStmts
+      templateStmts,
+      outsideStatements
     }
 
 }

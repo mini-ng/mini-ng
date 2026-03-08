@@ -6,7 +6,7 @@ export class ExpressionParser {
 
     parse(source: string, implicitVariables: string[]): ts.SourceFile {
         // Create a SourceFile object
-        const sourceFile = ts.createSourceFile("example.ts", source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS);
+        const sourceFile = ts.createSourceFile("__mini_ng_expression_parser.ts", source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS);
 
         // Apply the transformation
         const result = ts.transform(sourceFile, [createTransformer("ctx", implicitVariables)]);
