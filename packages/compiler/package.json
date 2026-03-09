@@ -1,7 +1,7 @@
 {
   "name": "@mini-ng/compiler",
   "version": "0.0.1",
-  "description": "A JavaScript framework inspired by Angular",
+  "description": "A JavaScript framework compiler inspired by Angular",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "bin": {
@@ -16,9 +16,9 @@
   "author": "Chidume Nnamdi <kurtwanger40@gmail.com>",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/philipszdavido/mypluralize/issues"
+    "url": "https://github.com/mini-ng/mini-ng/tree/master/packages/compiler/issues"
   },
-  "homepage": "https://github.com/philipszdavido/mypluralize#readme",
+  "homepage": "https://github.com/mini-ng/mini-ng/tree/master/packages/compiler#readme",
   "devDependencies": {
     "@rollup/plugin-commonjs": "^29.0.0",
     "@rollup/plugin-node-resolve": "^16.0.3",
@@ -37,8 +37,6 @@
   },
   "dependencies": {
     "@types/glob": "^8.1.0",
-    "html-parse-stringify": "^1.0.2",
-    "html-tags": "^2.0.0",
     "htmlparser2": "^9.1.0",
     "parse5": "^7.1.2",
     "postcss": "^8.5.6",
