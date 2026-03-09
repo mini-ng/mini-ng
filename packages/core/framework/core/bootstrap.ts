@@ -13,7 +13,7 @@ import {
 } from "./core";
 import {DefaultDomRenderer2} from "./browser";
 import {setupZone} from "./zone";
-import {detectChanges} from "./change_detection";
+import {detectChanges, renderView} from "./change_detection";
 import {createTView} from "./shared";
 import {RenderFlags} from "./render_flags";
 import {createDirectivesInstances, directiveHostFirstCreatePass} from "./directive";
@@ -83,6 +83,7 @@ function createRootTView(
       varsToAllocate,
       directivesToApply,
       null,
+      null,
       [tAttributes],
       null
   );
@@ -135,6 +136,7 @@ export class ComponentFactory<T> {
     rootTView.template = cmpDef.template
     rootTView.consts = cmpDef.consts;
     rootTView.id = cmpDef.id;
+    rootTView.viewQuery = cmpDef.viewQuery
 
     const id_value = "_nghost-" + rootTView.id;
     hostElement.setAttribute(id_value, id_value);
@@ -183,16 +185,18 @@ export class ComponentFactory<T> {
 
     enterView(rootLView);
 
-    templateFn(RenderFlags.CREATE, componentInstance);
+    // templateFn(RenderFlags.CREATE, componentInstance);
+    //
+    // rootTView.firstCreatePass = false;
+    //
+    // // First update pass
+    // templateFn(RenderFlags.UPDATE, componentInstance);
+    //
+    // leaveView();
 
-    rootTView.firstCreatePass = false;
+    renderView(rootTView, rootLView, componentInstance);
 
-    // First update pass
-    templateFn(RenderFlags.UPDATE, componentInstance);
-
-    leaveView();
-
-    enterView(rootLView);
+    // enterView(rootLView);
 
   }
 

@@ -10,14 +10,32 @@ export class QueryMetadata {
   }
 }
 
+export class QueryList<T> implements Iterable<T> {
+  [Symbol.iterator](): Iterator<T, any, any> {
+    return undefined;
+  }
+}
+
 export interface LQuery<T> {}
+
+export class LQuery_<T> implements LQuery<T> {
+  matches: (T | null)[] | null = null;
+
+  constructor(public queryList: QueryList<T>) {
+  }
+}
 
 export interface LQueries {
   queries: LQuery<any>[];
 }
 
+export class LQueries_ implements LQueries {
+  constructor(public queries: LQuery<any>[] = []) {
+  }
+}
+
 export interface TQueries {
-  elementStart(tNode: TNode, tView: TView): void;
+  elementStart(tView: TView, tNode: TNode): void;
   track(tQuery: TQuery_): void;
 }
 
@@ -25,10 +43,10 @@ export class TQueries_ implements TQueries {
 
   constructor(private queries: TQuery[] = []) {}
 
-  elementStart(tNode: TNode, tView: TView) {
+  elementStart(tView: TView, tNode: TNode) {
     for (let i = 0; i < this.queries.length; i++) {
       const query = this.queries[i];
-      query.elementStart(tNode, tView);
+      query.elementStart(tView, tNode);
     }
   }
 
@@ -41,7 +59,7 @@ export class TQueries_ implements TQueries {
 export interface TQuery {
   metadata: QueryMetadata;
   matches: number[] | null;
-  elementStart(tNode: TNode, tView: TView): void;
+  elementStart(tView: TView, tNode: TNode): void;
 }
 
 export class TQuery_ implements TQuery {
@@ -52,7 +70,7 @@ export class TQuery_ implements TQuery {
     this.metadata = metadata;
   }
 
-  elementStart(tNode: TNode, tView: TView) {
+  elementStart(tView: TView, tNode: TNode) {
     // search through the TView and TNode
 
     if (this.metadata.predicate) {
@@ -63,7 +81,7 @@ export class TQuery_ implements TQuery {
         for (let i = 0; i < localNames.length; i++) {
 
           if (localNames[i] === predicate) {
-            this.matches.push(tNode.index)
+            (this.matches ??= []).push(tNode.index)
           }
 
           i++;
@@ -135,6 +153,7 @@ export interface DirectiveDef<T> {
   readonly exportAs: string[] | null;
   readonly standalone: boolean;
   readonly signals: boolean;
+  viewQuery: ViewQueriesFunction<T> | null;
 }
 
 export interface ComponentDef<T> extends DirectiveDef<T> {
@@ -161,6 +180,7 @@ export interface ComponentDef<T> extends DirectiveDef<T> {
   tView: TView | null;
   getExternalStyles: ((encapsulationId?: string) => string[]) | null;
   readonly _?: unknown;
+  viewQuery: ViewQueriesFunction<T> | null;
 }
 
 export type ComponentTemplate<T> = <U extends T>(rf: RenderFlags, ctx: T | U) => void
@@ -213,6 +233,7 @@ interface ComponentDefinition<T> extends DirectiveDefinition<T> {
   dependencies?: TypeOrFactory<DependencyTypeList>;
   styles?: string[];
   data?: {[kind: string]: any};
+  viewQuery: ViewQueriesFunction<T> | null;
 }
 
 export type Element = HTMLElement | Text | SVGElement | Comment;

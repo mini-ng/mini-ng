@@ -23,6 +23,7 @@ export function ɵɵdefineDirective(def: any) {
 }
 
 function getConstant<T>(tViewConsts: any[][], attrsIndex: number) {
+    if (attrsIndex === null || attrsIndex === undefined) return null;
     return tViewConsts ? tViewConsts[attrsIndex] : null;
 }
 
@@ -69,6 +70,10 @@ export function directiveHostFirstCreatePass(
 
     // resolve directives
     resolveDirectives(tNode, tView, lView, directiveMatcher, localRefs)
+
+    if (tView.queries !== null) {
+        tView.queries.elementStart(tView, tNode);
+    }
 
     return tNode;
 

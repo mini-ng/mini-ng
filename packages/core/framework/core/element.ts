@@ -12,8 +12,8 @@ import {
     TViewType,
 } from "./core";
 import {getCurrentParentTNode, setCurrentTNode} from "./state";
-import {createTNode, isComponentDef, saveResolvedLocalsInData} from "./shared";
-import {createDirectivesInstances, resolveDirectives} from "./directive";
+import {createTNode, findDirectiveDefMatches, isComponentDef, saveResolvedLocalsInData} from "./shared";
+import {createDirectivesInstances, directiveHostFirstCreatePass} from "./directive";
 import {renderView} from "./change_detection";
 import {COMPONENT_VARIABLE, SVG_NS} from "./constants";
 
@@ -69,7 +69,8 @@ export function ɵɵelementStart(
 
     }
 
-    let matchedDirectiveDefs = resolveDirectives(tNode, tView, lView, null, tView.consts[localRefsIndex])
+    // let matchedDirectiveDefs = resolveDirectives(tNode, tView, lView, null, tView.consts[localRefsIndex])
+    directiveHostFirstCreatePass(index, lView, TNodeType.Element, tag, findDirectiveDefMatches, false, attrsIndex, localRefsIndex)
 
     appendChild(el, lView, tView, runtime.currentTNode.parent)
     setupAttributes(el, tNode);
@@ -79,7 +80,8 @@ export function ɵɵelementStart(
 
     if (isDirectiveHost(tNode)) {
         createDirectivesInstances(tNode, tView, lView)
-        renderComponent(matchedDirectiveDefs[tNode.componentOffset], tView, el, lView, index);
+        const compDef = tView.directives[tNode.componentOffset]
+        renderComponent(compDef/*matchedDirectiveDefs[tNode.componentOffset]*/, tView, el, lView, index);
     }
 
     if (localRefsIndex != null) {

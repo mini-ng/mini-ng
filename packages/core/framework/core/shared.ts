@@ -14,7 +14,7 @@ import {
     TNode, TNodeType,
     TView,
     TViewType,
-    Type
+    Type, ViewQueriesFunction
 } from "./core";
 import {AttributeMarker} from "./attribute_marker";
 import {RenderFlags} from "./render_flags";
@@ -313,6 +313,7 @@ export function getOrCreateComponentTView(def: ComponentDef<any>): TView {
             def.vars,
             def.directiveDefs,
             def.pipeDefs,
+            def.viewQuery,
             def.consts,
             def.id,
         ));
@@ -351,6 +352,7 @@ export function createTView(
     vars: number,
     directives: DirectiveDefListOrFactory | null,
     pipes: PipeDefListOrFactory | null,
+    viewQuery: ViewQueriesFunction<any> | null,
     constsOrFactory: TConstantsOrFactory | null,
     ssrId: string | null,
 ): TView {
@@ -370,7 +372,7 @@ export function createTView(
         id: ssrId,
         components: null,
         queries: null,
-        viewQuery: null,
+        viewQuery,
     });
 
     return tView;

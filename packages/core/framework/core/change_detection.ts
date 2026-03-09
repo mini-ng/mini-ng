@@ -21,6 +21,10 @@ export function renderView<T>(tView: TView, lView: LView, ctx: any) {
         templateFn(RenderFlags.UPDATE, ctx);
     }
 
+    // if (tView.staticViewQueries) {
+        executeViewQueryFn<T>(RenderFlags.UPDATE, tView.viewQuery!, ctx);
+    // }
+
     leaveView();
 }
 
