@@ -35,7 +35,8 @@ export enum QueryFlags {
 
 export function extractViewChildViewChildren(node: ts.ClassDeclaration) {
 
-    const viewChilds: (ts.Statement)[] = []
+    const viewChilds: (ts.Statement)[] = [];
+    const viewChildsInfo = []
 
     for (const member of node.members) {
         if (!ts.isPropertyDeclaration(member)) continue;
@@ -50,6 +51,10 @@ export function extractViewChildViewChildren(node: ts.ClassDeclaration) {
         for (const dec of decorators) {
 
             if (isDecorator(dec, "ViewChild") || isDecorator(dec, "ViewChildren")) {
+
+                const isViewChild = isDecorator(dec, "ViewChild");
+                const isViewChildren = !isViewChild;
+
                 if ((dec.expression as ts.CallExpression).arguments?.length) {
                     const _arguments = (dec.expression as ts.CallExpression).arguments;
                     const selector = _arguments[0];
@@ -60,7 +65,7 @@ export function extractViewChildViewChildren(node: ts.ClassDeclaration) {
                     if (opts && ts.isObjectLiteralExpression(opts)) {
                         opts.properties.forEach((property) => {
                             if (ts.isPropertyAssignment(property)) {
-                                const { name, initializer } = property
+                                const {name, initializer} = property
 
                                 if ((name as Identifier).escapedText === "read") {
                                     args.push(initializer)
@@ -73,16 +78,22 @@ export function extractViewChildViewChildren(node: ts.ClassDeclaration) {
 
                     viewChilds.push(
                         ts.factory.createExpressionStatement(
-                        ts.factory.createCallExpression(
-                            ts.factory.createPropertyAccessExpression(
-                                ts.factory.createIdentifier(i0),
-                                ts.factory.createIdentifier(ɵɵviewQuery)
-                            ),
-                            undefined,
-                            args
+                            ts.factory.createCallExpression(
+                                ts.factory.createPropertyAccessExpression(
+                                    ts.factory.createIdentifier(i0),
+                                    ts.factory.createIdentifier(ɵɵviewQuery)
+                                ),
+                                undefined,
+                                args
+                            )
                         )
-                    )
                     );
+
+                    viewChildsInfo.push({
+                        isViewChild,
+                        isViewChildren,
+                        propertyDecorated: member.name.escapedText
+                    })
 
                 }
             }
@@ -101,13 +112,16 @@ export function extractViewChildViewChildren(node: ts.ClassDeclaration) {
         undefined
     );
 
+    // create update nodes
+    const updateNodes = generateViewQueryUpdateNode(viewChildsInfo)
+
     const updateNode = ts.factory.createIfStatement(
         factory.createBinaryExpression(
             ts.factory.createIdentifier("rf"),
             ts.SyntaxKind.AmpersandToken,
             ts.factory.createIdentifier(RenderFlags.UPDATE.toString())
         ),
-        ts.factory.createBlock([], true),
+        ts.factory.createBlock([...updateNodes], true),
         undefined
     );
 
@@ -116,13 +130,88 @@ export function extractViewChildViewChildren(node: ts.ClassDeclaration) {
         node.name.escapedText + "_Query", undefined,
         [
             ts.factory.createParameterDeclaration(
-                undefined, undefined, "ctx"
+                undefined, undefined, "rf"
             ),ts.factory.createParameterDeclaration(
-            undefined, undefined, "rf"
+            undefined, undefined, "ctx"
         )
         ], undefined,
         ts.factory.createBlock(
             [createNode, updateNode]
         )
+    )
+}
+
+function generateViewQueryUpdateNode(viewChildsInfo: any[]) {
+
+    const updateNodes = [];
+
+    // declare _t
+    const _tNode = createVariableDeclaration("_t", ts.NodeFlags.Let)
+    const _indexNode = createVariableDeclaration("_index", ts.NodeFlags.Let, factory.createNumericLiteral("0"))
+    updateNodes.push(_tNode, _indexNode)
+
+    viewChildsInfo.forEach((info, index) => {
+
+        const binaryNode = createBinaryExpression(
+            propertyCallExpression("i0", "ɵɵqueryRefresh", [
+                createBinaryExpression("_t", propertyCallExpression("i0", "ɵɵloadQuery", []), ts.SyntaxKind.EqualsToken)
+            ]),
+            factory.createParenthesizedExpression(
+                createBinaryExpression(
+                    ts.factory.createPropertyAccessExpression(
+                        ts.factory.createIdentifier("ctx"),
+                        ts.factory.createIdentifier(info.propertyDecorated)
+                    ),
+                    info.isViewChild ? ts.factory.createPropertyAccessExpression(
+                        ts.factory.createIdentifier("_t"),
+                        ts.factory.createIdentifier("first")
+                    ) : ts.factory.createIdentifier("_t"),
+                    ts.SyntaxKind.EqualsToken,
+                )
+            ),
+            ts.SyntaxKind.AmpersandAmpersandToken,
+        );
+
+        updateNodes.push(binaryNode);
+
+    });
+
+    return updateNodes;
+
+}
+
+function propertyCallExpression(object: string, propertyName: string, args: ts.Expression[]) {
+    return ts.factory.createCallExpression(
+        ts.factory.createPropertyAccessExpression(
+            ts.factory.createIdentifier(object),
+            ts.factory.createIdentifier(propertyName)
+        ),
+        undefined,
+        args
+    )
+}
+
+function createVariableDeclaration(variableName: string, nodeFlags: ts.NodeFlags, initializer?: ts.Expression) {
+    return factory.createVariableStatement(
+        undefined,
+        factory.createVariableDeclarationList(
+            [
+                factory.createVariableDeclaration(
+                    factory.createIdentifier(variableName),
+                    undefined,
+                    undefined,
+                    initializer
+                ),
+            ],
+            nodeFlags
+        )
+    );
+}
+
+function createBinaryExpression(lhs: string | ts.Expression, rhs: string | ts.Expression, token: ts.BinaryOperator): ts.Expression {
+    return factory.createBinaryExpression(
+        typeof lhs !== "string" && ts.isExpression(lhs) ? lhs : factory.createIdentifier(lhs),
+        token,
+        typeof rhs !== "string" && ts.isExpression(rhs) ? rhs : factory.createNumericLiteral(rhs)
     )
 }
