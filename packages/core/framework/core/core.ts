@@ -4,7 +4,9 @@ import {LViewFlags, Writable} from "./type";
 import {PipeDef} from "./pipe";
 
 export class QueryMetadata {
-  constructor(predicate, read, flags) {
+  predicate
+  constructor(predicate, public read, public flags) {
+    this.predicate = predicate;
   }
 }
 
@@ -21,15 +23,17 @@ export interface TQueries {
 
 export class TQueries_ implements TQueries {
 
-  constructor(private queries: TQuery[] = []) {
-  }
+  constructor(private queries: TQuery[] = []) {}
 
   elementStart(tNode: TNode, tView: TView) {
-
+    for (let i = 0; i < this.queries.length; i++) {
+      const query = this.queries[i];
+      query.elementStart(tNode, tView);
+    }
   }
 
   track(tQuery: TQuery_) {
-
+    this.queries.push(tQuery);
   }
 
 }
@@ -49,7 +53,25 @@ export class TQuery_ implements TQuery {
   }
 
   elementStart(tNode: TNode, tView: TView) {
+    // search through the TView and TNode
 
+    if (this.metadata.predicate) {
+      const predicate = this.metadata.predicate;
+      if (typeof predicate === "string") {
+        // search in tNode localNames
+        const localNames = tNode.localNames
+        for (let i = 0; i < localNames.length; i++) {
+
+          if (localNames[i] === predicate) {
+            this.matches.push(tNode.index)
+          }
+
+          i++;
+        }
+
+      }
+
+    }
   }
 
 }
