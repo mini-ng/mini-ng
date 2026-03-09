@@ -25,3 +25,12 @@ TemplateRef, ElementRef, and ViewContainerRef
 Difference between dynamic and static queries:
 Dynamic queries (static: false) - The query resolves before the ngAfterViewInit() callback is called. The result will be updated for changes to your view, such as changes to ngIf and ngFor blocks.
 Static queries (static: true) - The query resolves once the view has been created, but before change detection runs (before the ngOnInit() callback is called). The result, though, will never be updated to reflect changes to your view, such as changes to ngIf and ngFor blocks.
+
+```ts
+let _t;
+let _index = 0;
+i0.ɵɵqueryRefresh(_index, _t = i0.ɵɵloadQuery(_index)) && (ctx.alertBox = _t.first);
+_index++
+i0.ɵɵqueryRefresh(_t = i0.ɵɵloadQuery()) && (ctx.children = _t);
+
+```
