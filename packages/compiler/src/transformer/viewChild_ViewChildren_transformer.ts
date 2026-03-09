@@ -154,7 +154,8 @@ function generateViewQueryUpdateNode(viewChildsInfo: any[]) {
 
         const binaryNode = createBinaryExpression(
             propertyCallExpression("i0", "ɵɵqueryRefresh", [
-                createBinaryExpression("_t", propertyCallExpression("i0", "ɵɵloadQuery", []), ts.SyntaxKind.EqualsToken)
+                createBinaryExpression("_t", propertyCallExpression("i0", "ɵɵloadQuery", [ factory.createIdentifier("_index") ]), ts.SyntaxKind.EqualsToken),
+                factory.createIdentifier("_index")
             ]),
             factory.createParenthesizedExpression(
                 createBinaryExpression(
@@ -173,6 +174,18 @@ function generateViewQueryUpdateNode(viewChildsInfo: any[]) {
         );
 
         updateNodes.push(binaryNode);
+        updateNodes.push(
+            createBinaryExpression(
+                "_index",
+                createBinaryExpression(
+                    "_index",
+                    factory.createNumericLiteral(1),
+                    ts.SyntaxKind.PlusToken
+                )
+                ,
+                ts.SyntaxKind.EqualsToken,
+            )
+        );
 
     });
 
