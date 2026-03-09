@@ -3,7 +3,7 @@ import {
     LView,
     QueryList,
     QueryMetadata,
-    TNode,
+    TNode, TNodeType,
     TQueries_,
     TQuery_,
     TView,
@@ -70,17 +70,41 @@ export function ɵɵviewQuery<T>(
 
 }
 
-function getCurrentQueryIndex() {
-
-}
-
-export function ɵɵloadQuery<T>(): QueryList<T> {
+export function ɵɵloadQuery<T>(queryIndex: number): QueryList<T> {
     const lView = getLView()
 
-    const queryIndex = getCurrentQueryIndex();
+    // const queryIndex = getCurrentQueryIndex();
     return lView!.queries[queryIndex].queryList;
 
 }
 
-export function ɵɵqueryRefresh(queryList: QueryList<any>): boolean {
+export function ɵɵqueryRefresh<T>(queryList: QueryList<any>, queryIndex: number): boolean {
+    const lView = getLView();
+    const tView = getTView();
+
+    const lQuery = lView!.queries![queryIndex];
+    const tQuery = tView.queries.getQueryByIndex(queryIndex);
+
+    const matches = tQuery.matches
+    const result: Array<T | null> = [];
+
+    if (matches === null) {
+        queryList.reset([])
+    } else {
+        // get the matches
+        for (let i = 1; i < matches.length; i++) {
+            const matchedNodeIdx = matches[i];
+            const matchedTNode = tView.data[matchedNodeIdx] as TNode
+
+            if (matchedTNode.type && TNodeType.Element) {
+                result.push(lView.data[matchedNodeIdx] as any)
+            }
+
+        }
+        queryList.reset(result)
+    }
+
+    lQuery.queries = result
+    return lQuery.queries
+
 }

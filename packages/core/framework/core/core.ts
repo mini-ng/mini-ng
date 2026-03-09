@@ -11,8 +11,20 @@ export class QueryMetadata {
 }
 
 export class QueryList<T> implements Iterable<T> {
-  [Symbol.iterator](): Iterator<T, any, any> {
-    return undefined;
+
+  private _results: T[] = [];
+
+  first!: T;
+  last!: T;
+
+  reset(values: T[]) {
+    this._results = values;
+    this.first = values[0];
+    this.last = values[values.length - 1];
+  }
+
+  [Symbol.iterator](): Iterator<T> {
+    return this._results[Symbol.iterator]();
   }
 }
 
@@ -37,6 +49,7 @@ export class LQueries_ implements LQueries {
 export interface TQueries {
   elementStart(tView: TView, tNode: TNode): void;
   track(tQuery: TQuery_): void;
+  getQueryByIndex(index: number): TQuery | null;
 }
 
 export class TQueries_ implements TQueries {
@@ -52,6 +65,10 @@ export class TQueries_ implements TQueries {
 
   track(tQuery: TQuery_) {
     this.queries.push(tQuery);
+  }
+
+  getQueryByIndex(index: number): TQuery | null {
+    return this.queries[index];
   }
 
 }
@@ -78,13 +95,17 @@ export class TQuery_ implements TQuery {
       if (typeof predicate === "string") {
         // search in tNode localNames
         const localNames = tNode.localNames
-        for (let i = 0; i < localNames.length; i++) {
+        if (localNames !== null) {
 
-          if (localNames[i] === predicate) {
-            (this.matches ??= []).push(tNode.index)
+          for (let i = 0; i < localNames.length; i++) {
+
+            if (localNames[i] === predicate) {
+              (this.matches ??= []).push(tNode.index)
+            }
+
+            i++;
           }
 
-          i++;
         }
 
       }
