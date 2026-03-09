@@ -311,6 +311,17 @@ export function ɵɵrepeater(iterable: Array<any>) {
 
     }
 
+    // check to see if the items in currentLView has changed
+    const prevInstances = currentLView.instances
+
+    if (prevInstances.length > 0) {
+        // we have previous items rendered.
+        // we need to know which item moved, added or deleted.
+
+        const prevValues = prevInstances.map(instance => instance.context.$implicit)
+
+    }
+
     iterable.forEach((el, i) => {
 
         const context = cloneObject(hostLView.context);

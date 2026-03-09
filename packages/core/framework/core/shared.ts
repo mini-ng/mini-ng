@@ -370,6 +370,7 @@ export function createTView(
         id: ssrId,
         components: null,
         queries: null,
+        viewQuery: null,
     });
 
     return tView;

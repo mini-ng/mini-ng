@@ -1,18 +1,18 @@
 import { enterView, leaveView, LView, TNode, TView } from "./core";
 import { processHostBindingOpCodes} from "./shared";
 import {RenderFlags} from "./render_flags";
+import {executeViewQueryFn} from "./queries/queries";
 
-export function renderView(tView: TView, lView: LView, ctx: any) {
+export function renderView<T>(tView: TView, lView: LView, ctx: any) {
 
     const templateFn = tView.template
 
     enterView(lView);
 
-    // const viewQuery = tView.viewQuery;
-    // if (viewQuery !== null) {
-    //     executeViewQueryFn<T>(RenderFlags.Create, viewQuery, context);
-    // }
-
+    const viewQuery = tView.viewQuery;
+    if (viewQuery !== null) {
+        executeViewQueryFn<T>(RenderFlags.CREATE, viewQuery, ctx);
+    }
 
     if (tView.firstCreatePass) {
         templateFn(RenderFlags.CREATE | RenderFlags.UPDATE, ctx);

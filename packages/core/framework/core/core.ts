@@ -3,10 +3,55 @@ import {RenderFlags} from "./render_flags";
 import {LViewFlags, Writable} from "./type";
 import {PipeDef} from "./pipe";
 
+export class QueryMetadata {
+  constructor(predicate, read, flags) {
+  }
+}
+
 export interface LQuery<T> {}
 
 export interface LQueries {
   queries: LQuery<any>[];
+}
+
+export interface TQueries {
+  elementStart(tNode: TNode, tView: TView): void;
+  track(tQuery: TQuery_): void;
+}
+
+export class TQueries_ implements TQueries {
+
+  constructor(private queries: TQuery[] = []) {
+  }
+
+  elementStart(tNode: TNode, tView: TView) {
+
+  }
+
+  track(tQuery: TQuery_) {
+
+  }
+
+}
+
+export interface TQuery {
+  metadata: QueryMetadata;
+  matches: number[] | null;
+  elementStart(tNode: TNode, tView: TView): void;
+}
+
+export class TQuery_ implements TQuery {
+  matches: number[] | null = null;
+  metadata: QueryMetadata;
+
+  constructor(metadata: QueryMetadata) {
+    this.metadata = metadata;
+  }
+
+  elementStart(tNode: TNode, tView: TView) {
+
+  }
+
 }
 
 export const enum TNodeFlags {
@@ -178,9 +223,6 @@ export enum TViewType {
   Embedded
 }
 
-class TQueries {
-}
-
 export type TView = {
   type: TViewType;
   blueprint: any[];
@@ -195,6 +237,7 @@ export type TView = {
   components: number[] | null;
   directives?: DirectiveDef<any>[];
   queries: TQueries | null;
+  viewQuery: ViewQueriesFunction<{}> | null;
 };
 
 export interface LView {
