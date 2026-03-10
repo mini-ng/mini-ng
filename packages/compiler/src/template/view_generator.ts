@@ -1,5 +1,5 @@
-import {parseDocument} from "htmlparser2";
-import {Element, Node, Text} from "domhandler";
+import {parseDocument} from "../html_parser/html_parser";
+import {Element, Node, Text} from "../html_parser/nodes";
 import {factory, SourceFile} from "typescript";
 import {ExpressionParser} from "../expr_parser/expr_parser";
 import {AttributeMarker} from "./attribute_marker";
