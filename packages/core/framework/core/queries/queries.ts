@@ -34,7 +34,6 @@ export function executeViewQueryFn<T>(
     viewQueryFn: ViewQueriesFunction<T>,
     component: T,
 ): void {
-    // setCurrentQueryIndex(0);
     try {
         viewQueryFn(flags, component);
     } finally {

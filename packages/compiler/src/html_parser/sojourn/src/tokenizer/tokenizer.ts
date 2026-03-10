@@ -11,196 +11,181 @@ export class Tokenizer {
 
     public start() {
 
-        this.html = this.html.split("").filter(char => {
-            if (char === "\n") {
-                return false
-            }
-
-            return true;
-        }).join("")
+        // remove newlines
+        this.html = this.html.replace(/\n/g, "");
 
         let openTag = false;
         let comment = false;
         let DOCTYPE = false;
 
-        let elementName = "";
+        let elementBuffer = "";
+        let textBuffer = "";
 
-        const tokens: Array<Token> = [];
+        const tokens: Token[] = [];
 
         for (let index = 0; index < this.html.length; index++) {
 
             const char = this.html[index];
             const nextChar = this.html[index + 1];
 
-            if(char === "<" && openTag === false) {
-
-                // check for comment
-                if(nextChar === "!") {
-                    if(this.html[index + 2] === "-") {
-
-                        comment = true;
-                        continue;
-
-                    } else if(this.html[index + 2] === "D") {
-                        // we have "DOCTYPE"
-                        DOCTYPE = true;
-                        continue;
-                    }
-
-                }
-
-                openTag = true;
+            // COMMENT START
+            if (!openTag && !comment && this.html.startsWith("<!--", index)) {
+                comment = true;
+                index += 3;
                 continue;
             }
 
-            if(comment) {
-                if(char === "-" && nextChar === ">") {
+            // COMMENT BODY
+            if (comment) {
+                if (this.html.startsWith("-->", index)) {
                     comment = false;
-                    continue;
+                    index += 2;
                 }
-                continue
+                continue;
             }
 
-            if(DOCTYPE) {
-                if(char === ">") {
+            // DOCTYPE
+            if (!openTag && this.html.startsWith("<!DOCTYPE", index)) {
+                DOCTYPE = true;
+                index += 8;
+                continue;
+            }
+
+            if (DOCTYPE) {
+                if (char === ">") {
                     DOCTYPE = false;
-                    continue;
                 }
-                continue
+                continue;
             }
 
-            if(openTag) {
+            // TAG OPEN
+            if (char === "<" && !openTag) {
 
-                elementName += char
+                if (textBuffer.length) {
+                    tokens.push({
+                        name: textBuffer,
+                        type: "text"
+                    });
+                    textBuffer = "";
+                }
 
-                // make sure that the ">"
-                if(nextChar === ">" && !this.isInsideAttributeValue(elementName)) {
+                openTag = true;
+                elementBuffer = "";
+                continue;
+            }
 
-                    if(elementName.startsWith("/")) {
+            // TAG PARSING
+            if (openTag) {
+
+                elementBuffer += char;
+
+                if (nextChar === ">" && !this.isInsideAttributeValue(elementBuffer)) {
+
+                    let content = elementBuffer.trim();
+
+                    let selfClosing = false;
+
+                    if (content.endsWith("/")) {
+                        selfClosing = true;
+                        content = content.slice(0, -1).trim();
+                    }
+
+                    // END TAG
+                    if (content.startsWith("/")) {
 
                         tokens.push({
-                            name: elementName,
+                            name: content.slice(1),
                             endTag: true,
                             type: "node"
-                        })
-    
+                        });
+
                     } else {
 
-                        // gather attributes
-                        const elementNameParts = elementName.split(" ")
+                        // extract element name
+                        const firstSpace = content.indexOf(" ");
 
-                        // first is the element name
-                        const name = elementNameParts[0];
+                        let name = content;
+                        let attrString = "";
 
-                        const elementAttributes = this.processAttributes(elementNameParts.slice(1))
+                        if (firstSpace !== -1) {
+                            name = content.slice(0, firstSpace);
+                            attrString = content.slice(firstSpace + 1);
+                        }
+
+                        const attributes = this.processAttributes(attrString);
 
                         tokens.push({
                             name,
-                            attributes: elementAttributes,
+                            attributes,
                             startTag: true,
+                            selfClosing,
                             type: "node"
                         });
-    
+
                     }
 
-                    elementName = ""
-
+                    elementBuffer = "";
                     openTag = false;
-                    continue;
 
-                }
-
-            }
-            else if(!comment || !DOCTYPE) {
-
-                if(char === ">") {
+                    index++;
                     continue;
                 }
 
-                let textName = ""
-
-                for (let j = index; j < this.html.length; j++) {
-
-                    const textChar = this.html[j];
-                    textName += textChar;
-
-                    if(this.html[j + 1] === "<") {
-
-                        tokens.push({
-                            name: textName,
-                            type: "text"
-                        })
-                        textName = ""
-
-                        index = j;
-                        break;
-
-                    }
-                    
-                }
-
+                continue;
             }
-            
+
+            // TEXT
+            textBuffer += char;
+
+        }
+
+        // push remaining text
+        if (textBuffer.length) {
+            tokens.push({
+                name: textBuffer,
+                type: "text"
+            });
         }
 
         tokens.push({
             name: "EOF",
-            type: "EOF",
-        })
-
-        const mappedTokens = tokens.map((token, index) => {
-            return {
-                index,
-                ...token
-            }
+            type: "EOF"
         });
 
-        // console.log(mappedTokens)
-
-        return mappedTokens
-
+        return tokens.map((token, index) => ({
+            index,
+            ...token
+        }));
     }
 
-    private isInsideAttributeValue(elementName: string) {
-        // check we have " or ' left
-        // and we have = after " or '
+    private isInsideAttributeValue(str: string) {
 
-        let insideAttribute = false;
+        let quote: string | null = null;
 
-        const reversedElementName = elementName
-            .split("=")
-            .map( part => part.trim())
-            .join("=")
-            .split("").reverse().join("");
+        for (let i = 0; i < str.length; i++) {
 
-        let sawAttributeValueOpen = false
+            const char = str[i];
 
-        for(let i = 0; i < reversedElementName.length; i++) {
-            const char = reversedElementName[i];
-            const nextChar = reversedElementName[i + 1];
-
-            if(char === '"' && nextChar !== "=") {
-                sawAttributeValueOpen = true
-                continue
+            if (!quote && (char === '"' || char === "'")) {
+                quote = char;
+                continue;
             }
 
-            if(!sawAttributeValueOpen && char === '"' && nextChar === "=") {
-                insideAttribute = true;
-                break;
+            if (quote && char === quote) {
+                quote = null;
             }
+
         }
 
-        return insideAttribute;
-
+        return quote !== null;
     }
 
-    private processAttributes(attributes: string[]) {
+    private processAttributes(attrString: string) {
 
-        const attributesString = attributes.join(" ")
+        if (!attrString) return [];
 
-        const attributeParser = new AttributeParser(attributesString)
-        return attributeParser.start()
-        
+        const parser = new AttributeParser(attrString);
+        return parser.start();
     }
 
 }

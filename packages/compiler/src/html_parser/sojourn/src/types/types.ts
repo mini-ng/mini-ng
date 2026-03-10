@@ -1,39 +1,25 @@
-
-export class ElementNode {
-
-    type = "element"
-
-    constructor(
-        public name: string,
-        public attributes: Array<Attribute> | undefined,
-        public children: NodeType[]) {
-    }
-
-}
-
 export type Attribute = {
     name?: string;
     value?: string;
 }
 
-export class TextNode {
-    type = "text"
-    constructor(public name: string) {}
-}
-
-export type NodeContainer = ElementNode;
-
-export type NodeType = ElementNode | TextNode;
-
-
-export type Token = {
+export interface NodeToken {
+    type: "node";
     name: string;
-    attributes?: Array<{
-        name?: string;
-        value?: string | undefined;
-    }>;
     startTag?: boolean;
     endTag?: boolean;
-    type: "node" | "text" | "EOF";
-    index?: number;
+    selfClosing?: boolean;
+    attributes?: Attribute[];
 }
+
+export interface TextToken {
+    type: "text";
+    name: string;
+}
+
+export interface EOFToken {
+    type: "EOF";
+    name: "EOF";
+}
+
+export type Token = NodeToken | TextToken | EOFToken;

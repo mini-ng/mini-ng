@@ -1,5 +1,5 @@
 import ts, {factory} from "typescript";
-import {Element} from "domhandler";
+import {Element} from "../html_parser/nodes";
 import {getRootObject} from "../utils/utils";
 
 export function forTrackByParser(node: Element, slotIndex: number, trackBy: string) {

@@ -2,108 +2,71 @@ import {Attribute} from "../types/types";
 
 export class AttributeParser {
 
-    private ignores = [" ", "", "\n", "\p"]
-    private ignoresList = [" ", "\n", "\p"]
-
-    constructor(private readonly attributesString: string) {}
+    constructor(private readonly input: string) {}
 
     start() {
 
-        const attributes = [] as Attribute[];
+        const attributes: Attribute[] = [];
 
-        const attributesString = this.attributesString
-            .split("=")
-            .map(char => char.trim())
-            .join("=")
+        let i = 0;
 
-        let name = "";
-        let isValue = false;
+        while (i < this.input.length) {
 
-        for (let i = 0; i < attributesString.length; i++) {
+            while (this.isSpace(this.input[i])) i++;
 
-            const char = attributesString[i];
+            let name = "";
 
-            if(char === "=") {
-
-                const {
-                    value,
-                    stopIndex
-                } = this.findClosingEnd(i, attributesString)
-
-                const attribute = {
-                    name,
-                    value
-                } as Attribute
-
-                attributes.push(attribute)
-
-                i = stopIndex;
-                name = ""
-                continue
-
+            while (i < this.input.length &&
+            !this.isSpace(this.input[i]) &&
+            this.input[i] !== "=") {
+                name += this.input[i++];
             }
 
-            if(this.ignores.includes(char)) {
-                attributes.push({ name })
-                name = ""
-                continue
+            if (!name) {
+                i++;
+                continue;
             }
 
-            name += char
+            while (this.isSpace(this.input[i])) i++;
+
+            let value = "";
+
+            if (this.input[i] === "=") {
+
+                i++;
+
+                while (this.isSpace(this.input[i])) i++;
+
+                const quote = this.input[i];
+
+                if (quote === '"' || quote === "'") {
+
+                    i++;
+
+                    while (i < this.input.length && this.input[i] !== quote) {
+                        value += this.input[i++];
+                    }
+
+                    i++;
+
+                } else {
+
+                    while (i < this.input.length && !this.isSpace(this.input[i])) {
+                        value += this.input[i++];
+                    }
+
+                }
+            }
+
+            attributes.push({ name, value });
 
         }
 
         return attributes;
-
     }
 
-    findClosingEnd(currentIndex: number, attributesString: string) {
-
-        let mainChar
-
-        let value = "";
-        let stopIndex: number ;
-
-        let lookForValueAfterCurrentIndex;
-
-        for (let i = 0; i < attributesString.length; i++) {
-
-            const char = attributesString[i];
-            const nextChar = attributesString[i + 1];
-
-            if (i <= currentIndex) {
-                if (i === currentIndex) {
-                    lookForValueAfterCurrentIndex = true
-                }
-                continue;
-            }
-
-            if(lookForValueAfterCurrentIndex) {
-                if(!this.ignores.includes(char)) {
-
-                    mainChar = char;
-
-                    lookForValueAfterCurrentIndex = false;
-
-                }
-                continue;
-            }
-
-            if (mainChar === char) {
-                stopIndex = i;
-                break
-            } else {
-                value += char;
-            }
-
-        }
-
-        return {
-            value,
-            // @ts-ignore
-            stopIndex
-        }
-
+    private isSpace(char?: string) {
+        return char === " " || char === "\n" || char === "\t";
     }
 
 }
