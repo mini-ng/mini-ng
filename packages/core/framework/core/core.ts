@@ -28,7 +28,10 @@ export class QueryList<T> implements Iterable<T> {
   }
 }
 
-export interface LQuery<T> {}
+export interface LQuery<T> {
+  matches: (T | null)[] | null;
+  queryList: QueryList<T>;
+}
 
 export class LQuery_<T> implements LQuery<T> {
   matches: (T | null)[] | null = null;

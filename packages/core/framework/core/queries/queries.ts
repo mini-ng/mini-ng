@@ -74,7 +74,7 @@ export function ɵɵloadQuery<T>(queryIndex: number): QueryList<T> {
     const lView = getLView()
 
     // const queryIndex = getCurrentQueryIndex();
-    return lView!.queries[queryIndex].queryList;
+    return lView!.queries.queries[queryIndex].queryList;
 
 }
 
@@ -82,7 +82,7 @@ export function ɵɵqueryRefresh<T>(queryList: QueryList<any>, queryIndex: numbe
     const lView = getLView();
     const tView = getTView();
 
-    const lQuery = lView!.queries![queryIndex];
+    const lQuery = lView!.queries.queries![queryIndex];
     const tQuery = tView.queries.getQueryByIndex(queryIndex);
 
     const matches = tQuery.matches
@@ -92,7 +92,7 @@ export function ɵɵqueryRefresh<T>(queryList: QueryList<any>, queryIndex: numbe
         queryList.reset([])
     } else {
         // get the matches
-        for (let i = 1; i < matches.length; i++) {
+        for (let i = 0; i < matches.length; i++) {
             const matchedNodeIdx = matches[i];
             const matchedTNode = tView.data[matchedNodeIdx] as TNode
 
@@ -104,7 +104,7 @@ export function ɵɵqueryRefresh<T>(queryList: QueryList<any>, queryIndex: numbe
         queryList.reset(result)
     }
 
-    lQuery.queries = result
-    return lQuery.queries
+    lQuery.matches = result
+    return true
 
 }
