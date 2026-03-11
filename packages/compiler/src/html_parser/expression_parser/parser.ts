@@ -21,7 +21,11 @@ export class HTMLExpressionParser {
     tokens: Token[];
     index: number = 0
 
-    expressions: AST[]
+    expressions: AST[] = []
+
+    constructor(tokens: Token[]) {
+        this.tokens = tokens;
+    }
 
     start() {
 
@@ -71,9 +75,9 @@ export class HTMLExpressionParser {
         const lhs = this.parseUnary();
 
         while(this.matchArray([TokenType.SUB, TokenType.ADD, TokenType.MUL, TokenType.DIV])) {
+            const { value } = this.previous();
 
             const rhs = this.parseExpression()
-            const { value} = this.peek()
 
             return {
                 operator: value,
@@ -191,4 +195,9 @@ export class HTMLExpressionParser {
         }
         return false;
     }
+
+    previous() {
+        return this.tokens[this.index - 1];
+    }
+
 }
