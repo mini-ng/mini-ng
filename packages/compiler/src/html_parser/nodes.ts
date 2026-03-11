@@ -1,3 +1,5 @@
+import {ASTWithSource, BoundAttribute, BoundEvent, Reference} from "./ast/ast";
+
 export enum ElementType {
     Root = "root",
     Text = "text",
@@ -8,6 +10,8 @@ export enum ElementType {
     Tag = "tag",
     CDATA = "cdata",
     Doctype = "doctype",
+    BoundText = "boundText",
+    Template = "template",
 }
 
 interface SourceCodeLocation {
@@ -33,7 +37,7 @@ interface TagSourceCodeLocation extends SourceCodeLocation {
 /**
  * A node that can have children.
  */
-export type ParentNode = Document | Element | CDATA;
+export type ParentNode = Document | Element | CDATA | Template;
 
 /**
  * A node that can have a parent.
@@ -43,9 +47,11 @@ export type ChildNode =
     | Comment
     | ProcessingInstruction
     | Element
+    | Template
     | CDATA
     // `Document` is also used for document fragments, and can be a child node.
-    | Document;
+    | Document
+    | BoundText;
 export type AnyNode = ParentNode | ChildNode;
 
 /**
@@ -168,6 +174,18 @@ export class Text extends DataNode {
     get nodeType(): 3 {
         return 3;
     }
+}
+
+export class BoundText extends DataNode {
+    type: ElementType.BoundText = ElementType.BoundText;
+    get nodeType() : 2 {
+        return 2;
+    }
+
+    constructor(public data: string, public value: ASTWithSource) {
+        super(data);
+    }
+
 }
 
 /**
@@ -337,6 +355,73 @@ export class Element extends NodeWithChildren {
         }));
     }
 
+    inputs: BoundAttribute[];
+    outputs: BoundEvent[];
+    references: Reference[];
+
+    /** Element namespace (parse5 only). */
+    namespace?: string;
+    /** Element attribute namespaces (parse5 only). */
+    "x-attribsNamespace"?: Record<string, string>;
+    /** Element attribute namespace-related prefixes (parse5 only). */
+    "x-attribsPrefix"?: Record<string, string>;
+}
+
+export class Template extends NodeWithChildren {
+    /**
+     * @param name Name of the tag, eg. `div`, `span`.
+     * @param attribs Object mapping attribute names to attribute values.
+     * @param children Children of the node.
+     */
+    constructor(
+        public name: string,
+        public attribs: { [name: string]: string },
+        children: ChildNode[] = [],
+        public type: ElementType.Template,
+    ) {
+        super(children);
+    }
+
+    get nodeType(): 1 {
+        return 1;
+    }
+
+    /**
+     * `parse5` source code location info, with start & end tags.
+     *
+     * Available if parsing with parse5 and location info is enabled.
+     */
+    sourceCodeLocation?: TagSourceCodeLocation | null;
+
+    // DOM Level 1 aliases
+
+    /**
+     * Same as {@link name}.
+     * [DOM spec](https://dom.spec.whatwg.org)-compatible alias.
+     */
+    get tagName(): string {
+        return this.name;
+    }
+
+    set tagName(name: string) {
+        this.name = name;
+    }
+
+    get attributes(): Attribute[] {
+        return Object.keys(this.attribs).map((name) => ({
+            name,
+            value: this.attribs[name],
+            namespace: this["x-attribsNamespace"]?.[name],
+            prefix: this["x-attribsPrefix"]?.[name],
+        }));
+    }
+
+    inputs: BoundAttribute[];
+    outputs: BoundEvent[];
+    references: Reference[];
+    templateAttrs: BoundAttribute[];
+    variables: BoundAttribute[];
+
     /** Element namespace (parse5 only). */
     namespace?: string;
     /** Element attribute namespaces (parse5 only). */
@@ -346,7 +431,7 @@ export class Element extends NodeWithChildren {
 }
 
 function isTagRaw(node: Node) {
-    return node.type === ElementType.Tag;
+    return node.type === ElementType.Tag || node.type === ElementType.Script || node.type === ElementType.Style;
 }
 
 /**
@@ -475,6 +560,9 @@ export function cloneNode<T extends Node>(node: T, recursive = false): T {
         result = instruction;
     } else if (node.type === ElementType.Style) {
         return node
+    } else if (node.type === ElementType.Script) {
+        return node;
+    } else if (node.type === ElementType.BoundText) {
     } else {
         throw new Error(`Not implemented yet: ${node.type}`);
     }
