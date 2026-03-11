@@ -56,8 +56,9 @@
     "minor": "npm version minor",
     "major": "npm version major",
     "release": "npm version patch && npm publish",
-    "test": "mocha --loader ts-node/esm \\\"test/**/*.ts\\\"",
-    "build-all": "npm run build && npm run build:types"
+    "esm-test": "mocha --loader ts-node/esm \\\"test/**/*.ts\\\"",
+    "build-all": "npm run build && npm run build:types",
+    "test": "mocha -r ts-node/register 'test/**/*.spec.ts'"
   },
   "dependencies": {
     "tslib": "^2.8.1"

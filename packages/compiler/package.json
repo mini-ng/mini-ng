@@ -10,8 +10,9 @@
   "scripts": {
     "serve": "./compiler/ivy_plugin.js",
     "build": "tsc",
-    "test": "mocha --reporter spec",
-    "cover": "istanbul cover node_modules/mocha/bin/_mocha test/*.js -- -R spec"
+    "mocha-test": "mocha --reporter spec",
+    "cover": "istanbul cover node_modules/mocha/bin/_mocha test/*.js -- -R spec",
+    "test": "mocha -r ts-node/register 'src/**/*.spec.ts'"
   },
   "author": "Chidume Nnamdi <kurtwanger40@gmail.com>",
   "license": "ISC",
