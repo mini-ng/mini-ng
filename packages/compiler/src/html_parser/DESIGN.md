@@ -14,7 +14,7 @@ Interpolation
     expression
 
 BoundText = {{}}
-value: ASTWithSource
+    value: ASTWithSource
 
 BoundAttribute = [attrib]
     name
