@@ -1,45 +1,73 @@
-type AST =
-    | PropertyReadAST
-    | MethodCallAST
-    | BinaryAST
-    | LiteralAST
-    | BindingPipeAST
+export type AST =
     | IdentifierAST
+    | LiteralAST
+    | BinaryAST
+    | UnaryAST
+    | PropertyReadAST
+    | CallAST
+    | ConditionalAST
     | SequenceAST
-    | ConditionalAst;
+    | BindingPipeAST
+    | GroupingAST;
 
-export interface UnaryAst {
-    op: string;
-    expr: AST;
-}
-
-export interface SequenceAST {
-    exprs: AST[]
-}
-
-export interface ConditionalAst {
-    xpr: AST;
-    then: AST;
-    else: AST
-}
-
-interface PropertyReadAST {
-    type: "PropertyRead";
+export interface IdentifierAST {
+    type: "Identifier";
     name: string;
-    receiver: AST | null;
 }
 
-interface MethodCallAST {
-    type: "MethodCall";
-    name: string;
-    receiver: AST | null;
-    args: AST[];
+export interface LiteralAST {
+    type: "Literal";
+    value: string | number | boolean | null;
 }
 
-interface BinaryAST {
+export interface UnaryAST {
+    type: "Unary";
+    operator: string;
+    argument: AST;
+}
+
+export interface BinaryAST {
+    type: "Binary";
     operator: string;
     left: AST;
     right: AST;
+}
+
+export interface PropertyReadAST {
+    type: "PropertyRead";
+    receiver: AST | null;
+    key: string | AST;
+    computed: boolean;
+}
+
+export interface CallAST {
+    type: "Call";
+    callee: AST;
+    args: AST[];
+}
+
+export interface ConditionalAST {
+    type: "Conditional";
+    test: AST;
+    consequent: AST;
+    alternate: AST;
+}
+
+export interface SequenceAST {
+    type: "Sequence";
+    expressions: AST[];
+}
+
+export interface BindingPipeAST {
+    type: "Pipe";
+    name: string;
+    expression: AST;
+    args: AST[];
+}
+
+export interface GroupingAST {
+    type: "Grouping";
+    expression: AST;
 }
 
 export enum LiteralAstType {
@@ -47,22 +75,6 @@ export enum LiteralAstType {
     NUMBER,
     BOOLEAN,
     NULL
-}
-
-interface LiteralAST {
-    type: LiteralAstType;
-    value: string | number | boolean | null;
-}
-
-interface IdentifierAST {
-    value: string
-}
-
-interface BindingPipeAST {
-    type: "Pipe";
-    name: string;
-    exp: AST;
-    args: AST[];
 }
 
 interface ASTWithSource {
@@ -86,18 +98,4 @@ interface BoundEvent {
 interface Reference {
     name: string;                 // #refName
     value: string | null;         // what it references (directive instance or element)
-}
-
-export {
-    BinaryAST,
-    BindingPipeAST,
-    LiteralAST,
-    MethodCallAST,
-    PropertyReadAST,
-    IdentifierAST,
-    AST,
-    ASTWithSource,
-    BoundAttribute,
-    BoundEvent,
-    Reference
 }
