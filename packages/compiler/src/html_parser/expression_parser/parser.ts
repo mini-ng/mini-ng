@@ -1,13 +1,13 @@
 import {Token, TokenType} from "./tokens";
 import {
     AST,
-    BinaryAST,
-    ConditionalAst,
+    BinaryAST, BindingPipeAST, CallAST,
+    // ConditionalAst,
     IdentifierAST,
     LiteralAST,
-    LiteralAstType,
+    LiteralAstType, PropertyReadAST,
     SequenceAST,
-    UnaryAst
+    // UnaryAst
 } from "../ast/ast";
 
 // recursive descent parser
@@ -19,185 +19,324 @@ import {
 export class HTMLExpressionParser {
 
     tokens: Token[];
-    index: number = 0
-
-    expressions: AST[] = []
+    index = 0;
 
     constructor(tokens: Token[]) {
         this.tokens = tokens;
     }
 
-    start() {
+    start(): AST[] {
+        const expressions: AST[] = [];
 
         while (!this.isAtEnd()) {
-            this.expressions.push(this.parseExpression())
+            expressions.push(this.parseExpression());
         }
 
-        return this.expressions;
-
+        return expressions;
     }
 
-    parseExpression() {
-        return this.parseSequence()
+    parseExpression(): AST {
+        return this.parseSequence();
     }
 
-    // ((2 + 2), (call()))
-    // [BinaryAst, CallAst]
-    parseSequence() {
-        // this is an array of expressions
-        const exprs = []
-        exprs.push(this.parseConditional())
+    // a(), b(), c()
+    parseSequence(): SequenceAST {
+
+        const expressions: AST[] = [];
+
+        expressions.push(this.parseConditional());
 
         while (this.match(TokenType.COMMA)) {
-            exprs.push(this.parseConditional())
+            expressions.push(this.parseConditional());
         }
 
-        return { exprs } as SequenceAST
-
+        return {
+            type: "Sequence",
+            expressions
+        };
     }
 
-    parseConditional() {
+    // a ? b : c
+    parseConditional(): AST {
 
-        let expr: AST = this.parseBinary();
+        let expr = this.parseAdditive();
 
         if (this.match(TokenType.TERNARY)) {
-            const thenExpr = this.parseExpression();
-            this.consumeType(TokenType.COLON, "Expected ':' in conditional expression");
-            const elseExpr = this.parseExpression();
-            expr = { xpr: expr, then: thenExpr, else: elseExpr } as ConditionalAst
+
+            const consequent = this.parseExpression();
+
+            this.consumeType(TokenType.COLON, "Expected ':'");
+
+            const alternate = this.parseExpression();
+
+            expr = {
+                type: "Conditional",
+                test: expr,
+                consequent,
+                alternate
+            };
         }
+
         return expr;
-
     }
 
-    parseBinary() {
+    // + -
+    parseAdditive(): AST {
 
-        const lhs = this.parseUnary();
+        let expr = this.parseMultiplicative();
 
-        while(this.matchArray([TokenType.SUB, TokenType.ADD, TokenType.MUL, TokenType.DIV])) {
-            const { value } = this.previous();
+        while (
+            this.check(TokenType.ADD) ||
+            this.check(TokenType.SUB)
+            ) {
 
-            const rhs = this.parseExpression()
+            const operator = this.peek().value;
+            this.advance();
 
-            return {
-                operator: value,
-                left: lhs,
-                right: rhs,
-            } as BinaryAST;
+            const right = this.parseMultiplicative();
 
+            expr = {
+                type: "Binary",
+                operator,
+                left: expr,
+                right
+            };
         }
 
-        return lhs;
-
+        return expr;
     }
 
-    parseUnary() {
+    // * /
+    parseMultiplicative(): AST {
 
-        // if peek is - or + or !
-        if (this.match(TokenType.ADD) || this.match(TokenType.SUB)) {
-            const expr = this.parseUnary();
-            return {
-                op: this.peek().value,
-                expr
-            } as UnaryAst
+        let expr = this.parsePipe();
+
+        while (
+            this.check(TokenType.MUL) ||
+            this.check(TokenType.DIV)
+            ) {
+
+            const operator = this.peek().value;
+            this.advance();
+
+            const right = this.parsePipe();
+
+            expr = {
+                type: "Binary",
+                operator,
+                left: expr,
+                right
+            };
         }
 
-        return this.parsePrimary()
-
+        return expr;
     }
 
-    parsePrimary() {
+    // | pipe
+    parsePipe(): AST {
+
+        let expr = this.parseUnary();
+
+        while (this.match(TokenType.PIPE)) {
+
+            const name = this.peek().value;
+            this.consumeType(TokenType.IDENTIFIER, "Expected pipe name");
+
+            const args: AST[] = [];
+
+            while (this.match(TokenType.COLON)) {
+                args.push(this.parseExpression());
+            }
+
+            expr = {
+                type: "Pipe",
+                name,
+                expression: expr,
+                args
+            };
+        }
+
+        return expr;
+    }
+
+    parseUnary(): AST {
+
+        if (
+            this.check(TokenType.ADD) ||
+            this.check(TokenType.SUB)
+        ) {
+
+            const operator = this.peek().value;
+            this.advance();
+
+            const argument = this.parseUnary();
+
+            return {
+                type: "Unary",
+                operator,
+                argument
+            };
+        }
+
+        return this.parseLHS();
+    }
+
+    parseLHS(): AST {
+
+        let expr = this.parsePrimary();
+
+        while (true) {
+
+            // call
+            // e.g: call(45, 90)
+            if (this.match(TokenType.LEFT_PAREN)) {
+
+                const args: AST[] = [];
+
+                if (!this.check(TokenType.RIGHT_PAREN)) {
+                    do {
+                        args.push(this.parseExpression());
+                    } while (this.match(TokenType.COMMA));
+                }
+
+                this.consumeType(TokenType.RIGHT_PAREN, "Expected ')'");
+
+                expr = {
+                    type: "Call",
+                    callee: expr,
+                    args
+                };
+            }
+
+            // property access
+            // e.g: user.age
+            else if (this.match(TokenType.DOT)) {
+
+                const name = this.peek().value;
+
+                this.consumeType(
+                    TokenType.IDENTIFIER,
+                    "Expected property name"
+                );
+
+                expr = {
+                    type: "PropertyRead",
+                    receiver: expr,
+                    key: name,
+                    computed: false
+                };
+            }
+
+            // computed access
+            // e.g: user['age']
+            else if (this.match(TokenType.LEFT_SQUARE_BRACKET)) {
+
+                const key = this.parseExpression();
+
+                this.consumeType(
+                    TokenType.RIGHT_SQUARE_BRACKET,
+                    "Expected ']'"
+                );
+
+                expr = {
+                    type: "PropertyRead",
+                    receiver: expr,
+                    key,
+                    computed: true
+                };
+            }
+
+            else {
+                break;
+            }
+        }
+
+        return expr;
+    }
+
+    parsePrimary(): AST {
 
         const token = this.peek();
 
         if (this.match(TokenType.IDENTIFIER)) {
-            return {value: token.value} as IdentifierAST
+            return {
+                type: "Identifier",
+                name: token.value
+            };
         }
 
         if (this.match(TokenType.STRING)) {
-            return {type: LiteralAstType.STRING, value: token.value} as LiteralAST
+            return {
+                type: "Literal",
+                value: token.value
+            };
         }
 
         if (this.match(TokenType.NUMBER)) {
-            return {type: LiteralAstType.NUMBER, value: token.value} as LiteralAST
+            return {
+                type: "Literal",
+                value: token.value
+            };
         }
 
         if (this.match(TokenType.BOOL)) {
-            return {type: LiteralAstType.BOOLEAN, value: token.value} as LiteralAST
+            return {
+                type: "Literal",
+                value: token.value
+            };
         }
 
         if (this.match(TokenType.LEFT_PAREN)) {
 
-            let expr: AST = null;
+            const expression = this.parseExpression();
 
-            if (this.peek().token === TokenType.RIGHT_PAREN) {
-                this.consumeType(TokenType.RIGHT_PAREN, "Expected ')' at line: ")
-            } else {
-                expr = this.parseExpression()
-            }
+            this.consumeType(TokenType.RIGHT_PAREN, "Expected ')'");
 
-            return expr
+            return {
+                type: "Grouping",
+                expression
+            };
         }
+
+        throw new Error("Expected expression.");
     }
 
-    match(type: TokenType) {
+    match(type: TokenType): boolean {
+
         if (this.check(type)) {
             this.advance();
             return true;
         }
+
         return false;
     }
 
-    check(type: TokenType) {
+    check(type: TokenType): boolean {
 
         if (this.isAtEnd()) return false;
 
-        const current = this.peek();
-
-        if (current.token === type) {
-            return true
-        }
-
-        return false;
+        return this.peek().token === type;
     }
 
     advance() {
-        this.index++
-    }
-
-    consume() {
-        this.index++
+        if (!this.isAtEnd()) this.index++;
     }
 
     consumeType(type: TokenType, errorMsg: string) {
-        if (this.match(type)) {
+
+        if (this.check(type)) {
             this.advance();
-        } else {
-            throw errorMsg
+            return;
         }
+
+        throw new Error(errorMsg);
     }
 
-    peek() {
-        return this.tokens[this.index]
+    peek(): Token {
+        return this.tokens[this.index];
     }
 
-    isAtEnd() {
-        return this.index >= this.tokens.length
+    isAtEnd(): boolean {
+        return this.index >= this.tokens.length;
     }
-
-    private matchArray(param: TokenType[]) {
-        for (let i = 0; i < param.length; i++) {
-            const token = param[i];
-            if (this.check(token)) {
-                this.advance();
-                return true
-            }
-        }
-        return false;
-    }
-
-    previous() {
-        return this.tokens[this.index - 1];
-    }
-
 }
