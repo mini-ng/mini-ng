@@ -114,7 +114,7 @@ export class HTMLExpressionTokenizer {
         }
         this.index--;
 
-        this.tokens.push({token: TokenType.NUMBER, value: +number})
+        this.tokens.push({token: TokenType.NUMBER, value: number})
 
     }
 
