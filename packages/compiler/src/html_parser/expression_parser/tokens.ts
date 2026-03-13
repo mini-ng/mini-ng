@@ -1,6 +1,6 @@
 export interface Token {
     token: TokenType;
-    value: string | number;
+    value: string;
 }
 
 export enum TokenType {
