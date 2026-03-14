@@ -72,7 +72,7 @@ export function ɵɵelementStart(
     // let matchedDirectiveDefs = resolveDirectives(tNode, tView, lView, null, tView.consts[localRefsIndex])
     directiveHostFirstCreatePass(index, lView, TNodeType.Element, tag, findDirectiveDefMatches, false, attrsIndex, localRefsIndex)
 
-    appendChild(el, lView, tView, runtime.currentTNode.parent)
+    appendChild(el, lView, tView, tNode, runtime.currentTNode.parent)
     setupAttributes(el, tNode);
 
     // check the tag is a component
@@ -90,7 +90,7 @@ export function ɵɵelementStart(
 
 }
 
-export function appendChild(native: Element | any, lView: LView, tView: TView, tNode: TNode) {
+export function appendChild(native: Element | any, lView: LView, tView: TView, childTNode: TNode, tNode: TNode) {
 
     if (tNode == null) {
 
@@ -240,6 +240,6 @@ function setupAttributes(element: Element | any, tNode: TNode) {
 
 function runViewQueries(tView: TView, tNode: TNode) {
     if (tView.queries !== null) {
-        // tView.queries.elementStart(tView, tNode);
+        tView.queries.elementStart(tView, tNode);
     }
 }

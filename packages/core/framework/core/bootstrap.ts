@@ -155,7 +155,10 @@ export class ComponentFactory<T> {
       host: hostElement,
       context: null,
       context_value: null,
-      queries: null
+      queries: null,
+      declaration_view: null,
+      declaration_component_view: null,
+      t_host: null
     };
 
     const hostTNode = directiveHostFirstCreatePass(

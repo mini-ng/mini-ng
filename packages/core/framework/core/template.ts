@@ -34,6 +34,7 @@ export function ɵɵtemplate<T>(
         components: declarationTView.components,
         queries: declarationTView.queries,
         viewQuery: declarationTView.viewQuery,
+        firstChild: null,
     }
 
     const parentTNode = runtime.isParent ? runtime.currentTNode : runtime.currentTNode.parent
@@ -61,7 +62,7 @@ export function ɵɵtemplate<T>(
 
     declarationLView.instances[index] = embeddedLView;
 
-    appendChild(comment, declarationLView, declarationTView, tNode.parent);
+    appendChild(comment, declarationLView, declarationTView, tNode, tNode.parent);
 
 }
 
@@ -163,6 +164,7 @@ export function ɵɵrepeaterCreate<T>(
         directives: tView.directives,
         queries: tView.queries,
         viewQuery: tView.viewQuery,
+        firstChild: null,
     }
 
     const attrs = tView.consts[attrsIndex]
@@ -194,7 +196,7 @@ export function ɵɵrepeaterCreate<T>(
 
     lView.instances[forIndex] = embeddedLView;
 
-    appendChild(comment, lView, tView, tNode.parent);
+    appendChild(comment, lView, tView, tNode, tNode.parent);
 
     if (emptyTemplateFn) {
         repeaterForEmpty(lView, tView, emptyIndex, emptyTagName, emptyTemplateFn)
@@ -225,6 +227,7 @@ function repeaterForEmpty<T>(
         components: tView.components,
         queries: tView.queries,
         viewQuery: tView.viewQuery,
+        firstChild: null,
     }
 
     const parentTNode = runtime.isParent ? runtime.currentTNode : runtime.currentTNode.parent
@@ -250,7 +253,7 @@ function repeaterForEmpty<T>(
 
     lView.instances[index] = embeddedLView;
 
-    appendChild(comment, lView, tView, tNode.parent);
+    appendChild(comment, lView, tView, tNode, tNode.parent);
 
 }
 
@@ -351,5 +354,9 @@ export function ɵɵrepeater(iterable: Array<any>) {
 
 
     })
+
+}
+
+export function ɵɵrepeaterTrackByIdentity<T>( _: number, value: T) {
 
 }

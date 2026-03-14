@@ -373,6 +373,7 @@ export function createTView(
         components: null,
         queries: null,
         viewQuery,
+        firstChild: null
     });
 
     return tView;
@@ -464,6 +465,9 @@ export function createLView<T>(
             LViewFlags.Dirty |
             LViewFlags.RefreshView,
         id: getUniqueLViewId(),
+        declaration_view: null,
+        declaration_component_view: null,
+        t_host: tHostNode
     }
 
     return lView as LView;
@@ -479,7 +483,7 @@ export function createTNode(
 ): TNode {
     let flags = 0;
 
-    return {
+    const tNode: TNode = {
         type,
         index: index,
         value: tag,
@@ -495,7 +499,14 @@ export function createTNode(
         componentOffset: -1,
         directiveStart: -1,
         directiveEnd: -1,
+        child: null,
+        next: null,
+        prev: null,
+        projection: null,
     }
+
+    return tNode;
+
 }
 
 export function getFactoryDef<T>(type: any, throwNotFound?: boolean): FactoryFn<T> | null {
@@ -559,6 +570,3 @@ export function saveResolvedLocalsInData(
     }
 }
 
-export function ɵɵrepeaterTrackByIdentity<T>( _: number, value: T) {
-
-}

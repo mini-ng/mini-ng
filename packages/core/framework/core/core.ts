@@ -305,6 +305,7 @@ export type TView = {
   directives?: DirectiveDef<any>[];
   queries: TQueries | null;
   viewQuery: ViewQueriesFunction<{}> | null;
+  firstChild: TNode | null;
 };
 
 export interface LView {
@@ -320,7 +321,16 @@ export interface LView {
   flags: LViewFlags,
   id: number,
   directive_instances?: any[]
-  pipe_instances?: PipeTransform[]
+  pipe_instances?: PipeTransform[];
+  /**
+   * component view that owns the template
+   * **/
+  declaration_component_view: LView;
+  /**
+   * TNode representing the component element.
+   * **/
+  t_host: TNode;
+  declaration_view: LView;
 }
 
 type NodeOutputBindings = {
@@ -350,6 +360,10 @@ export type TNode = {
   outputs: NodeOutputBindings | null;
   flags: TNodeFlags;
   componentOffset: number;
+  child: TNode | null;
+  next: TNode | null;
+  prev: TNode | null;
+  projection: [];
 };
 
 export interface LContainer extends LView {}

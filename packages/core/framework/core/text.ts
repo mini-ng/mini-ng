@@ -16,7 +16,7 @@ export function ɵɵtext(index: number, value = '') {
 
     const parent = getCurrentParentTNode()
 
-    appendChild(text, lView, tView, parent);
+    appendChild(text, lView, tView, null, parent);
 
 }
 
@@ -47,6 +47,6 @@ export function ɵɵtextStyle(index: number, value = '') {
 
     const parent = getCurrentParentTNode()
 
-    appendChild(text, lView, tView, parent);
+    appendChild(text, lView, tView, null, parent);
 
 }

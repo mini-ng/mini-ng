@@ -37,6 +37,25 @@ function createTNodeAtIndex(tView: TView, index: number, type: TNodeType.Element
 
     tView.data[index] = tNode;
 
+    if (tView.firstChild === null) {
+        tView.firstChild = tNode;
+    }
+
+    if (currentTNode !== null) {
+
+        if (tNode.parent === currentTNode) {
+            if (currentTNode.child === null) {
+                currentTNode.child = tNode;
+            }
+        } else {
+            if (currentTNode.next === null) {
+                currentTNode.next = tNode;
+                tNode.prev = currentTNode;
+            }
+        }
+
+    }
+
     return tNode;
 }
 

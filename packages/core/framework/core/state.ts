@@ -41,7 +41,10 @@ export function createLView<T>(
         context_value: null,
         queries: null,
         flags: null,
-        id: null
+        id: null,
+        declaration_view: null,
+        declaration_component_view: null,
+        t_host: null,
     }
     return lView;
 }
