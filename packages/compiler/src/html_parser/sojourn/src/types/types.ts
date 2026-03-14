@@ -17,9 +17,14 @@ export interface TextToken {
     name: string;
 }
 
+export interface ExpressionToken {
+    type: "expression";
+    name: string;
+}
+
 export interface EOFToken {
     type: "EOF";
     name: "EOF";
 }
 
-export type Token = NodeToken | TextToken | EOFToken;
+export type Token = NodeToken | TextToken | ExpressionToken | EOFToken;

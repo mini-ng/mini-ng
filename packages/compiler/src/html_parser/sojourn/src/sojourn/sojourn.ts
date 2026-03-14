@@ -45,6 +45,11 @@ export class Sojourn {
                 continue;
             }
 
+            // EXPRESSION NODE -> a Bound text
+            if (token.type === "expression") {
+                continue;
+            }
+
             // ELEMENT NODE
             if (token.type === "node" && token.startTag) {
 

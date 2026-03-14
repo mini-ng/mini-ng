@@ -1,5 +1,13 @@
 import {Token} from "../types/types";
 import {AttributeParser} from "../attr-parser/attribute-parser";
+import {isExpression} from "typescript";
+
+const SVG_TAG_REWRITE: Record<string, string> = {
+    clippath: 'clipPath',
+    lineargradient: 'linearGradient',
+    radialgradient: 'radialGradient',
+    foreignobject: 'foreignObject',
+};
 
 export class Tokenizer {
 
@@ -17,9 +25,11 @@ export class Tokenizer {
         let openTag = false;
         let comment = false;
         let DOCTYPE = false;
+        let isExpression = false;
 
         let elementBuffer = "";
         let textBuffer = "";
+        let expressionBuffer = ""
 
         const tokens: Token[] = [];
 
@@ -93,11 +103,11 @@ export class Tokenizer {
                     // END TAG
                     if (content.startsWith("/")) {
 
-                        tokens.push({
+                        this.pushNodeToken(tokens, {
                             name: content.slice(1),
                             endTag: true,
                             type: "node"
-                        });
+                        })
 
                     } else {
 
@@ -114,13 +124,13 @@ export class Tokenizer {
 
                         const attributes = this.processAttributes(attrString);
 
-                        tokens.push({
+                        this.pushNodeToken(tokens, {
                             name,
                             attributes,
                             startTag: true,
                             selfClosing,
                             type: "node"
-                        });
+                        })
 
                     }
 
@@ -131,6 +141,27 @@ export class Tokenizer {
                     continue;
                 }
 
+                continue;
+            }
+
+            if (!comment && !openTag && !DOCTYPE && this.html.startsWith("{{", index)) {
+                isExpression = true;
+                index += 1;
+                continue;
+            }
+
+            if (isExpression) {
+                if (this.html.startsWith("}}", index)) {
+                    index += 1;
+                    isExpression = false;
+                    tokens.push({
+                        name: expressionBuffer,
+                        type: "expression"
+                    })
+                    continue;
+                }
+
+                expressionBuffer += char;
                 continue;
             }
 
@@ -186,6 +217,15 @@ export class Tokenizer {
 
         const parser = new AttributeParser(attrString);
         return parser.start();
+    }
+
+    private pushNodeToken(tokens: Token[], token: Token) {
+        token.name = this.rewriteTagExactDomName(token.name)
+        tokens.push(token)
+    }
+
+    rewriteTagExactDomName(tag: string) {
+        return SVG_TAG_REWRITE[tag] ?? tag;
     }
 
 }

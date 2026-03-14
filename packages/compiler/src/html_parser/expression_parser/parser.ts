@@ -44,10 +44,10 @@ export class HTMLExpressionParser {
 
         const expressions: AST[] = [];
 
-        expressions.push(this.parseConditional());
+        expressions.push(this.parsePipe());
 
         while (this.match(TokenType.COMMA)) {
-            expressions.push(this.parseConditional());
+            expressions.push(this.parsePipe());
         }
 
         return {
@@ -109,7 +109,7 @@ export class HTMLExpressionParser {
     // * /
     parseMultiplicative(): AST {
 
-        let expr = this.parsePipe();
+        let expr = this.parseUnary();
 
         while (
             this.check(TokenType.MUL) ||
@@ -119,7 +119,7 @@ export class HTMLExpressionParser {
             const operator = this.peek().value;
             this.advance();
 
-            const right = this.parsePipe();
+            const right = this.parseUnary();
 
             expr = {
                 type: "Binary",
@@ -135,7 +135,7 @@ export class HTMLExpressionParser {
     // | pipe
     parsePipe(): AST {
 
-        let expr = this.parseUnary();
+        let expr = this.parseConditional();
 
         while (this.match(TokenType.PIPE)) {
 
@@ -268,6 +268,7 @@ export class HTMLExpressionParser {
         if (this.match(TokenType.STRING)) {
             return {
                 type: "Literal",
+                valueType: LiteralAstType.STRING,
                 value: token.value
             };
         }
@@ -275,6 +276,7 @@ export class HTMLExpressionParser {
         if (this.match(TokenType.NUMBER)) {
             return {
                 type: "Literal",
+                valueType: LiteralAstType.NUMBER,
                 value: token.value
             };
         }
@@ -282,6 +284,7 @@ export class HTMLExpressionParser {
         if (this.match(TokenType.BOOL)) {
             return {
                 type: "Literal",
+                valueType: LiteralAstType.BOOLEAN,
                 value: token.value
             };
         }

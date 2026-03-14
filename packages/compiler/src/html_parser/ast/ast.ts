@@ -17,6 +17,7 @@ export interface IdentifierAST {
 
 export interface LiteralAST {
     type: "Literal";
+    valueType: LiteralAstType,
     value: string | number | boolean | null;
 }
 
@@ -68,6 +69,17 @@ export interface BindingPipeAST {
 export interface GroupingAST {
     type: "Grouping";
     expression: AST;
+}
+
+export enum AstType {
+    GroupingAST,
+    BindingPipeAST,
+    SequenceAST,
+    ConditionalAST,
+    CallAST,
+    PropertyReadAST,
+    BinaryAST,
+    UnaryAst
 }
 
 export enum LiteralAstType {
