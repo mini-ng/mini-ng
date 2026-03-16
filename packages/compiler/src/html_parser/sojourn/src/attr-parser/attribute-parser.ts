@@ -1,4 +1,4 @@
-import {Attribute} from "../types/types";
+import {Attribute, Input, Output, Reference, TemplateAttr, Variable} from "../types/types";
 
 export class AttributeParser {
 
@@ -7,6 +7,11 @@ export class AttributeParser {
     start() {
 
         const attributes: Attribute[] = [];
+        const inputs: Input[] = [];
+        const outputs: Output[] = [];
+        const references: Reference[] = [];
+        const templateAttrs: TemplateAttr[] = [];
+        const variables: Variable[] = [];
 
         let i = 0;
 
@@ -58,11 +63,56 @@ export class AttributeParser {
                 }
             }
 
-            attributes.push({ name, value });
+            if (name.startsWith("[(") && name.endsWith(")]")) {
+
+                // we have a banana-in-a-box
+                name = name.slice(2, -2);
+                inputs.push({ name, value });
+                outputs.push({ name: name, value: value + "Change" });
+
+            } else if (name.startsWith("(") && name.endsWith(")")) {
+
+                // we have an output
+                name = name.slice(1, -1);
+                outputs.push({ name, value })
+
+            } else if (name.startsWith("[") && name.endsWith("]")) {
+
+                // we have an input
+                name = name.slice(1, -1);
+                inputs.push({ name, value });
+
+            } else if (name.startsWith("#")) {
+
+                name = name.slice(1);
+                references.push({ name, value })
+
+            } else if (name.startsWith("*")) {
+
+                name = name.slice(1);
+                templateAttrs.push({name, value});
+
+            } else if (name.startsWith("let-")) {
+
+                name = name.slice(4);
+                variables.push({ name, value });
+
+            } else {
+
+                attributes.push({ name, value });
+
+            }
 
         }
 
-        return attributes;
+        return {
+            attributes,
+            inputs,
+            outputs,
+            references,
+            templateAttrs,
+            variables,
+        }
     }
 
     private isSpace(char?: string) {
