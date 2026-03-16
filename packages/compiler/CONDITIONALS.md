@@ -9,6 +9,11 @@
 </ng-if>
 ```
 ```html
+@if () {
+} @elseif () {
+} @else {
+}
+
 <ng-if condition="loggedIn">
   <div>Dashboard</div>
 
@@ -24,13 +29,27 @@
 
 # for
 ```html
+@for () {
+}
+
 <ng-for item="user" of="users" trackBy="id">
   <div>{{ user.name }}</div>
 </ng-for>
 ```
+
 # switch
 
 ```html
+@switch () {
+
+    @case() {
+    }
+
+    @default() {
+    }
+
+}
+
 <ng-switch condition="status">
   <ng-case value="'loading'">
     <spinner />
