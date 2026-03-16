@@ -1,6 +1,5 @@
-import {Token} from "../types/types";
+import {Attribute, Input, NodeToken, Output, Reference, TemplateAttr, Token, Variable} from "../types/types";
 import {AttributeParser} from "../attr-parser/attribute-parser";
-import {isExpression} from "typescript";
 
 const SVG_TAG_REWRITE: Record<string, string> = {
     clippath: 'clipPath',
@@ -8,6 +7,8 @@ const SVG_TAG_REWRITE: Record<string, string> = {
     radialgradient: 'radialGradient',
     foreignobject: 'foreignObject',
 };
+
+const templatesNodeNames = ["@if", "@for", /*"ng-else", "ng-else-if",*/ /* "ng-empty", "ng-case", */ "@switch" /*, "ng-default"*/, "@while"]
 
 export class Tokenizer {
 
@@ -27,11 +28,18 @@ export class Tokenizer {
         let DOCTYPE = false;
         let isExpression = false;
 
+        let collectTemplateName = false
+        let templateSyntaxCounter = 0;
+        let templateSyntaxFoundNames = []
+
         let elementBuffer = "";
         let textBuffer = "";
         let expressionBuffer = ""
 
+        let templateName = ""
+
         const tokens: Token[] = [];
+        let pushNgTemplateCloseTag = 0;
 
         for (let index = 0; index < this.html.length; index++) {
 
@@ -109,6 +117,15 @@ export class Tokenizer {
                             type: "node"
                         })
 
+                        if (pushNgTemplateCloseTag > 0) {
+                            pushNgTemplateCloseTag--;
+                            this.pushNodeToken(tokens, {
+                                name: "ng-template",
+                                endTag: true,
+                                type: "node"
+                            })
+                        }
+
                     } else {
 
                         // extract element name
@@ -122,15 +139,45 @@ export class Tokenizer {
                             attrString = content.slice(firstSpace + 1);
                         }
 
-                        const attributes = this.processAttributes(attrString);
+                        const { attributes, inputs, outputs, templateAttrs, references, variables } = this.processAttributes(attrString);
 
-                        this.pushNodeToken(tokens, {
+                        // check to see if there is a structural directive present in the attribute
+                        const token: NodeToken = {
                             name,
                             attributes,
+                            inputs,
+                            outputs,
+                            templateAttrs,
+                            variables,
+                            references,
                             startTag: true,
                             selfClosing,
                             type: "node"
-                        })
+                        };
+
+                        if (templateAttrs && templateAttrs.length && name !== "ng-template") {
+
+                            // push ng-template token
+                            const ngTemplateToken: Token = {
+                                name: "ng-template",
+                                attributes,
+                                inputs,
+                                outputs,
+                                templateAttrs,
+                                variables: [],
+                                references: [],
+                                startTag: true,
+                                selfClosing: false,
+                                type: "node"
+                            }
+
+                            token.templateAttrs = [];
+                            pushNgTemplateCloseTag++;
+
+                            this.pushNodeToken(tokens, ngTemplateToken)
+                        }
+
+                        this.pushNodeToken(tokens, token)
 
                     }
 
@@ -144,25 +191,167 @@ export class Tokenizer {
                 continue;
             }
 
-            if (!comment && !openTag && !DOCTYPE && this.html.startsWith("{{", index)) {
+            if (!comment && !openTag && !DOCTYPE && (char == "{" && nextChar == "{") /*this.html.startsWith("{{", index)*/) {
                 isExpression = true;
                 index += 1;
                 continue;
             }
 
             if (isExpression) {
-                if (this.html.startsWith("}}", index)) {
+                if (char == "}" && nextChar == "}"/*this.html.startsWith("}}", index)*/) {
                     index += 1;
                     isExpression = false;
                     tokens.push({
                         name: expressionBuffer,
                         type: "expression"
                     })
+                    elementBuffer = "";
+                    expressionBuffer = ""
+                    textBuffer = ""
                     continue;
                 }
 
                 expressionBuffer += char;
                 continue;
+            }
+
+            if (char === "@" && nextChar !== " " && !comment && !DOCTYPE) {
+                templateName += char;
+                collectTemplateName = true;
+                continue;
+            }
+
+            if (collectTemplateName && (char === "(" || char === " " || char === "{")) {
+                collectTemplateName = false;
+
+                if (templatesNodeNames.includes(templateName)) {
+
+                    let _char = char;
+                    let expression = ""
+
+                    // match till we reach ( or {
+                    if (char === " ") {
+                        index++;
+                        while (index < this.html.length) {
+                            let newChar = this.html[index];
+
+                            if (newChar === "(") {
+                                // collectTemplateSyntaxInputs = true;
+                                _char = newChar
+                                break
+                            }
+
+                            if(newChar === "{") {
+                                _char = newChar;
+                                break;
+                            }
+
+                            if (newChar !== "(" && newChar !== "{" && newChar !== " ") {
+                                throw ""
+                            }
+
+                            if (index === this.html.length - 1) {
+                                throw ""
+                            }
+
+                            index += 1;
+                        }
+
+                    }
+
+                    if (_char === "(") {
+                        // collect expression
+                        index += 1;
+                        _char = this.html[index]
+
+                        while (index < this.html.length) {
+
+                            if (_char === ")") {
+
+                                if (this.html[index + 1] === "{") {
+                                    index += 1;
+                                    _char = this.html[index];
+                                    break;
+                                }
+
+                                // consume to see if the next is "{"
+                                let seq = "";
+                                index += 1;
+                                let newChar = this.html[index];
+
+                                while (true) {
+
+                                    if (newChar === "{" && seq.trim().length === 0) {
+                                        _char = newChar;
+                                        break
+                                    }
+
+                                    if (newChar !== " ") {
+                                        expression += seq;
+                                        break;
+                                    }
+
+                                    seq += newChar;
+
+                                    index += 1;
+                                    newChar = this.html[index];
+
+                                }
+
+                                if (_char === "{") break;
+                            }
+
+                            expression += _char;
+                            index++;
+                            _char = this.html[index];
+
+                        }
+
+                        templateSyntaxCounter++
+
+                        if (_char !== "{") {
+                            throw "";
+                        }
+
+                    }
+
+                    if(_char === "{") {
+                        this.pushNodeToken(tokens, {
+                            name: templateName,
+                            startTag: true,
+                            expression,
+                            endTag: false,
+                            type: "templateSyntax",
+                        });
+
+                        templateSyntaxFoundNames.push(templateName);
+                        templateSyntaxCounter++;
+                        templateName = ""
+                        continue
+                    }
+
+                    continue;
+
+                } else  {
+                    textBuffer += templateName;
+                    templateName = ""
+                }
+
+            } else if (collectTemplateName) {
+                templateName += char;
+                continue
+            }
+
+            if (char === "}" && templateSyntaxFoundNames && templateSyntaxCounter > 0) {
+                this.pushNodeToken(tokens, {
+                    endTag: true,
+                    name: templateSyntaxFoundNames[0],
+                    startTag: false,
+                    type: "templateSyntax",
+                });
+                templateSyntaxFoundNames = templateSyntaxFoundNames.slice(0);
+                templateSyntaxCounter--;
+                continue
             }
 
             // TEXT
@@ -213,7 +402,7 @@ export class Tokenizer {
 
     private processAttributes(attrString: string) {
 
-        if (!attrString) return [];
+        if (!attrString) return {} as {attributes: Attribute[], inputs: Input[], outputs: Output[], references: Reference[], templateAttrs: TemplateAttr[], variables: Variable[]};
 
         const parser = new AttributeParser(attrString);
         return parser.start();
@@ -222,6 +411,10 @@ export class Tokenizer {
     private pushNodeToken(tokens: Token[], token: Token) {
         token.name = this.rewriteTagExactDomName(token.name)
         tokens.push(token)
+    }
+
+    private processTemplateSyntaxExpression(expression: string) {
+
     }
 
     rewriteTagExactDomName(tag: string) {
