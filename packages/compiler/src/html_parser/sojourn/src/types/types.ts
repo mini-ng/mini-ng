@@ -3,6 +3,31 @@ export type Attribute = {
     value?: string;
 }
 
+export type Input = {
+    name?: string;
+    value?: string;
+}
+
+export type Output = {
+    name?: string;
+    value?: string;
+}
+
+export type Reference = {
+    name?: string;
+    value?: string;
+}
+
+export type TemplateAttr = {
+    name?: string;
+    value?: string;
+}
+
+export type Variable = {
+    name?: string;
+    value?: string;
+}
+
 export interface NodeToken {
     type: "node";
     name: string;
@@ -10,6 +35,20 @@ export interface NodeToken {
     endTag?: boolean;
     selfClosing?: boolean;
     attributes?: Attribute[];
+    inputs?: Input[];
+    outputs?: Output[];
+    references?: Reference[];
+    templateAttrs?: TemplateAttr[];
+    variables?: Variable[];
+    hasStructuralDirective?: boolean;
+}
+
+export interface TemplateSyntaxNode {
+    type: "templateSyntax";
+    name: string;
+    startTag?: boolean;
+    endTag?: boolean;
+    expression?: string;
 }
 
 export interface TextToken {
@@ -27,4 +66,4 @@ export interface EOFToken {
     name: "EOF";
 }
 
-export type Token = NodeToken | TextToken | ExpressionToken | EOFToken;
+export type Token = NodeToken | TextToken | ExpressionToken | TemplateSyntaxNode | EOFToken;
