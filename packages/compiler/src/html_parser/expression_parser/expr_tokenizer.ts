@@ -7,6 +7,18 @@ export class HTMLExpressionTokenizer {
     index: number = 0
     tokens: Token[] = []
 
+    private static _instance: HTMLExpressionTokenizer;
+
+    public static instance() {
+
+        if (HTMLExpressionTokenizer._instance) {
+            return HTMLExpressionTokenizer._instance;
+        }
+
+        return (HTMLExpressionTokenizer._instance = new HTMLExpressionTokenizer())
+
+    }
+
     tokenize(expr: string) {
 
         this.expr = expr
