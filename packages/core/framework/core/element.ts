@@ -92,6 +92,13 @@ export function ɵɵelementStart(
 
 export function appendChild(native: Element | any, lView: LView, tView: TView, childTNode: TNode, tNode: TNode) {
 
+    /**
+     * We don't append to components
+     * **/
+    if (isDirectiveHost(tNode)) {
+        return;
+    }
+
     if (tNode == null) {
 
         if (tView.type == TViewType.Embedded) {
