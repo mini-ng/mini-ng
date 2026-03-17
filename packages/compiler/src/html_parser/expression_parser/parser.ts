@@ -25,14 +25,29 @@ export class HTMLExpressionParser {
         this.tokens = tokens;
     }
 
-    start(): AST[] {
-        const expressions: AST[] = [];
+    private static _instance: HTMLExpressionParser;
 
-        while (!this.isAtEnd()) {
-            expressions.push(this.parseExpression());
+    public static instance(tokens: Token[]) {
+
+        if (HTMLExpressionParser._instance) {
+            return HTMLExpressionParser._instance;
         }
 
-        return expressions;
+        return (HTMLExpressionParser._instance = new HTMLExpressionParser(tokens))
+
+    }
+
+    start(): AST {
+
+        // const expressions: AST[] = [];
+        //
+        // while (!this.isAtEnd()) {
+        //     expressions.push(this.parseExpression());
+        // }
+        //
+        // return expressions;
+
+        return this.parseExpression()
     }
 
     parseExpression(): AST {
