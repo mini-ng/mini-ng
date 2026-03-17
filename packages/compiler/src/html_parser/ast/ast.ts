@@ -89,25 +89,25 @@ export enum LiteralAstType {
     NULL
 }
 
-interface ASTWithSource {
-    ast: AST;        // parsed AST node (see below)
-    source: string;  // original expression string
+export interface ASTWithSource {
+    ast: AST;
+    source: string;
 }
 
-interface BoundAttribute {
+export interface BoundAttribute {
     name: string;                 // attribute name
     type: "Property" | "Attribute" | "Class" | "Style"; // binding type
     value: ASTWithSource;         // expression/value
     unit?: string;                // e.g., 'px' for style
 }
 
-interface BoundEvent {
+export interface BoundEvent {
     name: string;                 // event name
     handler: ASTWithSource;       // event handler expression
     target?: string;              // optional target, e.g., document, window
 }
 
-interface Reference {
+export interface Reference {
     name: string;                 // #refName
     value: string | null;         // what it references (directive instance or element)
 }
