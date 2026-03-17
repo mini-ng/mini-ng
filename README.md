@@ -5,7 +5,7 @@
 </p>
 
 <p align="center">
-  <strong>A lightweight, compiler-friendly JavaScript framework for building component-driven UI.</strong>
+  <strong>A JavaScript framework for building component-driven UI.</strong>
 </p>
 
 <p align="center">
@@ -47,13 +47,25 @@ It is ideal for:
 # 📦 Installation
 
 ```bash
-npm install @mini-ng/core
+npm install @mini-ng/cli -g
+
+mngc new project_name
+
+cd project_name
+
+npm run start
 ```
 
 or
 
 ```bash
-yarn add @mini-ng/core
+yarn add @mini-ng/cli -g
+
+mngc new project_name
+
+cd project_name
+
+npm run start
 ```
 
 ---
