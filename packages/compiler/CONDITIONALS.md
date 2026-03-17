@@ -30,6 +30,7 @@
 # for
 ```html
 @for () {
+} @empty {
 }
 
 <ng-for item="user" of="users" trackBy="id">
@@ -68,6 +69,10 @@
 # while
 
 ```html
+
+@while() {
+}
+
 <ng-while condition="count < 3">
   <div>Count: {{ count }}</div>
 </ng-while>
