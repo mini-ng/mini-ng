@@ -1,5 +1,8 @@
-import {NodeToken, Token} from "../types/types";
-import {cloneNode, Document, Element, Text} from "../../../nodes";
+import {NodeToken, TemplateSyntaxNode, Token, Variable} from "../types/types";
+import {BoundText, cloneNode, Document, Element, Template, Text} from "../../../nodes";
+import {HTMLExpressionParser} from "../../../expression_parser/parser";
+import {HTMLExpressionTokenizer} from "../../../expression_parser/expr_tokenizer";
+import {BoundAttribute, BoundEvent, Reference} from "../../../ast/ast";
 
 interface ClosingResult {
     closingIndex?: number;
@@ -47,7 +50,28 @@ export class Sojourn {
 
             // EXPRESSION NODE -> a Bound text
             if (token.type === "expression") {
+
+                const ast = this.parse(token.name);
+                const boundTextNode = new BoundText(token.name, ast);
+
+                boundTextNode.parent = parent;
+                boundTextNode.prev = prev;
+
+                if (prev) prev.next = boundTextNode;
+
+                nodes.push(boundTextNode);
+                prev = boundTextNode;
+
                 continue;
+            }
+
+            if (token.type === "templateSyntax" && token.startTag) {
+
+                const { children, closingIndex, selfClosing } =
+                    this.findTemplateSyntaxClosing(token, i, tokens);
+
+                continue;
+
             }
 
             // ELEMENT NODE
@@ -59,9 +83,49 @@ export class Sojourn {
                     attribs[attr.name] = attr.value;
                 });
 
-                const element = cloneNode(
-                    new Element(token.name, attribs, [])
-                );
+                const inputs: BoundAttribute[] = [];
+                token.inputs.forEach(input => {
+                    inputs.push({
+                        name: input.name, type: undefined, value: this.parse(input.value)
+                    })
+                })
+
+                const outputs: BoundEvent[] = [];
+                token.outputs.forEach(output => {
+                    outputs.push({
+                        handler: this.parse(output.value), name: output.name
+                    })
+                });
+
+                const references: Reference[] = []
+                token.references.forEach(reference => {
+                    references.push({name: reference.name, value: reference.value})
+                });
+
+                let element: Element | Template
+
+                if (token.name === "ng-template") {
+
+                    const templateAttrs: BoundAttribute[] = [];
+                    token.templateAttrs.forEach(attr => {
+                        templateAttrs.push({name: attr.name, type: undefined, value: this.parse(attr.value)})
+                    });
+
+                    const variables: Variable[] = []
+                    token.variables.forEach(variable => {
+                        variables.push(variable)
+                    });
+
+                    // create TemplateNode
+                    element = cloneNode(
+                        new Template(token.name, attribs, inputs, outputs, references, templateAttrs, variables, [])
+                    );
+
+                } else {
+                    element = cloneNode(
+                        new Element(token.name, attribs, inputs, outputs, references, [])
+                    );
+                }
 
                 const { children, closingIndex, selfClosing } =
                     this.findClosingTag(token, i, tokens);
@@ -151,6 +215,71 @@ export class Sojourn {
             selfClosing: false
         };
     }
+
+    private findTemplateSyntaxClosing(
+        token: TemplateSyntaxNode,
+        startIndex: number,
+        tokens: Token[]
+    ): ClosingResult {
+
+        const children: Token[] = [];
+        const name = token.name;
+
+        let depth = 0;
+
+        for (let i = startIndex + 1; i < tokens.length; i++) {
+
+            const current = tokens[i];
+
+            if (current.type !== "templateSyntax") {
+                children.push(current);
+                continue;
+            }
+
+            // same nested tag
+            if (current.startTag && current.name === name) {
+                depth++;
+                children.push(current);
+                continue;
+            }
+
+            // closing tag
+            if (current.endTag && current.name === name) {
+
+                if (depth === 0) {
+                    return {
+                        closingIndex: i,
+                        children,
+                        selfClosing: false
+                    };
+                }
+
+                depth--;
+                children.push(current);
+                continue;
+            }
+
+            children.push(current);
+        }
+
+        return {
+            closingIndex: undefined,
+            children,
+            selfClosing: false
+        };
+
+    }
+
+    parse(expr: string) {
+
+        const tokenizer = HTMLExpressionTokenizer.instance()
+        const tokens = tokenizer.tokenize(expr);
+
+        const parser = HTMLExpressionParser.instance(tokens)
+        return { ast: parser.start(), source: expr };
+
+    }
+
 }
 
 // export class SojournV2 {
