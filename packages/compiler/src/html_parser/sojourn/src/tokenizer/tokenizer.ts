@@ -8,7 +8,7 @@ const SVG_TAG_REWRITE: Record<string, string> = {
     foreignobject: 'foreignObject',
 };
 
-const templatesNodeNames = ["@if", "@for", /*"ng-else", "ng-else-if",*/ /* "ng-empty", "ng-case", */ "@switch" /*, "ng-default"*/, "@while"]
+const templatesNodeNames = ["@if", "@for", "@else", "@elseif", "@empty", "@case", "@switch", "@default", "@while"]
 
 export class Tokenizer {
 
