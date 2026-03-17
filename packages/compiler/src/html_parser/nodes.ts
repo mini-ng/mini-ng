@@ -1,4 +1,5 @@
 import {ASTWithSource, BoundAttribute, BoundEvent, Reference} from "./ast/ast";
+import {Variable} from "./sojourn/src/types/types";
 
 export enum ElementType {
     Root = "root",
@@ -300,14 +301,22 @@ interface Attribute {
  * An element within the DOM.
  */
 export class Element extends NodeWithChildren {
+
     /**
      * @param name Name of the tag, eg. `div`, `span`.
      * @param attribs Object mapping attribute names to attribute values.
+     * @param inputs
+     * @param outputs
+     * @param references
      * @param children Children of the node.
+     * @param type
      */
     constructor(
         public name: string,
         public attribs: { [name: string]: string },
+        public inputs: BoundAttribute[] = [],
+        public outputs: BoundEvent[] = [],
+        public references: Reference[] = [],
         children: ChildNode[] = [],
         public type:
             | ElementType.Tag
@@ -355,10 +364,6 @@ export class Element extends NodeWithChildren {
         }));
     }
 
-    inputs: BoundAttribute[];
-    outputs: BoundEvent[];
-    references: Reference[];
-
     /** Element namespace (parse5 only). */
     namespace?: string;
     /** Element attribute namespaces (parse5 only). */
@@ -371,13 +376,24 @@ export class Template extends NodeWithChildren {
     /**
      * @param name Name of the tag, eg. `div`, `span`.
      * @param attribs Object mapping attribute names to attribute values.
+     * @param inputs
+     * @param outputs
+     * @param references
+     * @param templateAttrs
+     * @param variables
      * @param children Children of the node.
+     * @param type
      */
     constructor(
         public name: string,
         public attribs: { [name: string]: string },
+        public inputs: BoundAttribute[] = [],
+        public outputs: BoundEvent[] = [],
+        public references: Reference[] = [],
+        public templateAttrs: BoundAttribute[] = [],
+        public variables: Variable[] = [],
         children: ChildNode[] = [],
-        public type: ElementType.Template,
+        public type: ElementType.Template = ElementType.Template,
     ) {
         super(children);
     }
@@ -416,18 +432,16 @@ export class Template extends NodeWithChildren {
         }));
     }
 
-    inputs: BoundAttribute[];
-    outputs: BoundEvent[];
-    references: Reference[];
-    templateAttrs: BoundAttribute[];
-    variables: BoundAttribute[];
-
     /** Element namespace (parse5 only). */
     namespace?: string;
     /** Element attribute namespaces (parse5 only). */
     "x-attribsNamespace"?: Record<string, string>;
     /** Element attribute namespace-related prefixes (parse5 only). */
     "x-attribsPrefix"?: Record<string, string>;
+}
+
+function isTemplate(node: Node): node is Template {
+    return node.type === ElementType.Template;
 }
 
 function isTagRaw(node: Node) {
@@ -519,7 +533,7 @@ export function cloneNode<T extends Node>(node: T, recursive = false): T {
         result = new Comment(node.data);
     } else if (isTag(node)) {
         const children = recursive ? cloneChildren(node.children) : [];
-        const clone = new Element(node.name, { ...node.attribs }, children);
+        const clone = new Element(node.name, { ...node.attribs }, node.inputs, node.outputs, node.references, children);
         children.forEach((child) => (child.parent = clone));
 
         if (node.namespace != null) {
@@ -563,6 +577,24 @@ export function cloneNode<T extends Node>(node: T, recursive = false): T {
     } else if (node.type === ElementType.Script) {
         return node;
     } else if (node.type === ElementType.BoundText) {
+    } else if (isTemplate(node)) {
+
+        const children = recursive ? cloneChildren(node.children) : [];
+        const clone = new Template(node.name, { ...node.attribs }, node.inputs, node.outputs, node.references, node.templateAttrs, node.variables, children);
+        children.forEach((child) => (child.parent = clone));
+
+        if (node.namespace != null) {
+            clone.namespace = node.namespace;
+        }
+        if (node["x-attribsNamespace"]) {
+            clone["x-attribsNamespace"] = { ...node["x-attribsNamespace"] };
+        }
+        if (node["x-attribsPrefix"]) {
+            clone["x-attribsPrefix"] = { ...node["x-attribsPrefix"] };
+        }
+
+        result = clone;
+
     } else {
         throw new Error(`Not implemented yet: ${node.type}`);
     }
