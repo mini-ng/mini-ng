@@ -478,6 +478,10 @@ export function isText(node: Node): node is Text {
     return node.type === ElementType.Text;
 }
 
+function isBoundText(node: Node): node is BoundText {
+    return node.type === ElementType.BoundText;
+}
+
 /**
  * Checks if `node` is a comment node.
  *
@@ -531,6 +535,8 @@ export function cloneNode<T extends Node>(node: T, recursive = false): T {
         result = new Text(node.data);
     } else if (isComment(node)) {
         result = new Comment(node.data);
+    }  else if (isBoundText(node)) {
+        result = new BoundText(node.data, node.value);
     } else if (isTag(node)) {
         const children = recursive ? cloneChildren(node.children) : [];
         const clone = new Element(node.name, { ...node.attribs }, node.inputs, node.outputs, node.references, children);
@@ -573,10 +579,9 @@ export function cloneNode<T extends Node>(node: T, recursive = false): T {
 
         result = instruction;
     } else if (node.type === ElementType.Style) {
-        return node
+        result = node
     } else if (node.type === ElementType.Script) {
-        return node;
-    } else if (node.type === ElementType.BoundText) {
+        result = node;
     } else if (isTemplate(node)) {
 
         const children = recursive ? cloneChildren(node.children) : [];
