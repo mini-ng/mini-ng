@@ -345,7 +345,7 @@ export class Tokenizer {
             if (char === "}" && templateSyntaxFoundNames && templateSyntaxCounter > 0) {
                 this.pushNodeToken(tokens, {
                     endTag: true,
-                    name: templateSyntaxFoundNames[0],
+                    name: templateSyntaxFoundNames[templateSyntaxFoundNames.length - 1],
                     startTag: false,
                     type: "templateSyntax",
                 });
@@ -402,7 +402,14 @@ export class Tokenizer {
 
     private processAttributes(attrString: string) {
 
-        if (!attrString) return {} as {attributes: Attribute[], inputs: Input[], outputs: Output[], references: Reference[], templateAttrs: TemplateAttr[], variables: Variable[]};
+        if (!attrString) return {
+            attributes: [],
+            templateAttrs: [],
+            inputs: [],
+            outputs: [],
+            references: [],
+            variables: []
+        } as {attributes: Attribute[], inputs: Input[], outputs: Output[], references: Reference[], templateAttrs: TemplateAttr[], variables: Variable[]};
 
         const parser = new AttributeParser(attrString);
         return parser.start();
@@ -411,10 +418,6 @@ export class Tokenizer {
     private pushNodeToken(tokens: Token[], token: Token) {
         token.name = this.rewriteTagExactDomName(token.name)
         tokens.push(token)
-    }
-
-    private processTemplateSyntaxExpression(expression: string) {
-
     }
 
     rewriteTagExactDomName(tag: string) {
