@@ -80,7 +80,9 @@ export class AttributeParser {
 
                 // we have an input
                 name = name.slice(1, -1);
-                inputs.push({ name, value });
+                // get type
+                const type = this.getInputType(name)
+                inputs.push({ name, value, type });
 
             } else if (name.startsWith("#")) {
 
@@ -90,7 +92,8 @@ export class AttributeParser {
             } else if (name.startsWith("*")) {
 
                 name = name.slice(1);
-                templateAttrs.push({name, value});
+                const type = this.getInputType(name)
+                templateAttrs.push({name, value, type});
 
             } else if (name.startsWith("let-")) {
 
@@ -117,6 +120,20 @@ export class AttributeParser {
 
     private isSpace(char?: string) {
         return char === " " || char === "\n" || char === "\t";
+    }
+
+    getInputType(input: string) {
+
+        if (input === "class") {
+            return "Class"
+        }
+
+        if (input === "style") {
+            return "Style"
+        }
+
+        return "Attribute"
+
     }
 
 }
