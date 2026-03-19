@@ -9,6 +9,7 @@ import {
     SequenceAST,
     // UnaryAst
 } from "../ast/ast";
+import {Call, Conditional, Identifier, Literal, True, Unary} from "../ast/ast-impl";
 
 // recursive descent parser
 // Binary
@@ -28,10 +29,6 @@ export class HTMLExpressionParser {
     private static _instance: HTMLExpressionParser;
 
     public static instance(tokens: Token[]) {
-
-        if (HTMLExpressionParser._instance) {
-            return HTMLExpressionParser._instance;
-        }
 
         return (HTMLExpressionParser._instance = new HTMLExpressionParser(tokens))
 
@@ -84,12 +81,13 @@ export class HTMLExpressionParser {
 
             const alternate = this.parseExpression();
 
-            expr = {
-                type: "Conditional",
-                test: expr,
-                consequent,
-                alternate
-            };
+            const conditional = new Conditional();
+            conditional.alternate = alternate;
+            conditional.consequent = consequent;
+            conditional.test = expr
+
+            expr = conditional;
+
         }
 
         return expr;
@@ -186,11 +184,11 @@ export class HTMLExpressionParser {
 
             const argument = this.parseUnary();
 
-            return {
-                type: "Unary",
-                operator,
-                argument
-            };
+            const unary = new Unary()
+            unary.operator = operator;
+            unary.argument = argument;
+
+            return unary;
         }
 
         return this.parseLHS();
@@ -216,11 +214,12 @@ export class HTMLExpressionParser {
 
                 this.consumeType(TokenType.RIGHT_PAREN, "Expected ')'");
 
-                expr = {
-                    type: "Call",
-                    callee: expr,
-                    args
-                };
+                const call = new Call()
+                call.callee = expr;
+                call.args = args
+
+                expr = call;
+
             }
 
             // property access
@@ -274,34 +273,28 @@ export class HTMLExpressionParser {
         const token = this.peek();
 
         if (this.match(TokenType.IDENTIFIER)) {
-            return {
-                type: "Identifier",
-                name: token.value
-            };
+            const identifier = new Identifier();
+            identifier.name = token.value;
+            return identifier
         }
 
         if (this.match(TokenType.STRING)) {
-            return {
-                type: "Literal",
-                valueType: LiteralAstType.STRING,
-                value: token.value
-            };
+            const literal = new Literal()
+            literal.value = token.value;
+            literal.valueType = LiteralAstType.STRING;
+
+            return literal;
         }
 
         if (this.match(TokenType.NUMBER)) {
-            return {
-                type: "Literal",
-                valueType: LiteralAstType.NUMBER,
-                value: token.value
-            };
+            const literal = new Literal()
+            literal.value = token.value;
+            literal.valueType = LiteralAstType.NUMBER;
+            return literal;
         }
 
         if (this.match(TokenType.BOOL)) {
-            return {
-                type: "Literal",
-                valueType: LiteralAstType.BOOLEAN,
-                value: token.value
-            };
+            return new True();
         }
 
         if (this.match(TokenType.LEFT_PAREN)) {
@@ -316,7 +309,8 @@ export class HTMLExpressionParser {
             };
         }
 
-        throw new Error("Expected expression.");
+        console.log(this.tokens)
+        throw new Error("Expected expression." + this.peek().value.toString());
     }
 
     match(type: TokenType): boolean {

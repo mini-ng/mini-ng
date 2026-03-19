@@ -1,6 +1,7 @@
 import ts = require("typescript");
 import { ViewGenerator } from "./view_generator";
 import {factory} from "typescript";
+import {HtmlAstVisitor, HtmlAstVisitorImpl} from "../html_parser/ast/html-ast";
 
 const parseConfig = {
   lowerCaseTagName: false, // convert tag name to lower case (hurts performance heavily)
@@ -48,7 +49,10 @@ export class Parser {
     const html = this.template;
 
     const generator = new ViewGenerator();
-    const { stmts, updateStmts, consts, templateStmts, outsideStatements } = generator.generateViewCode(html);
+    const htmlVisitor = new HtmlAstVisitorImpl();
+    const { stmts, updateStmts, consts, templateStmts, outsideStatements } = htmlVisitor.generateView(html);
+
+    // const { stmts, updateStmts, consts, templateStmts, outsideStatements } = generator.generateViewCode(html);
 
 
    const creationNode = ts.factory.createIfStatement(
