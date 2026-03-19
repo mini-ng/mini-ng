@@ -29,7 +29,7 @@ export function generateElementStartNode(
         ts.factory.createStringLiteral(element),
     ];
 
-    if (attrsIndex !== undefined && attrsIndex >= 0) {
+    if (attrsIndex !== null && attrsIndex !== undefined && attrsIndex >= 0) {
         params.push(ts.factory.createNumericLiteral(attrsIndex));
     }
 
