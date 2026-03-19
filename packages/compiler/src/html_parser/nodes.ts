@@ -1,5 +1,12 @@
-import {ASTWithSource, BoundAttribute, BoundEvent, Reference} from "./ast/ast";
-import {Variable} from "./sojourn/src/types/types";
+import {ASTWithSource} from "./ast/ast";
+import {
+    BoundAttribute,
+    BoundEvent,
+    HtmlAstExpression,
+    HtmlAstVisitor,
+    HtmlReference,
+    HtmlVariable
+} from "./ast/html-ast";
 
 export enum ElementType {
     Root = "root",
@@ -59,7 +66,7 @@ export type AnyNode = ParentNode | ChildNode;
  * This object will be used as the prototype for Nodes when creating a
  * DOM-Level-1-compliant structure.
  */
-export abstract class Node {
+export abstract class Node implements HtmlAstExpression {
     /** The type of the node. */
     abstract readonly type: ElementType;
 
@@ -140,6 +147,9 @@ export abstract class Node {
     cloneNode<T extends Node>(this: T, recursive = false): T {
         return cloneNode(this, recursive);
     }
+
+    accept(visitor: HtmlAstVisitor) {
+    }
 }
 
 /**
@@ -175,6 +185,10 @@ export class Text extends DataNode {
     get nodeType(): 3 {
         return 3;
     }
+
+    accept(visitor: HtmlAstVisitor) {
+        visitor.visitText(this)
+    }
 }
 
 export class BoundText extends DataNode {
@@ -187,6 +201,10 @@ export class BoundText extends DataNode {
         super(data);
     }
 
+    accept(visitor: HtmlAstVisitor) {
+        visitor.visitBoundText(this)
+    }
+
 }
 
 /**
@@ -197,6 +215,10 @@ export class Comment extends DataNode {
 
     get nodeType(): 8 {
         return 8;
+    }
+
+    accept(visitor: HtmlAstVisitor) {
+        visitor.visitComment(this)
     }
 }
 
@@ -297,6 +319,22 @@ interface Attribute {
     prefix?: string;
 }
 
+export class AttributeNode implements HtmlAstExpression {
+
+    constructor(
+        public name: string,
+        public value: string,
+        public namespace?: string,
+        public prefix?: string,
+    ) {
+    }
+
+    accept(visitor: HtmlAstVisitor) {
+        visitor.visitAttribute(this)
+    }
+
+}
+
 /**
  * An element within the DOM.
  */
@@ -316,7 +354,7 @@ export class Element extends NodeWithChildren {
         public attribs: { [name: string]: string },
         public inputs: BoundAttribute[] = [],
         public outputs: BoundEvent[] = [],
-        public references: Reference[] = [],
+        public references: HtmlReference[] = [],
         children: ChildNode[] = [],
         public type:
             | ElementType.Tag
@@ -370,6 +408,20 @@ export class Element extends NodeWithChildren {
     "x-attribsNamespace"?: Record<string, string>;
     /** Element attribute namespace-related prefixes (parse5 only). */
     "x-attribsPrefix"?: Record<string, string>;
+
+    get attributeNodes() {
+
+        const attrs = this.attributes
+
+        return attrs.map((attr) => {
+            return new AttributeNode(attr.name, attr.value, attr.namespace, attr.prefix);
+        })
+
+    }
+
+    accept(visitor: HtmlAstVisitor) {
+        visitor.visitElement(this)
+    }
 }
 
 export class Template extends NodeWithChildren {
@@ -389,9 +441,9 @@ export class Template extends NodeWithChildren {
         public attribs: { [name: string]: string },
         public inputs: BoundAttribute[] = [],
         public outputs: BoundEvent[] = [],
-        public references: Reference[] = [],
+        public references: HtmlReference[] = [],
         public templateAttrs: BoundAttribute[] = [],
-        public variables: Variable[] = [],
+        public variables: HtmlVariable[] = [],
         children: ChildNode[] = [],
         public type: ElementType.Template = ElementType.Template,
     ) {
@@ -438,6 +490,10 @@ export class Template extends NodeWithChildren {
     "x-attribsNamespace"?: Record<string, string>;
     /** Element attribute namespace-related prefixes (parse5 only). */
     "x-attribsPrefix"?: Record<string, string>;
+
+    accept(visitor: HtmlAstVisitor) {
+        visitor.visitTemplate(this)
+    }
 }
 
 function isTemplate(node: Node): node is Template {
