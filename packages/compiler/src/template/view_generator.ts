@@ -1,5 +1,5 @@
 import {parseDocument} from "../html_parser/html_parser";
-import {Element, Node, Text} from "../html_parser/nodes";
+import {BoundText, Element, Node, Template, Text} from "../html_parser/nodes";
 import {factory, SourceFile} from "typescript";
 import {ExpressionParser} from "../expr_parser/expr_parser";
 import {AttributeMarker} from "./attribute_marker";
@@ -27,15 +27,23 @@ import {ElementType} from "domelementtype";
 import {replaceCustomDirectivesAndPipes} from "../expr_parser/html_string_to_template_ast";
 import ts = require("typescript");
 import {forTrackByParser} from "./for_track_by_parser";
+import {ForLoopBlock, IfBlock, SwitchNode} from "../html_parser/syntax-ast";
+import {
+  generateAdvanceNode, generateConditionalNode,
+  generateElementEndNode,
+  generateElementStartNode,
+  generateListenerNode, generatePipeNode,
+  generateProjection,
+  generateProjectionDef,
+  generatePropertyNode, generateRepeaterCreateNode,
+  generateTemplateNode,
+  generateTextInterpolateNode,
+  generateTextNode,
+  generateTextStyleNode, generateUpdateRepeaterNode, InterpolationType, parseMicroSyntax
+} from "../node-generation/node-generation";
 
 export interface ViewGeneratorOptions {
   cmpDirNode: ts.Node
-}
-
-type InterpolationType = {
-  type: 'text' | 'expression' | 'statement',
-  statement?: ts.ExpressionStatement;
-  content?: string
 }
 
 const templatesNodeNames = ["ng-if", "ng-for", /*"ng-else", "ng-else-if",*/ /* "ng-empty", "ng-case", */ "ng-switch" /*, "ng-default"*/, "ng-while", "ng-template", "ng-for-empty"]
@@ -46,11 +54,11 @@ const SVG_TAG_REWRITE: Record<string, string> = {
   foreignobject: 'foreignObject',
 };
 
-export type Template = {
+export type TemplateStmt = {
   functionName: string;
   updateStmts: ts.ExpressionStatement[],
   stmts: ts.ExpressionStatement[],
-  templateStmts: Template[]
+  templateStmts: TemplateStmt[]
 }
 
 export class ViewGenerator {
@@ -58,13 +66,14 @@ export class ViewGenerator {
 
   private readonly stmts: ts.ExpressionStatement[] = [];
   private readonly updateStmts: ts.ExpressionStatement[] = [];
-  private readonly templateStmts: Template[] = []
+  private readonly templateStmts: TemplateStmt[] = []
   private consts: ts.Expression[] = [];
   private readonly outsideStatements: ts.Statement[] = [];
   private slot = 0;
   private index = 0;
   private readonly implicitVariables = []
   private skipNode: number  = -1;
+  private ngContents = []
 
   constructor(options?: ViewGeneratorOptions) {
     this.options = options;
@@ -90,6 +99,11 @@ export class ViewGenerator {
 
     }
 
+    // push projectionDef to top
+    if (!this.ngContents.length) {
+      this.stmts.unshift(generateProjectionDef([]))
+    }
+
     return {
       stmts: this.stmts,
       updateStmts: this.updateStmts,
@@ -106,7 +120,9 @@ export class ViewGenerator {
 
     let index = this.slot++;
 
-    if (node instanceof Element) {
+    if (node instanceof Template) {
+
+    } else if (node instanceof Element) {
       const tag = node.tagName;
 
       if (this.isElementContainingStructuralDirectives(node)) {
@@ -121,7 +137,22 @@ export class ViewGenerator {
         return this.processPipe(node, index)
       }
 
+      if (tag === "ng-content") {
+        return this.processNgContent(node, index)
+      }
+
       return this.processElement(node, index);
+
+    } else if (node instanceof ForLoopBlock) {
+
+    } else if (node instanceof IfBlock) {
+
+    } else if (node instanceof SwitchNode) {
+
+    } else if (node instanceof BoundText) {
+
+      // generateTextInterpolateNode()
+
     } else if (node instanceof Text) {
       return this.processText(node, index);
     } else {
@@ -142,25 +173,7 @@ export class ViewGenerator {
 
     const { attrIndex, tempStmts, localRefIndex } = this.processAttributes(tag, index, attributes)
 
-    this.stmts.push(generateElementStartNode(index, tag, /* Object.keys(attributes).length == 0 ? null : index + 1,*/ attrIndex, localRefIndex), ...tempStmts);
-
-    // Process children
-    // let childIndex = index + 1;
-    // element.childNodes.forEach((childNode, idx) => {
-    //
-    //   if (tag === "style") {
-    //     const cssParser = new CSSParser();
-    //     (childNode as Text).data = cssParser.parsePostCSS((childNode as Text).data.trim())
-    //   }
-    //
-    //   const { creation: childCreation, update: childUpdate } = this.processNode(
-    //     childNode,
-    //     childIndex + idx
-    //   );
-    //   creation += childCreation;
-    //   update += childUpdate;
-    //   childIndex += idx + 1;
-    // });
+    this.stmts.push(generateElementStartNode(index, tag, attrIndex, localRefIndex), ...tempStmts);
 
     const viewGenerator = new ViewGenerator();
     viewGenerator.slot = this.slot;
@@ -339,6 +352,16 @@ export class ViewGenerator {
     return { tempStmts, attrIndex, implicitVariables, localNames, localRefIndex }
 
   }
+
+  processInputs(tag: string) {}
+
+  processOutputs(tag: string) {}
+
+  processReferences(tag: string) {}
+
+  processTemplateAttrs(tag: string) {}
+
+  processVariables(tag: string) {}
 
   parseInterpolations(input: string): Array<InterpolationType> {
     const regex = /{{(.*?)}}|([^{{}}]+)/g;
@@ -779,6 +802,16 @@ export class ViewGenerator {
     return {creation: "", update: ""};
   }
 
+  private processNgContent(node: Element, index: number) {
+
+    this.ngContents.push(node);
+
+    this.stmts.push(generateProjection(index))
+
+    return null;
+
+  }
+
   setImplicitVariables(variableName: string, parentImplicitVariables: string[]) {
     this.implicitVariables.push(parentImplicitVariables);
     this.implicitVariables.push(variableName);
@@ -867,16 +900,16 @@ export class ViewGenerator {
 
     node.attribs = attribs;
 
-    const templateAttribs = this.parseMicroSyntax(directiveName, directiveValue)
+    const templateAttribs = parseMicroSyntax(directiveName, directiveValue)
 
-    const templateElement = new Element(
+    const templateElement = null /*new Element(
         "ng-template",
         templateAttribs,
         [
             node
         ],
         ElementType.Tag
-    );
+    )*/;
 
     templateElement.next = node.next
     templateElement.prev = node.prev
@@ -931,451 +964,6 @@ export class ViewGenerator {
 
   }
 
-  // | Keyword   | Becomes          |
-  // | --------- | ---------------- |
-  // | `of`      | prefix + Of      |
-  // | `trackBy` | prefix + TrackBy |
-  // | `when`    | prefix + When    |
-  // | `else`    | prefix + Else    |
-  // | Part           | Meaning           |
-  // | -------------- | ----------------- |
-  // | `tpl`          | main expression   |
-  // | `context: ctx` | secondary binding |
-
-  parseMicroSyntax(directiveName: string, directiveValue: string) {
-
-    const attribs = {}
-
-    if (directiveValue.startsWith("let ")) {
-      // this is a Of
-
-      const parts = directiveValue.split(";")
-      const forOfPart = parts[0];
-
-      const forOfParts = forOfPart.split(" ").map(part => part.trim())
-
-      if (forOfParts.length < 4) {
-        throw new Error("This attribute must be in the format: let user of users");
-      }
-
-      const letOf = forOfParts[0];
-      const iterOf = forOfParts[1];
-      const arrayOf = forOfParts[3];
-
-      if (letOf !== "let") throw new Error("This attribute must be in the format: let user of users");
-
-      attribs["let-" + iterOf] = "";
-      attribs["[" + directiveName + "Of]"] = arrayOf;
-      attribs["" + directiveName + ""] = ""
-
-      return attribs
-
-    }
-
-    if (directiveValue.split(";").length > 1) {
-
-
-      // prefix secondary bindings with directive name.
-
-      directiveValue.split(";").forEach(part => {
-        part = part.trim();
-
-        if (part.startsWith("context") && part.split(":").length > 1) {
-          attribs["[" + directiveName + "Context]"] = part.split(":")[1];
-        } else {
-          attribs["[" + directiveName + "]"] = part.trim();
-        }
-
-      })
-
-      return attribs;
-
-    }
-
-    attribs["[" + directiveName + "]"] = directiveValue;
-
-    return attribs;
-
-  }
-
-}
-
-function generateElementStartNode(
-  index: number,
-  element: string,
-  attrsIndex?: number,
-  localRefIndex?: number,
-) {
-  const params = [
-    ts.factory.createNumericLiteral(index),
-    ts.factory.createStringLiteral(element),
-  ];
-
-  if (attrsIndex !== undefined && attrsIndex >= 0) {
-    params.push(ts.factory.createNumericLiteral(attrsIndex));
-  }
-
-  if (localRefIndex) {
-    params.push(ts.factory.createNumericLiteral(localRefIndex));
-  }
-
-  return ts.factory.createExpressionStatement(
-    ts.factory.createCallExpression(
-      ts.factory.createPropertyAccessExpression(
-        ts.factory.createIdentifier(i0),
-        ts.factory.createIdentifier(ɵɵelementStart)
-      ),
-      undefined,
-      params
-    )
-  );
-}
-
-function generateElementEndNode() {
-  return ts.factory.createExpressionStatement(
-    ts.factory.createCallExpression(
-      ts.factory.createPropertyAccessExpression(
-        ts.factory.createIdentifier(i0),
-        ts.factory.createIdentifier(ɵɵelementEnd)
-      ),
-      undefined,
-      []
-    )
-  );
-}
-
-function generateTextNode(index: number, text?: string) {
-  const params: ts.Expression[] = [
-    ts.factory.createNumericLiteral(index),
-  ];
-
-  if (text) {
-    params.push(ts.factory.createStringLiteral(text));
-  }
-
-  return ts.factory.createExpressionStatement(
-    ts.factory.createCallExpression(
-      ts.factory.createPropertyAccessExpression(
-        ts.factory.createIdentifier(i0),
-        ts.factory.createIdentifier(ɵɵtext)
-      ),
-      undefined,
-      params
-    )
-  );
-}
-
-function generatePipeNode(index: number, text: string) {
-  const params: ts.Expression[] = [
-    ts.factory.createNumericLiteral(index),
-    ts.factory.createStringLiteral(text),
-  ];
-
-  return ts.factory.createExpressionStatement(
-      ts.factory.createCallExpression(
-          ts.factory.createPropertyAccessExpression(
-              ts.factory.createIdentifier(i0),
-              ts.factory.createIdentifier(ɵɵpipe)
-          ),
-          undefined,
-          params
-      )
-  );
-}
-
-function generateTextStyleNode(index: number, text?: string) {
-
-  const params: ts.Expression[] = [
-    ts.factory.createNumericLiteral(index),
-  ];
-
-  if (text) {
-    params.push(ts.factory.createStringLiteral(text));
-  }
-
-  return ts.factory.createExpressionStatement(
-      ts.factory.createCallExpression(
-          ts.factory.createPropertyAccessExpression(
-              ts.factory.createIdentifier(i0),
-              ts.factory.createIdentifier(ɵɵtextStyle)
-          ),
-          undefined,
-          params
-      )
-  );
-}
-
-function generateListenerNode(eventName: string, tag: string, index: number, handler: string) {
-  return ts.factory.createExpressionStatement(
-    ts.factory.createCallExpression(
-      ts.factory.createPropertyAccessExpression(
-        ts.factory.createIdentifier(i0),
-        ts.factory.createIdentifier(ɵɵlistener)
-      ),
-      undefined,
-      [
-        ts.factory.createStringLiteral(eventName),
-        ts.factory.createArrowFunction(
-          undefined,
-          undefined,
-          [ts.factory.createParameterDeclaration(
-              undefined, undefined, ts.factory.createIdentifier($event), undefined, undefined, undefined
-          )],
-          undefined,
-          ts.factory.createToken(ts.SyntaxKind.EqualsGreaterThanToken),
-          ts.factory.createBlock(
-              [
-                ts.factory.createReturnStatement(
-                        ts.factory.createPropertyAccessExpression(
-                            ts.factory.createIdentifier(ctx),
-                            ts.factory.createIdentifier(handler)
-                        )
-                )
-              ]
-          )
-        )
-      ]
-    )
-  )
-}
-
-function generatePropertyNode(propertyName: string, value: string, implicitVariables: string[]) {
-
-  const exprParser = new ExpressionParser();
-  const transformedNode = exprParser.parse(value, implicitVariables);
-
-  return ts.factory.createExpressionStatement(
-        ts.factory.createCallExpression(
-        ts.factory.createPropertyAccessExpression(
-            ts.factory.createIdentifier(i0),
-            ts.factory.createIdentifier(ɵɵproperty)
-        ),
-        undefined,
-        [
-            ts.factory.createStringLiteral(propertyName),
-            // @ts-ignore
-            transformedNode.statements[0].expression
-            // ts.factory.createStringLiteral(value)
-        ]
-        )
-    )
-}
-
-function generateAdvanceNode(index: string) {
-  return factory.createExpressionStatement(factory.createCallExpression(
-      factory.createPropertyAccessExpression(
-          factory.createIdentifier(i0),
-          ɵɵadvance
-      ), undefined,
-      [
-          factory.createIdentifier(index)
-      ]
-  ))
-}
-
-function generateTextInterpolateNode(bindingExpressions: InterpolationType[], implicitVariables: string[]) {
-
-  const exprParser = new ExpressionParser();
-
-  const bindingExpressionStmts = bindingExpressions.map((binding) => {
-    if (binding.type === 'text') {
-      return factory.createStringLiteral(binding.content)
-    } else if (binding.type === 'expression') {
-      const transformedNode = exprParser.parse(binding.content, implicitVariables);
-      // @ts-ignore
-      return transformedNode.statements[0].expression;
-    } else if (binding.type === 'statement') {
-      return binding.statement
-    }
-  }).filter(Boolean)
-
-    // @ts-ignore
-  const expressionStatement = factory.createExpressionStatement(factory.createCallExpression(
-        factory.createPropertyAccessExpression(
-            factory.createIdentifier(i0),
-            ɵɵtextInterpolate
-        ), undefined,
-        // @ts-ignore
-        [
-            // @ts-ignore
-          ...bindingExpressionStmts
-        ]
-    ))
-    return expressionStatement
-}
-
-function generateTemplateNode(
-    index: number,
-    functionName: string,
-    templateName: string,
-    attrsIndex?: number | null,
-    localRefsIndex?: number | null
-) {
-
-  const nodeArguments = [
-    ts.factory.createNumericLiteral(index),
-    ts.factory.createIdentifier(functionName),
-    ts.factory.createStringLiteral(templateName)
-  ];
-
-  if (attrsIndex) {
-    nodeArguments.push(
-        ts.factory.createNumericLiteral(index)
-    )
-  }
-
-  if (localRefsIndex) {
-    nodeArguments.push(ts.factory.createNumericLiteral(localRefsIndex))
-  }
-
-  return ts.factory.createExpressionStatement(
-      ts.factory.createCallExpression(
-          ts.factory.createPropertyAccessExpression(
-              ts.factory.createIdentifier(i0),
-              ts.factory.createIdentifier(ɵɵtemplate)
-          ),
-          undefined,
-          nodeArguments
-      )
-  )
-}
-
-function generateConditionalNode(conditionals: any[], containerIndex: number) {
-
-  const exprParser = new ExpressionParser();
-
-  let expr: ts.Expression
-
-  if (conditionals.length == 1) {
-
-    const condition = conditionals[0];
-
-    const conditionExpr =
-        // @ts-ignore
-        exprParser.parse(condition.attributeValue).statements[0].expression;
-
-    expr = ts.factory.createConditionalExpression(
-        conditionExpr,
-        ts.factory.createToken(ts.SyntaxKind.QuestionToken),
-        // @ts-ignore
-        exprParser.parse(condition.slotIndex.toString()).statements[0].expression,
-        ts.factory.createToken(ts.SyntaxKind.ColonToken),
-        ts.factory.createNumericLiteral("-1")
-    );
-  } else {
-
-    for (let i = conditionals.length - 1; i >= 0; i--) {
-
-      const { type, slotIndex, attributeValue } = conditionals[i];
-      const conditionType = type
-
-      if (conditionType === 'else') {
-        // @ts-ignore
-        expr = exprParser.parse(slotIndex.toString()).statements[0].expression;
-        continue
-      }
-
-      if (conditionType === 'elseif') {
-
-        const conditionExpr =
-            // @ts-ignore
-            exprParser.parse(attributeValue).statements[0].expression;
-
-        expr = ts.factory.createConditionalExpression(
-            conditionExpr,
-            ts.factory.createToken(ts.SyntaxKind.QuestionToken),
-            // @ts-ignore
-            exprParser.parse(slotIndex.toString()).statements[0].expression,
-            ts.factory.createToken(ts.SyntaxKind.ColonToken),
-            expr
-        );
-        continue
-      }
-
-      if (conditionType === 'if') {
-
-        const conditionExpr =
-            // @ts-ignore
-            exprParser.parse(attributeValue).statements[0].expression;
-
-        expr = ts.factory.createConditionalExpression(
-            conditionExpr,
-            ts.factory.createToken(ts.SyntaxKind.QuestionToken),
-            // @ts-ignore
-            exprParser.parse(slotIndex.toString()).statements[0].expression, // must be ts.Expression
-            ts.factory.createToken(ts.SyntaxKind.ColonToken),
-            expr
-        );
-
-      }
-
-    }
-
-  }
-
-  const containerEndIndex = containerIndex + conditionals.length - 1
-
-  return ts.factory.createExpressionStatement(
-      ts.factory.createCallExpression(
-          ts.factory.createPropertyAccessExpression(
-              ts.factory.createIdentifier(i0),
-              ts.factory.createIdentifier(ɵɵconditional)
-          ),
-          undefined,
-          [
-            ts.factory.createNumericLiteral(containerIndex),
-            ts.factory.createNumericLiteral(containerEndIndex),
-              expr
-          ]
-      )
-  );
-}
-
-function generateRepeaterCreateNode(node: Element, slotIndex: number, functionName: string, emptyTemplateFnName: string, trackBy?: string, ɵɵrepeaterTrackByIdentity?, trackByFunctionName?: string) {
-  const trackByFnNode = trackBy ? trackByFunctionName ? ts.factory.createIdentifier(trackByFunctionName) : factory.createPropertyAccessExpression(
-      factory.createIdentifier("i0"),
-      factory.createIdentifier("ɵɵrepeaterTrackByIdentity")
-  ) : ts.factory.createNull();
-
-  return ts.factory.createExpressionStatement(
-      ts.factory.createCallExpression(
-          ts.factory.createPropertyAccessExpression(
-              ts.factory.createIdentifier(i0),
-              ts.factory.createIdentifier(ɵɵrepeaterCreate)
-          ), undefined,
-          [
-            ts.factory.createNumericLiteral(slotIndex),
-            ts.factory.createIdentifier(functionName),
-            ts.factory.createNumericLiteral(0),
-            ts.factory.createNumericLiteral(0),
-            ts.factory.createStringLiteral(node.tagName),
-            ts.factory.createNull(),
-            trackByFnNode, // trackByFn
-            ts.factory.createNull(),
-            emptyTemplateFnName ? ts.factory.createIdentifier(emptyTemplateFnName) : ts.factory.createNull(),
-            ts.factory.createNull(),
-            ts.factory.createNull(),
-            emptyTemplateFnName ? ts.factory.createStringLiteral("ng-for-empty") : ts.factory.createNull(),
-            ts.factory.createNull(),
-          ]
-      )
-  )
-}
-
-function generateUpdateRepeaterNode(exprParserSourceFile: SourceFile) {
-  return ts.factory.createExpressionStatement(
-      ts.factory.createCallExpression(
-          ts.factory.createPropertyAccessExpression(
-              ts.factory.createIdentifier(i0),
-              ts.factory.createIdentifier(ɵɵrepeater)
-          ),
-          undefined,
-          [
-            // @ts-ignore
-            exprParserSourceFile.statements[0].expression
-          ]
-      )
-  )
 }
 
 function findNgForEmpty(node: Element) {
