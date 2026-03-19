@@ -2,7 +2,17 @@ import {NodeToken, TemplateSyntaxNode, Token, Variable} from "../types/types";
 import {BoundText, cloneNode, Document, Element, Template, Text} from "../../../nodes";
 import {HTMLExpressionParser} from "../../../expression_parser/parser";
 import {HTMLExpressionTokenizer} from "../../../expression_parser/expr_tokenizer";
-import {BoundAttribute, BoundEvent, Reference} from "../../../ast/ast";
+import {
+    CaseNode,
+    DefaultNode,
+    ElseBlock, ElseIfBlock,
+    ForLoopBlock,
+    ForLoopBlockEmpty,
+    IfBlock,
+    SwitchNode
+} from "../../../syntax-ast";
+import {parseMicroSyntax} from "../../../../node-generation/node-generation";
+import {BoundAttribute, BoundEvent, HtmlReference, HtmlVariable} from "../../../ast/html-ast";
 
 interface ClosingResult {
     closingIndex?: number;
@@ -21,6 +31,7 @@ export class Sojourn {
         return doc;
     }
 
+    // 🔥, here we walk 🚶🏼
     private walk(tokens: Token[], parent?: any) {
 
         const nodes: any[] = [];
@@ -70,6 +81,180 @@ export class Sojourn {
                 const { children, closingIndex, selfClosing } =
                     this.findTemplateSyntaxClosing(token, i, tokens);
 
+                if (closingIndex !== undefined) {
+                    i = closingIndex;
+                }
+
+                // if template syntax is @for, check for @empty
+                if (token.name === "@for") {
+
+                    let forNode = new ForLoopBlock(null, null, null, null, [], null);
+                    this.parseForNode(forNode, token);
+
+                    let emptyNode;
+
+                    for (let j = closingIndex + 1; j < tokens.length; j++) {
+
+                        const current = tokens[j];
+                        // if empty text, we skip
+                        // if next non-empty text is node and not @empty node we return immediately
+
+                        if (current.type === "text" && current.name.trim().length == 0) {
+                            continue;
+                        }
+
+                        if (current.type === "templateSyntax" && current.name === "@empty" && current.startTag) {
+
+                            emptyNode = new ForLoopBlockEmpty([]);
+
+                            // walk for empty
+                            const {
+                                children: emptyChildren,
+                                closingIndex: emptyClosingIndex
+                            } = this.findTemplateSyntaxClosing(current, j, tokens);
+
+                            forNode.empty = emptyNode;
+
+                            if (emptyChildren.length) {
+                                emptyNode.children = this.walk(emptyChildren, emptyNode);
+                                emptyNode.childNodes = emptyNode.children
+                            }
+
+                            // move i forward so @empty is not reprocessed
+                            i = emptyClosingIndex + 1;
+                            break;
+
+                        } else break
+                    }
+
+                    if (!selfClosing && children.length) {
+                        forNode.children = this.walk(children, forNode);
+                        forNode.childNodes = forNode.children
+                    }
+
+                    nodes.push(forNode);
+                }
+
+                // @switch will have @case(s) and @default as children
+                if (token.name === "@switch") {
+
+                    // @case(s) and @default will be children
+                    const cases = []
+                    const switchNode = new SwitchNode([], null, cases, null)
+
+                    const expr = this.parse(token.expression)
+                    switchNode.expression = expr
+
+                    if (children.length) {
+
+                        switchNode.children = this.walk(children, switchNode);
+                        switchNode.childNodes = switchNode.children
+
+                        switchNode.childNodes.forEach(child => {
+                            if (child instanceof CaseNode) {
+                                cases.push(child);
+                            } else if (child instanceof DefaultNode) {
+                                switchNode.defaultNode = child
+                            } else {
+                                throw new Error("Invalid node in @switch.")
+                            }
+                        })
+                    }
+
+                    switchNode.cases = cases
+
+                    nodes.push(switchNode)
+                    continue
+
+                }
+
+                if (token.name === "@case") {
+                    const caseNode = new CaseNode([], null);
+                    const expr = this.parse(token.expression)
+                    caseNode.expression = expr
+
+                    if (children.length) {
+                        caseNode.children = this.walk(children, caseNode);
+                        caseNode.childNodes = caseNode.children
+                    }
+
+                    nodes.push(caseNode);
+                    continue;
+
+                }
+
+                if (token.name === "@default") {
+                    const defaultNode = new DefaultNode([]);
+
+                    if (children.length) {
+                        defaultNode.children = this.walk(children, defaultNode);
+                        defaultNode.childNodes = defaultNode.children
+                    }
+
+                    nodes.push(defaultNode);
+                    continue;
+
+                }
+
+                // @if, next node maybe @elseif(s) or @else
+                if (token.name === "@if") {
+
+                    // search for @elseif(s) and @else
+                    const expr = this.parse(token.expression)
+                    const ifNode = new IfBlock(expr, [], null, null);
+                    const elseIfs: ElseIfBlock[] = []
+
+                    for (let j = closingIndex + 1; j < tokens.length; j++) {
+
+                        const current = tokens[j];
+
+                        // if empty text, we skip
+                        // if next non-empty text is node and not @elseif or @else node we return immediately
+
+                        if (current.type === "text" && current.name.trim().length == 0) {
+                            continue;
+                        }
+
+                        if (current.type === "templateSyntax" && (current.name === "@elseif" || current.name === "@else") && current.startTag) {
+
+                            const elseOrElseIfNode: ElseBlock | IfBlock = current.name === "@elseif" ? new ElseIfBlock(null, []) : new ElseBlock(null, []);
+
+                            const {
+                                children: elseChildren,
+                                closingIndex: elseClosingIndex
+                            } = this.findTemplateSyntaxClosing(current, j, tokens);
+
+                            if (elseChildren.length) {
+                                elseOrElseIfNode.children = this.walk(elseChildren, elseOrElseIfNode);
+                                elseOrElseIfNode.childNodes = elseOrElseIfNode.children
+                            }
+
+                            const expr = this.parse(token.expression)
+                            elseOrElseIfNode.expression = expr
+
+                            if (elseOrElseIfNode instanceof ElseIfBlock) {
+                                elseIfs.push(elseOrElseIfNode)
+                            } else {
+                                ifNode.elseBranch = elseOrElseIfNode
+                            }
+
+                            i = elseClosingIndex + 1;
+                            j = i;
+
+                        } else break
+                    }
+
+                    if (!selfClosing && children.length) {
+                        ifNode.children = this.walk(children, ifNode);
+                        ifNode.childNodes = ifNode.children
+                    }
+
+                    ifNode.branches = elseIfs
+
+                    nodes.push(ifNode)
+
+                }
+
                 continue;
 
             }
@@ -85,21 +270,22 @@ export class Sojourn {
 
                 const inputs: BoundAttribute[] = [];
                 token.inputs.forEach(input => {
-                    inputs.push({
-                        name: input.name, type: undefined, value: this.parse(input.value)
-                    })
+                    // check if the attribute is "Property" | "Attribute" | "Class" | "Style"
+                    inputs.push(new BoundAttribute(
+                        input.type, input.name, this.parse(input.value), undefined
+                    ))
                 })
 
                 const outputs: BoundEvent[] = [];
                 token.outputs.forEach(output => {
-                    outputs.push({
-                        handler: this.parse(output.value), name: output.name
-                    })
+                    outputs.push( new BoundEvent(
+                        output.name, this.parse(output.value),
+                ))
                 });
 
-                const references: Reference[] = []
+                const references: HtmlReference[] = []
                 token.references.forEach(reference => {
-                    references.push({name: reference.name, value: reference.value})
+                    references.push(new HtmlReference(reference.name, reference.value))
                 });
 
                 let element: Element | Template
@@ -108,12 +294,12 @@ export class Sojourn {
 
                     const templateAttrs: BoundAttribute[] = [];
                     token.templateAttrs.forEach(attr => {
-                        templateAttrs.push({name: attr.name, type: undefined, value: this.parse(attr.value)})
+                        templateAttrs.push(new BoundAttribute(attr.type, attr.name, this.parse(attr.value), undefined))
                     });
 
-                    const variables: Variable[] = []
+                    const variables: HtmlVariable[] = []
                     token.variables.forEach(variable => {
-                        variables.push(variable)
+                        variables.push(new HtmlVariable(variable.name, variable.value))
                     });
 
                     // create TemplateNode
@@ -280,90 +466,11 @@ export class Sojourn {
 
     }
 
-}
+    private parseForNode(forNode: ForLoopBlock, token: TemplateSyntaxNode) {
+        const expression = token.expression
 
-// export class SojournV2 {
-//
-//     constructor(private tokens: Token[]) {}
-//
-//     public start() {
-//         const doc = new Document([]);
-//         const rootNodes = this.sojourn(this.tokens, doc);
-//         doc.childNodes = rootNodes;
-//         return doc;
-//     }
-//
-//     private sojourn(tokens: Token[], parent?: ParentNode): ChildNode[] {
-//         const rootNodes: ChildNode[] = [];
-//         let prev: ChildNode | null = null;
-//
-//         for (let i = 0; i < tokens.length; i++) {
-//             const token = tokens[i];
-//
-//             // Track previous node
-//             if (i !== 0) prev = rootNodes[rootNodes.length - 1];
-//
-//             if (token.type === "node" && token.startTag && !token.endTag) {
-//                 const attribs: { [key: string]: string } = {};
-//                 token.attributes?.forEach(attr => {
-//                     attribs[attr.name] = attr.value;
-//                 });
-//
-//                 const elNode = new Element(token.name, attribs, []);
-//                 elNode.parent = parent ?? null;
-//                 elNode.prev = prev;
-//                 if (prev) prev.next = elNode;
-//
-//                 // If self-closing, skip recursion
-//                 if (!token.selfClosing) {
-//                     // Find children until corresponding closing tag
-//                     const { children, closingTagIndex } = this.findTokenClosingTag(token, i, tokens);
-//                     elNode.children = this.sojourn(children, elNode);
-//                     elNode.childNodes = elNode.children;
-//
-//                     // Remove processed tokens from the list
-//                     tokens = tokens.slice(0, i + 1).concat(tokens.slice(closingTagIndex + 1));
-//                     i = i; // keep current index, children already processed
-//                 }
-//
-//                 rootNodes.push(elNode);
-//             } else if (token.type === "text") {
-//                 const textNode = new Text(token.name);
-//                 textNode.parent = parent ?? null;
-//                 textNode.prev = prev;
-//                 if (prev) prev.next = textNode;
-//                 rootNodes.push(textNode);
-//             }
-//         }
-//
-//         return rootNodes;
-//     }
-//
-//     private findTokenClosingTag(token: NodeToken, startIndex: number, tokens: Token[]): { children: Token[]; closingTagIndex: number } {
-//         const children: Token[] = [];
-//         let depth = 0;
-//         let closingTagIndex = tokens.length - 1;
-//
-//         for (let i = startIndex + 1; i < tokens.length; i++) {
-//             const t = tokens[i];
-//
-//             if (t.type === "node") {
-//                 if (t.startTag && t.name === token.name && !t.selfClosing) {
-//                     depth++;
-//                 } else if (t.endTag && t.name === token.name) {
-//                     if (depth === 0) {
-//                         closingTagIndex = i;
-//                         break;
-//                     } else {
-//                         depth--;
-//                     }
-//                 }
-//             }
-//
-//             if (depth >= 0) children.push(t);
-//         }
-//
-//         return { children, closingTagIndex };
-//     }
-//
-// }
+        // check the middle is "of"
+        const result = parseMicroSyntax("@for", expression)
+
+    }
+}
