@@ -11,10 +11,6 @@ export class HTMLExpressionTokenizer {
 
     public static instance() {
 
-        if (HTMLExpressionTokenizer._instance) {
-            return HTMLExpressionTokenizer._instance;
-        }
-
         return (HTMLExpressionTokenizer._instance = new HTMLExpressionTokenizer())
 
     }
