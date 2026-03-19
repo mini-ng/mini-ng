@@ -1,24 +1,44 @@
 export type AST =
     | IdentifierAST
     | LiteralAST
-    | BinaryAST
     | UnaryAST
+    | BinaryAST
     | PropertyReadAST
+    | PropertyWriteAST
+    | SafePropertyReadAST
     | CallAST
+    | SafeCallAST
     | ConditionalAST
     | SequenceAST
     | BindingPipeAST
-    | GroupingAST;
+    | GroupingAST
+    | TrueBooleanAST
+    | FalseBooleanAST
+    | NullAST
+    | UndefinedAST
+    | ThisAST
+    | ArrayLiteralAST
+    | ObjectLiteralAST
+    | AssignmentAST
+    | NonNullAssertAST;
 
 export interface IdentifierAST {
     type: "Identifier";
     name: string;
 }
 
+export interface TrueBooleanAST {}
+
+export interface FalseBooleanAST {}
+
+export interface NullAST {}
+
+export interface UndefinedAST {}
+
 export interface LiteralAST {
     type: "Literal";
     valueType: LiteralAstType,
-    value: string | number | boolean | null;
+    value: string | number;
 }
 
 export interface UnaryAST {
@@ -71,6 +91,15 @@ export interface GroupingAST {
     expression: AST;
 }
 
+export interface ThisAST {}
+export interface ArrayLiteralAST {}
+export interface ObjectLiteralAST {}
+export interface AssignmentAST {}
+export interface NonNullAssertAST {}
+export interface PropertyWriteAST {}
+export interface SafePropertyReadAST {}
+export interface SafeCallAST {}
+
 export enum AstType {
     GroupingAST,
     BindingPipeAST,
@@ -85,29 +114,9 @@ export enum AstType {
 export enum LiteralAstType {
     STRING,
     NUMBER,
-    BOOLEAN,
-    NULL
 }
 
 export interface ASTWithSource {
     ast: AST;
     source: string;
-}
-
-export interface BoundAttribute {
-    name: string;                 // attribute name
-    type: "Property" | "Attribute" | "Class" | "Style"; // binding type
-    value: ASTWithSource;         // expression/value
-    unit?: string;                // e.g., 'px' for style
-}
-
-export interface BoundEvent {
-    name: string;                 // event name
-    handler: ASTWithSource;       // event handler expression
-    target?: string;              // optional target, e.g., document, window
-}
-
-export interface Reference {
-    name: string;                 // #refName
-    value: string | null;         // what it references (directive instance or element)
 }
