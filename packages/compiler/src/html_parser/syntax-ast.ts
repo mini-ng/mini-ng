@@ -127,6 +127,7 @@ export class DefaultNode extends NodeWithChildren {
 
 }
 
+// this represent ng-content
 export class Content extends Node {
     readonly nodeType: number = 1;
     readonly type: ElementType = ElementType.Tag;
