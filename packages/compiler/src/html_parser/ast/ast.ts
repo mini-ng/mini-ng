@@ -1,3 +1,5 @@
+import {AstExpression} from "./ast-impl";
+
 export type AST =
     | IdentifierAST
     | LiteralAST
@@ -117,6 +119,6 @@ export enum LiteralAstType {
 }
 
 export interface ASTWithSource {
-    ast: AST;
+    ast: AstExpression;
     source: string;
 }

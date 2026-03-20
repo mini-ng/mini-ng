@@ -175,6 +175,7 @@ export class Sequence implements AstExpression, SequenceAST {
     type: "Sequence";
 
     accept(visitor: AstVisitor): any {
+        return visitor.visitSequence(this);
     }
 }
 
@@ -185,6 +186,7 @@ export class Conditional implements AstExpression, ConditionalAST {
     type: "Conditional";
 
     accept(visitor: AstVisitor): any {
+        return visitor.visitConditional(this);
     }
 }
 
@@ -194,6 +196,7 @@ export class Call implements AstExpression, CallAST {
     type: "Call";
 
     accept(visitor: AstVisitor): any {
+        return visitor.visitCall(this);
     }
 }
 
@@ -204,16 +207,18 @@ export class PropertyRead implements AstExpression, PropertyReadAST {
     type: "PropertyRead";
 
     accept(visitor: AstVisitor): any {
+        return visitor.visitPropertyRead(this);
     }
 }
 
 export class Binary implements AstExpression, BinaryAST {
-    left: AST;
+    left: AstExpression;
     operator: string;
-    right: AST;
+    right: AstExpression;
     type: "Binary";
 
     accept(visitor: AstVisitor): any {
+        return visitor.visitBinary(this);
     }
 }
 
@@ -223,6 +228,7 @@ export class Unary implements AstExpression, UnaryAST {
     type: "Unary";
 
     accept(visitor: AstVisitor): any {
+        return visitor.visitUnary(this);
     }
 }
 
