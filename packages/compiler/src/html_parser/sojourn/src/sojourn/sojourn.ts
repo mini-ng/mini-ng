@@ -89,7 +89,7 @@ export class Sojourn {
                 if (token.name === "@for") {
 
                     let forNode = new ForLoopBlock(null, null, null, null, [], null);
-                    this.parseForNode(forNode, token);
+                    this.parseForLoopParameters(forNode, token);
 
                     let emptyNode;
 
@@ -466,11 +466,40 @@ export class Sojourn {
 
     }
 
-    private parseForNode(forNode: ForLoopBlock, token: TemplateSyntaxNode) {
+    private parseForLoopParameters(forNode: ForLoopBlock, token: TemplateSyntaxNode) {
         const expression = token.expression
+        const FOR_LOOP_EXPRESSION_PATTERN = /^\s*([0-9A-Za-z_$]*)\s+of\s+([\S\s]*)/;
+        const ALLOWED_FOR_LOOP_LET_VARIABLES = new Set([
+            '$index',
+            '$first',
+            '$last',
+            '$even',
+            '$odd',
+            '$count',
+        ]);
 
         // check the middle is "of"
-        const result = parseMicroSyntax("@for", expression)
+        // const result = parseMicroSyntax("@for", expression)
+
+        const match = expression?.match(
+            FOR_LOOP_EXPRESSION_PATTERN,
+        );
+
+        if (!match || match[2].trim().length === 0) {
+
+            throw Error('Cannot parse expression. @for loop expression must match the pattern "<identifier> of <expression>"')
+
+        }
+
+        const [, itemName, rawExpression] = match;
+
+        if (ALLOWED_FOR_LOOP_LET_VARIABLES.has(itemName)) {
+            throw Error(`@for loop item name cannot be one of ${Array.from(ALLOWED_FOR_LOOP_LET_VARIABLES).join(
+                ', ',
+            )}.`)
+        }
+
+        const variableName = expression.split(' ')[0];
 
     }
 }
