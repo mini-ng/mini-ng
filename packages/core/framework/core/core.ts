@@ -330,6 +330,9 @@ export interface LView {
    * TNode representing the component element.
    * **/
   t_host: TNode;
+  /**
+   * The view where the template was declared.
+   */
   declaration_view: LView;
 }
 
@@ -363,7 +366,7 @@ export type TNode = {
   child: TNode | null;
   next: TNode | null;
   prev: TNode | null;
-  projection: [];
+  projection: (TNode | null)[];
 };
 
 export interface LContainer extends LView {}
