@@ -1,15 +1,20 @@
 import {Token, TokenType} from "./tokens";
 import {
     AST,
-    BinaryAST, BindingPipeAST, CallAST,
-    // ConditionalAst,
-    IdentifierAST,
-    LiteralAST,
-    LiteralAstType, PropertyReadAST,
-    SequenceAST,
-    // UnaryAst
+    LiteralAstType
 } from "../ast/ast";
-import {Call, Conditional, Identifier, Literal, True, Unary} from "../ast/ast-impl";
+import {
+    AstExpression,
+    Binary,
+    BindingPipe,
+    Call,
+    Conditional, False, Grouping,
+    Identifier,
+    Literal, PropertyRead,
+    Sequence,
+    True,
+    Unary
+} from "../ast/ast-impl";
 
 // recursive descent parser
 // Binary
@@ -34,25 +39,17 @@ export class HTMLExpressionParser {
 
     }
 
-    start(): AST {
-
-        // const expressions: AST[] = [];
-        //
-        // while (!this.isAtEnd()) {
-        //     expressions.push(this.parseExpression());
-        // }
-        //
-        // return expressions;
+    start(): AstExpression {
 
         return this.parseExpression()
     }
 
-    parseExpression(): AST {
-        return this.parseSequence();
+    parseExpression(): AstExpression {
+        return this.parsePipe();
     }
 
     // a(), b(), c()
-    parseSequence(): SequenceAST {
+    parseSequence(): AstExpression {
 
         const expressions: AST[] = [];
 
@@ -62,14 +59,15 @@ export class HTMLExpressionParser {
             expressions.push(this.parsePipe());
         }
 
-        return {
-            type: "Sequence",
-            expressions
-        };
+        const seq = new Sequence()
+        seq.type = "Sequence";
+        seq.expressions = expressions
+
+        return seq;
     }
 
     // a ? b : c
-    parseConditional(): AST {
+    parseConditional(): AstExpression {
 
         let expr = this.parseAdditive();
 
@@ -94,7 +92,7 @@ export class HTMLExpressionParser {
     }
 
     // + -
-    parseAdditive(): AST {
+    parseAdditive(): AstExpression {
 
         let expr = this.parseMultiplicative();
 
@@ -108,19 +106,20 @@ export class HTMLExpressionParser {
 
             const right = this.parseMultiplicative();
 
-            expr = {
-                type: "Binary",
-                operator,
-                left: expr,
-                right
-            };
+            const bin = new Binary();
+            bin.type = "Binary"
+            bin.operator = operator;
+            bin.left = expr
+            bin.right = right
+
+            expr = bin;
         }
 
         return expr;
     }
 
     // * /
-    parseMultiplicative(): AST {
+    parseMultiplicative(): AstExpression {
 
         let expr = this.parseUnary();
 
@@ -134,19 +133,25 @@ export class HTMLExpressionParser {
 
             const right = this.parseUnary();
 
-            expr = {
-                type: "Binary",
-                operator,
-                left: expr,
-                right
-            };
+            const bin = new Binary();
+            bin.type = "Binary"
+            bin.operator = operator;
+            bin.left = expr
+            bin.right = right
+
+            expr = bin;
         }
 
         return expr;
     }
 
+    parseLogicalOr() {}
+    parseLogicalAnd() {}
+    parseEquality() {}
+    parseComparison() {}
+
     // | pipe
-    parsePipe(): AST {
+    parsePipe(): AstExpression {
 
         let expr = this.parseConditional();
 
@@ -161,18 +166,20 @@ export class HTMLExpressionParser {
                 args.push(this.parseExpression());
             }
 
-            expr = {
-                type: "Pipe",
-                name,
-                expression: expr,
-                args
-            };
+            const pipe = new BindingPipe();
+            pipe.name = name;
+            pipe.type = "Pipe"
+            pipe.expression = expr
+            pipe.args = args
+
+
+            expr = pipe;
         }
 
         return expr;
     }
 
-    parseUnary(): AST {
+    parseUnary(): AstExpression {
 
         if (
             this.check(TokenType.ADD) ||
@@ -194,7 +201,7 @@ export class HTMLExpressionParser {
         return this.parseLHS();
     }
 
-    parseLHS(): AST {
+    parseLHS(): AstExpression {
 
         let expr = this.parsePrimary();
 
@@ -233,12 +240,13 @@ export class HTMLExpressionParser {
                     "Expected property name"
                 );
 
-                expr = {
-                    type: "PropertyRead",
-                    receiver: expr,
-                    key: name,
-                    computed: false
-                };
+                const propertyRead = new PropertyRead()
+                propertyRead.type = "PropertyRead";
+                propertyRead.key = name;
+                propertyRead.computed = false
+                propertyRead.receiver = expr
+
+                expr = propertyRead;
             }
 
             // computed access
@@ -252,12 +260,13 @@ export class HTMLExpressionParser {
                     "Expected ']'"
                 );
 
-                expr = {
-                    type: "PropertyRead",
-                    receiver: expr,
-                    key,
-                    computed: true
-                };
+                const propertyRead = new PropertyRead()
+                propertyRead.type = "PropertyRead";
+                propertyRead.key = key;
+                propertyRead.computed = true
+                propertyRead.receiver = expr
+
+                expr = propertyRead;
             }
 
             else {
@@ -268,7 +277,7 @@ export class HTMLExpressionParser {
         return expr;
     }
 
-    parsePrimary(): AST {
+    parsePrimary(): AstExpression {
 
         const token = this.peek();
 
@@ -293,8 +302,12 @@ export class HTMLExpressionParser {
             return literal;
         }
 
-        if (this.match(TokenType.BOOL)) {
+        if (this.match(TokenType.TRUE)) {
             return new True();
+        }
+
+        if (this.match(TokenType.FALSE)) {
+            return new False();
         }
 
         if (this.match(TokenType.LEFT_PAREN)) {
@@ -303,13 +316,13 @@ export class HTMLExpressionParser {
 
             this.consumeType(TokenType.RIGHT_PAREN, "Expected ')'");
 
-            return {
-                type: "Grouping",
-                expression
-            };
+            const grouping = new Grouping()
+            grouping.type = "Grouping"
+            grouping.expression = expression;
+
+            return grouping;
         }
 
-        console.log(this.tokens)
         throw new Error("Expected expression." + this.peek().value.toString());
     }
 
