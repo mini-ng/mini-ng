@@ -1,6 +1,6 @@
 import {Token, TokenType} from "./tokens";
 
-const keywords = ["true", "false"]
+const keywords = ["true", "false", "null", "undefined"]
 
 export class HTMLExpressionTokenizer {
     expr: string
@@ -45,6 +45,57 @@ export class HTMLExpressionTokenizer {
                     break
                 }
 
+                case ">": {
+
+                    if (this.matchNext(">")) {
+
+                        if (this.matchNext(">")) {
+                            this.tokens.push({token: TokenType.BIT_SHR, value: char});
+                            break;
+                        }
+
+                        this.tokens.push({token: TokenType.SHR, value: char})
+                        break;
+                    }
+
+                    if (this.matchNext("=")) {
+                        this.tokens.push({token: TokenType.GREATER_THAN, value: char})
+                        break;
+                    }
+
+                    this.tokens.push({token: TokenType.GREATER_EQUAL, value: char})
+
+                    break;
+                }
+
+                case "<": {
+
+                    if (this.matchNext("<")) {
+
+                        this.tokens.push({token: TokenType.SHL, value: char})
+                        break;
+                    }
+
+                    if (this.matchNext("=")) {
+                        this.tokens.push({token: TokenType.LESS_EQUAL, value: char})
+                        break;
+                    }
+
+                    this.tokens.push({token: TokenType.LESS_THAN, value: char})
+                    break;
+                }
+
+                case "&": {
+
+                    if (this.matchNext("&")) {
+                        this.tokens.push({token: TokenType.LOGICAL_AND, value: char})
+                        break;
+                    }
+
+                    this.tokens.push({token: TokenType.AND, value: char})
+                    break;
+                }
+
                 case "(": {
                     this.tokens.push({token: TokenType.LEFT_PAREN, value: char})
                     break;
@@ -71,6 +122,12 @@ export class HTMLExpressionTokenizer {
                 }
 
                 case "|": {
+
+                    if (this.matchNext("|")) {
+                        this.tokens.push({token: TokenType.OR, value: char})
+                        break
+                    }
+
                     this.tokens.push({token: TokenType.PIPE, value: char})
                     break
                 }
@@ -141,9 +198,9 @@ export class HTMLExpressionTokenizer {
         this.index--;
 
         if (keywords[0] === alpha) {
-            this.tokens.push({token: TokenType.BOOL, value: alpha})
+            this.tokens.push({token: TokenType.TRUE, value: alpha})
         } else if (keywords[1] === alpha) {
-            this.tokens.push({token: TokenType.BOOL, value: alpha})
+            this.tokens.push({token: TokenType.FALSE, value: alpha})
         } else {
             this.tokens.push({token: TokenType.IDENTIFIER, value: alpha})
         }
@@ -222,4 +279,14 @@ export class HTMLExpressionTokenizer {
         return this.isCharAlpha(c) || (c >= '0' && c <= '9');
     }
 
+    private matchNext(s: string) {
+        const nextChar = this.expr[this.getIndex() + 1]
+
+        if (nextChar === s) {
+            this.increment();
+            return true
+        }
+
+        return false;
+    }
 }
