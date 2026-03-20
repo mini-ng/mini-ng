@@ -4,10 +4,15 @@ import {TemplateStmt} from "../../template/view_generator";
 import ts from "typescript";
 import {sojourn} from "../sojourn/src";
 import {AttributeMarker} from "../../template/attribute_marker";
-import {generateElementEndNode, generateElementStartNode} from "../../node-generation/node-generation";
+import {
+    _generateTextInterpolateNode,
+    generateAdvanceNode,
+    generateElementEndNode,
+    generateElementStartNode, generateTextInterpolateNode,
+    generateTextNode
+} from "../../node-generation/node-generation";
 import {ASTWithSource} from "./ast";
-import {html} from "parse5";
-import {node} from "webpack";
+import {TemplateVisitor} from "../../visitor/template-visitor";
 
 export abstract class HtmlAstVisitor {
     abstract visitElement(expr: Element);
@@ -92,14 +97,15 @@ export class HtmlAstVisitorImpl extends HtmlAstVisitor {
     private index = 0;
     private readonly implicitVariables = []
     private ngContents = []
+    private readonly astVisitor = new TemplateVisitor();
 
     generateView(html: string) {
 
         const ast = sojourn(html);
 
         ast.childNodes.forEach(childNode => {
-            this.incrementIndex()
-            childNode.accept(this)
+            childNode.accept(this);
+            this.incrementIndex();
         })
 
         return {
@@ -113,6 +119,15 @@ export class HtmlAstVisitorImpl extends HtmlAstVisitor {
     }
 
     visitBoundText(expr: BoundText) {
+
+        const index = this.index;
+
+        this.stmts.push(generateTextNode(index));
+
+        this.updateStmts.push(generateAdvanceNode(index.toString()));
+
+        this.updateStmts.push(_generateTextInterpolateNode(expr.value.ast.accept(this.astVisitor), this.implicitVariables))
+
     }
 
     visitComment(visitor: Comment) {
@@ -161,6 +176,7 @@ export class HtmlAstVisitorImpl extends HtmlAstVisitor {
     }
 
     visitText(expr: Text) {
+        this.stmts.push(generateTextNode(this.index, expr.data))
     }
 
     visitAllAttributes(attributeNodes: AttributeNode[]) {
