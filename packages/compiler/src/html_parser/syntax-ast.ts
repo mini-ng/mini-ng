@@ -34,6 +34,10 @@ export class ElseIfBlock extends NodeWithChildren {
         super(children);
     }
 
+    accept(visitor: HtmlAstVisitor) {
+        return visitor.visitElseIfBlock(this)
+    }
+
 }
 
 export class ElseBlock extends NodeWithChildren {
@@ -45,6 +49,10 @@ export class ElseBlock extends NodeWithChildren {
         public children: ChildNode[] = [],
     ) {
         super(children);
+    }
+
+    accept(visitor: HtmlAstVisitor) {
+        return visitor.visitElseBlock(this)
     }
 
 }
