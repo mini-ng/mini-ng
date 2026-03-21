@@ -1,6 +1,6 @@
 import {
     ArrayLiteralAST,
-    AssignmentAST, AST,
+    AssignmentAST, AST, ASTWithSource,
     BinaryAST,
     BindingPipeAST,
     CallAST,
@@ -115,41 +115,70 @@ export class Undefined implements AstExpression, UndefinedAST {
 export class NonNullAssert implements AstExpression, NonNullAssertAST {
     accept(visitor: AstVisitor): any {
     }
+
+    expression: AstExpression;
+    type: "NonNullAssert";
 }
 
 export class Assignment implements AstExpression, AssignmentAST {
     accept(visitor: AstVisitor): any {
+        return visitor.visitAssignment(this);
     }
+
+    left: AstExpression;
+    right: AstExpression;
+    type: "Assignment";
 }
 
 export class ObjectLiteral implements AstExpression, ObjectLiteralAST {
     accept(visitor: AstVisitor): any {
     }
+
+    properties: { key: string; value: AST }[];
+    type: "ObjectLiteral";
 }
 
 export class ArrayLiteral implements AstExpression, ArrayLiteralAST {
     accept(visitor: AstVisitor): any {
     }
+
+    elements: AstExpression[];
+    type: "ArrayLiteral";
 }
 
 export class This implements AstExpression, ThisAST {
     accept(visitor: AstVisitor): any {
     }
+
+    type: "This";
 }
 
 export class SafeCall implements AstExpression, SafeCallAST {
     accept(visitor: AstVisitor): any {
     }
+
+    args: AstExpression[];
+    receiver: AstExpression;
+    type: "SafeCall";
 }
 
 export class SafePropertyRead implements AstExpression, SafePropertyReadAST {
     accept(visitor: AstVisitor): any {
     }
+
+    name: string;
+    receiver: AstExpression;
+    type: "SafePropertyRead";
 }
 
 export class PropertyWrite implements AstExpression, PropertyWriteAST {
     accept(visitor: AstVisitor): any {
     }
+
+    name: string;
+    receiver: AstExpression;
+    type: "PropertyWrite";
+    value: AstExpression;
 }
 
 export class Grouping implements AstExpression, GroupingAST {
@@ -180,9 +209,9 @@ export class Sequence implements AstExpression, SequenceAST {
 }
 
 export class Conditional implements AstExpression, ConditionalAST {
-    alternate: AST;
-    consequent: AST;
-    test: AST;
+    alternate: AstExpression;
+    consequent: AstExpression;
+    test: AstExpression;
     type: "Conditional";
 
     accept(visitor: AstVisitor): any {
@@ -202,8 +231,8 @@ export class Call implements AstExpression, CallAST {
 
 export class PropertyRead implements AstExpression, PropertyReadAST {
     computed: boolean;
-    key: string | AST;
-    receiver: AST | null;
+    key: string | AstExpression;
+    receiver: AstExpression | null;
     type: "PropertyRead";
 
     accept(visitor: AstVisitor): any {
@@ -223,7 +252,7 @@ export class Binary implements AstExpression, BinaryAST {
 }
 
 export class Unary implements AstExpression, UnaryAST {
-    argument: AST;
+    argument: AstExpression;
     operator: string;
     type: "Unary";
 

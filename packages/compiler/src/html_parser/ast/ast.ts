@@ -22,7 +22,8 @@ export type AST =
     | ArrayLiteralAST
     | ObjectLiteralAST
     | AssignmentAST
-    | NonNullAssertAST;
+    | NonNullAssertAST
+    | SafeKeyedReadAST;
 
 export interface IdentifierAST {
     type: "Identifier";
@@ -93,14 +94,65 @@ export interface GroupingAST {
     expression: AST;
 }
 
-export interface ThisAST {}
-export interface ArrayLiteralAST {}
-export interface ObjectLiteralAST {}
-export interface AssignmentAST {}
-export interface NonNullAssertAST {}
-export interface PropertyWriteAST {}
-export interface SafePropertyReadAST {}
-export interface SafeCallAST {}
+export interface ThisAST {
+    type: "This";
+}
+
+export interface ArrayLiteralAST {
+    type: "ArrayLiteral";
+    elements: AST[];
+}
+
+// { name: user.name, age: 20 }
+export interface ObjectLiteralAST {
+    type: "ObjectLiteral";
+    properties: {
+        key: string;
+        value: AST;
+    }[];
+}
+
+// a = b
+export interface AssignmentAST {
+    type: "Assignment";
+    left: AST;   // Identifier | PropertyRead | etc.
+    right: AST;
+}
+
+// user!.name
+export interface NonNullAssertAST {
+    type: "NonNullAssert";
+    expression: AST;
+}
+
+// user.name = "John"
+export interface PropertyWriteAST {
+    type: "PropertyWrite";
+    receiver: AST;
+    name: string;
+    value: AST;
+}
+
+// user?.name
+export interface SafePropertyReadAST {
+    type: "SafePropertyRead";
+    receiver: AST;
+    name: string;
+}
+
+// user?.getName()
+export interface SafeCallAST {
+    type: "SafeCall";
+    receiver: AST;
+    args: AST[];
+}
+
+// user?.["name"]
+export interface SafeKeyedReadAST {
+    type: "SafeKeyedRead";
+    receiver: AST;
+    key: AST;
+}
 
 export enum AstType {
     GroupingAST,
