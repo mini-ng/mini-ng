@@ -330,7 +330,7 @@ export class AttributeNode implements HtmlAstExpression {
     }
 
     accept(visitor: HtmlAstVisitor) {
-        visitor.visitAttribute(this)
+        return visitor.visitAttribute(this)
     }
 
 }
@@ -490,6 +490,16 @@ export class Template extends NodeWithChildren {
     "x-attribsNamespace"?: Record<string, string>;
     /** Element attribute namespace-related prefixes (parse5 only). */
     "x-attribsPrefix"?: Record<string, string>;
+
+    get attributeNodes() {
+
+        const attrs = this.attributes
+
+        return attrs.map((attr) => {
+            return new AttributeNode(attr.name, attr.value, attr.namespace, attr.prefix);
+        })
+
+    }
 
     accept(visitor: HtmlAstVisitor) {
         visitor.visitTemplate(this)
