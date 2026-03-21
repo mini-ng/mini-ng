@@ -78,7 +78,7 @@ export class Sojourn {
 
             if (token.type === "templateSyntax" && token.startTag) {
 
-                const { children, closingIndex, selfClosing } =
+                const {children, closingIndex, selfClosing} =
                     this.findTemplateSyntaxClosing(token, i, tokens);
 
                 if (closingIndex !== undefined) {
@@ -229,8 +229,10 @@ export class Sojourn {
                                 elseOrElseIfNode.childNodes = elseOrElseIfNode.children
                             }
 
-                            const expr = this.parse(token.expression)
-                            elseOrElseIfNode.expression = expr
+                            if (elseOrElseIfNode instanceof ElseIfBlock) {
+                                const expr = this.parse(current.expression)
+                                elseOrElseIfNode.expression = expr;
+                            }
 
                             if (elseOrElseIfNode instanceof ElseIfBlock) {
                                 elseIfs.push(elseOrElseIfNode)
@@ -239,7 +241,11 @@ export class Sojourn {
                             }
 
                             i = elseClosingIndex + 1;
-                            j = i;
+                            j = elseClosingIndex;
+
+                            if (elseOrElseIfNode instanceof ElseBlock) {
+                                break
+                            }
 
                         } else break
                     }
@@ -278,9 +284,9 @@ export class Sojourn {
 
                 const outputs: BoundEvent[] = [];
                 token.outputs.forEach(output => {
-                    outputs.push( new BoundEvent(
+                    outputs.push(new BoundEvent(
                         output.name, this.parse(output.value),
-                ))
+                    ))
                 });
 
                 const references: HtmlReference[] = []
@@ -313,7 +319,7 @@ export class Sojourn {
                     );
                 }
 
-                const { children, closingIndex, selfClosing } =
+                const {children, closingIndex, selfClosing} =
                     this.findClosingTag(token, i, tokens);
 
                 if (!selfClosing && children.length) {
@@ -500,6 +506,12 @@ export class Sojourn {
         }
 
         const variableName = expression.split(' ')[0];
+
+        console.log(variableName)
+
+        return {
+            variableName,
+        }
 
     }
 }
