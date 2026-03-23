@@ -88,8 +88,13 @@ export class Sojourn {
                 // if template syntax is @for, check for @empty
                 if (token.name === "@for") {
 
-                    let forNode = new ForLoopBlock(null, null, null, null, [], null);
-                    this.parseForLoopParameters(forNode, token);
+                    const forNode = new ForLoopBlock(null, null, null, null, [], null);
+                    const { itemName, expression, context, trackBy } = this.parseForLoopParameters(forNode, token);
+
+                    forNode.item = itemName;
+                    forNode.trackBy = trackBy;
+                    forNode.contextVariables = context;
+                    forNode.expression = expression.ast
 
                     let emptyNode;
 
@@ -473,7 +478,9 @@ export class Sojourn {
     }
 
     private parseForLoopParameters(forNode: ForLoopBlock, token: TemplateSyntaxNode) {
-        const expression = token.expression
+        const blockParameters = token.blockParameters
+
+        const FOR_LOOP_TRACK_PATTERN = /^track\s+([\S\s]*)/;
         const FOR_LOOP_EXPRESSION_PATTERN = /^\s*([0-9A-Za-z_$]*)\s+of\s+([\S\s]*)/;
         const ALLOWED_FOR_LOOP_LET_VARIABLES = new Set([
             '$index',
@@ -484,10 +491,9 @@ export class Sojourn {
             '$count',
         ]);
 
-        // check the middle is "of"
-        // const result = parseMicroSyntax("@for", expression)
+        const [expressionParam, ...secondaryParams] = blockParameters;
 
-        const match = expression?.match(
+        const match = expressionParam?.match(
             FOR_LOOP_EXPRESSION_PATTERN,
         );
 
@@ -505,12 +511,30 @@ export class Sojourn {
             )}.`)
         }
 
-        const variableName = expression.split(' ')[0];
+        const variable = new HtmlVariable(itemName, '$implicit');
+        const iterableExpr = this.parse(rawExpression);
 
-        console.log(variableName)
+        const context = Array.from(ALLOWED_FOR_LOOP_LET_VARIABLES, (variableName) => {
+            return new HtmlVariable(
+                variableName,
+                variableName,
+            );
+        });
+
+        let trackBy;
+
+        for (const blockParameter of blockParameters) {
+            const trackMatch = blockParameter.match(FOR_LOOP_TRACK_PATTERN);
+            if (trackMatch !== null) {
+                trackBy = this.parse(trackMatch[1]);
+            }
+        }
 
         return {
-            variableName,
+            itemName: variable,
+            expression: iterableExpr,
+            context: context,
+            trackBy: trackBy,
         }
 
     }
