@@ -18,8 +18,8 @@ export enum TokenType {
     RIGHT_PAREN,
     PIPE,
     DOT,
-    LEFT_SQUARE_BRACKET,
-    RIGHT_SQUARE_BRACKET,
+    LEFT_SQUARE_BRACKET, // [
+    RIGHT_SQUARE_BRACKET, // ]
     TERNARY,
     COLON,
     LESS_THAN,
@@ -32,4 +32,10 @@ export enum TokenType {
     OR,
     LOGICAL_AND,
     AND,
+    LBRACE, // {
+    RBRACE, // }
+    SPREAD, // ...
+    KEYWORD,
+    STRICT_EQUAL,
+    STRICT_NOTEQUAL
 }
