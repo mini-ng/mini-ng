@@ -1,17 +1,15 @@
 import {Token, TokenType} from "./tokens";
 
-const keywords = ["true", "false", "null", "undefined"]
+const keywords = ["true", "false", "null", "undefined", "new"]
 
 export class HTMLExpressionTokenizer {
     expr: string
     index: number = 0
     tokens: Token[] = []
 
-    private static _instance: HTMLExpressionTokenizer;
-
     public static instance() {
 
-        return (HTMLExpressionTokenizer._instance = new HTMLExpressionTokenizer())
+        return (new HTMLExpressionTokenizer())
 
     }
 
@@ -50,16 +48,16 @@ export class HTMLExpressionTokenizer {
                     if (this.matchNext(">")) {
 
                         if (this.matchNext(">")) {
-                            this.tokens.push({token: TokenType.BIT_SHR, value: char});
+                            this.tokens.push({token: TokenType.BIT_SHR, value: this.currentCharacter()});
                             break;
                         }
 
-                        this.tokens.push({token: TokenType.SHR, value: char})
+                        this.tokens.push({token: TokenType.SHR, value: this.currentCharacter()})
                         break;
                     }
 
                     if (this.matchNext("=")) {
-                        this.tokens.push({token: TokenType.GREATER_THAN, value: char})
+                        this.tokens.push({token: TokenType.GREATER_THAN, value: this.currentCharacter()})
                         break;
                     }
 
@@ -72,12 +70,12 @@ export class HTMLExpressionTokenizer {
 
                     if (this.matchNext("<")) {
 
-                        this.tokens.push({token: TokenType.SHL, value: char})
+                        this.tokens.push({token: TokenType.SHL, value: this.currentCharacter()})
                         break;
                     }
 
                     if (this.matchNext("=")) {
-                        this.tokens.push({token: TokenType.LESS_EQUAL, value: char})
+                        this.tokens.push({token: TokenType.LESS_EQUAL, value: this.currentCharacter()})
                         break;
                     }
 
@@ -88,7 +86,7 @@ export class HTMLExpressionTokenizer {
                 case "&": {
 
                     if (this.matchNext("&")) {
-                        this.tokens.push({token: TokenType.LOGICAL_AND, value: char})
+                        this.tokens.push({token: TokenType.LOGICAL_AND, value: this.currentCharacter()})
                         break;
                     }
 
@@ -116,9 +114,24 @@ export class HTMLExpressionTokenizer {
                     break;
                 }
 
+                case "{": {
+                    this.tokens.push({token: TokenType.LBRACE, value: char})
+                    break
+                }
+
+                case "}": {
+                    this.tokens.push({token: TokenType.RBRACE, value: char})
+                    break
+                }
+
                 case ",": {
                     this.tokens.push({token: TokenType.COMMA, value: char})
                     break;
+                }
+
+                case ":" : {
+                    this.tokens.push({token: TokenType.COLON, value: char});
+                    break
                 }
 
                 case "|": {
@@ -201,6 +214,8 @@ export class HTMLExpressionTokenizer {
             this.tokens.push({token: TokenType.TRUE, value: alpha})
         } else if (keywords[1] === alpha) {
             this.tokens.push({token: TokenType.FALSE, value: alpha})
+        } else if (keywords.includes(alpha)) {
+            this.tokens.push({token: TokenType.KEYWORD, value: alpha})
         } else {
             this.tokens.push({token: TokenType.IDENTIFIER, value: alpha})
         }
@@ -208,15 +223,17 @@ export class HTMLExpressionTokenizer {
 
     collectString() {
 
-        let string = "";
+        let string = this.currentCharacter();
         this.increment()
         let char = this.currentCharacter()
 
-        while ((char !== '"' /*|| char !== "'"*/) && !this.isEndOf()) {
+        while ((char !== '"' && char !== "'") && !this.isEndOf()) {
             string += char
             this.increment()
             char = this.currentCharacter()
         }
+
+        string += char
 
         this.tokens.push({
             token: TokenType.STRING,
