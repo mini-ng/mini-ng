@@ -2,6 +2,7 @@ import {ChildNode, ElementType, NodeWithChildren, Node} from "./nodes";
 import {ASTWithSource} from "./ast/ast";
 import {Variable} from "./sojourn/src/types/types";
 import {HtmlAstVisitor} from "./ast/html-ast";
+import {AstExpression} from "./ast/ast-impl";
 
 export class IfBlock extends NodeWithChildren {
 
@@ -60,8 +61,8 @@ export class ElseBlock extends NodeWithChildren {
 export class ForLoopBlock extends NodeWithChildren {
     constructor(
         public item: Variable,
-        public expression: ASTWithSource,
-        public trackBy: ASTWithSource,
+        public expression: AstExpression,
+        public trackBy: AstExpression,
         public contextVariables: Variable[],
         public children: ChildNode[] = [],
         public empty: ForLoopBlockEmpty | null,
@@ -73,6 +74,7 @@ export class ForLoopBlock extends NodeWithChildren {
     readonly type: ElementType = ElementType.Tag;
 
     accept(visitor: HtmlAstVisitor) {
+        visitor.visitForLoopBlock(this)
     }
 
 }
@@ -86,6 +88,10 @@ export class ForLoopBlockEmpty extends NodeWithChildren {
 
     readonly nodeType: number = 1;
     readonly type: ElementType = ElementType.Tag;
+
+    accept(visitor: HtmlAstVisitor) {
+        visitor.visitForLoopBlockEmpty(this)
+    }
 
 }
 
