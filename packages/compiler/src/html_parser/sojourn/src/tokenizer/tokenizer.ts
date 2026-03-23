@@ -8,7 +8,18 @@ const SVG_TAG_REWRITE: Record<string, string> = {
     foreignobject: 'foreignObject',
 };
 
-const templatesNodeNames = ["@if", "@for", "@else", "@elseif", "@empty", "@case", "@switch", "@default", "@while"]
+const templatesNodeNames = ["@if", "@for", "@else", "@elseif", "@empty", "@case", "@switch", "@default", "@while"];
+
+const chars = {
+  LBRACKET: "{",
+  RBRACKET: "}",
+  LPAREN: "(",
+  RPAREN: ")",
+  AT: "@",
+  LT: "<",
+  RT: ">",
+  EMPTY_SPACE: " "
+};
 
 export class Tokenizer {
 
@@ -198,7 +209,7 @@ export class Tokenizer {
             }
 
             if (isExpression) {
-                if (char == "}" && nextChar == "}"/*this.html.startsWith("}}", index)*/) {
+                if (char == chars.LBRACKET && nextChar == chars.RBRACKET) {
                     index += 1;
                     isExpression = false;
                     tokens.push({
@@ -236,7 +247,6 @@ export class Tokenizer {
                             let newChar = this.html[index];
 
                             if (newChar === "(") {
-                                // collectTemplateSyntaxInputs = true;
                                 _char = newChar
                                 break
                             }
@@ -247,11 +257,11 @@ export class Tokenizer {
                             }
 
                             if (newChar !== "(" && newChar !== "{" && newChar !== " ") {
-                                throw ""
+                                throw "Template " + templateName + " must be followed by either ( or {"
                             }
 
                             if (index === this.html.length - 1) {
-                                throw ""
+                                throw "Wrong/incomplete template format."
                             }
 
                             index += 1;
@@ -310,7 +320,7 @@ export class Tokenizer {
                         templateSyntaxCounter++
 
                         if (_char !== "{") {
-                            throw "";
+                            throw "Template " + templateName + " must be followed by either ( or {";
                         }
 
                     }
@@ -319,7 +329,7 @@ export class Tokenizer {
                         this.pushNodeToken(tokens, {
                             name: templateName,
                             startTag: true,
-                            expression,
+                            blockParameters: this._consumeBlockParameters(expression),
                             endTag: false,
                             type: "templateSyntax",
                         });
@@ -348,6 +358,7 @@ export class Tokenizer {
                     name: templateSyntaxFoundNames[templateSyntaxFoundNames.length - 1],
                     startTag: false,
                     type: "templateSyntax",
+                    blockParameters: []
                 });
                 templateSyntaxFoundNames = templateSyntaxFoundNames.slice(0);
                 templateSyntaxCounter--;
@@ -422,6 +433,33 @@ export class Tokenizer {
 
     rewriteTagExactDomName(tag: string) {
         return SVG_TAG_REWRITE[tag] ?? tag;
+    }
+
+    _consumeBlockParameters(expression: string) {
+
+        const blockParameters = [];
+        let inQuote: number | null = null;
+        let openParens = 0;
+
+        let start = 0
+
+        for (let i = 0; i < expression.length; i++) {
+
+            const char = expression.charAt(i);
+
+            if (char === ";") {
+                blockParameters.push(expression.substring(start, i).trim());
+                start = i + 1;
+            }
+
+            if (i === expression.length - 1) {
+                blockParameters.push(expression.substring(start, i + 1).trim());
+            }
+
+        }
+
+        return blockParameters;
+
     }
 
 }
