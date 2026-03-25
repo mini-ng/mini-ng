@@ -1,6 +1,9 @@
+import {SourceSpan} from "../../sourcespan/sourceSpan";
+
 export interface Token {
     token: TokenType;
     value: string;
+    span?: SourceSpan
 }
 
 export enum TokenType {
@@ -66,4 +69,5 @@ export enum TokenType {
     LOGICAL_NOT, // !
     Increment, // ++
     Decrement, // --
+    QUESTION_LEFT_SQUARE_BRACKET, // ?[
 }
