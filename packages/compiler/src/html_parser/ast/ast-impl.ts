@@ -261,3 +261,20 @@ export class Unary implements AstExpression, UnaryAST {
     }
 }
 
+export class Comma implements AstExpression {
+
+    constructor(public left: AstExpression, public right: AstExpression) {}
+
+    accept(visitor: AstVisitor): any {
+    }
+
+}
+
+export class YieldExpression implements AstExpression {
+
+    constructor(public argument: AstExpression, public delegate: boolean) {}
+
+    accept(visitor: AstVisitor): any {
+    }
+
+}
