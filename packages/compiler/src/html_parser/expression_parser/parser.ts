@@ -12,10 +12,10 @@ import {
     Grouping,
     Identifier,
     Literal, New,
-    ObjectLiteral,
+    ObjectLiteral, ObjectProperty,
     PostfixUpdate,
     PrefixUnary,
-    PrefixUpdate,
+    PrefixUpdate, PropertyRead, SafeCall, SafePropertyRead,
     True,
     YieldExpression
 } from "../ast/ast-impl";
@@ -96,15 +96,13 @@ export class HTMLExpressionParser {
 
     parseSpread() {
 
-        if (this.check(TokenType.SPREAD)) {
-            this.advance();
+        let expr: AstExpression
 
-            const right = this.parseComma()
-
-            return right
+        if (this.match(TokenType.SPREAD)) {
+            expr = this.parseExpression();
         }
 
-        return this.parseYield()
+        return expr
 
     }
 
@@ -797,7 +795,11 @@ export class HTMLExpressionParser {
     parseNewWithoutArgs() {
 
         if (this.matchKeyword(keywords.new)) {
-            return new New();
+
+            const ctor = this.parsePrimary();
+            const args = this.parseArguments();
+
+            return new New(ctor, args);
         }
 
         return this.parseLeftHandSide();
@@ -813,27 +815,27 @@ export class HTMLExpressionParser {
             // a.b
             if (this.match(TokenType.DOT)) {
                 const prop = this.consumeIdentifier();
-                expr = new Member(expr, prop);
+                expr = new PropertyRead(expr, prop.value);
             }
 
             // a?.b
             else if (this.match(TokenType.OPTIONAL_CHAINING)) {
                 const prop = this.consumeIdentifier();
-                expr = new SafeMember(expr, prop);
+                expr = new SafePropertyRead(expr, prop.value);
             }
 
             // a[b]
             else if (this.match(TokenType.LEFT_SQUARE_BRACKET)) {
                 const prop = this.parseExpression();
                 this.consume(TokenType.RIGHT_SQUARE_BRACKET, "Expected ']'.");
-                expr = new Member(expr, prop, true);
+                expr = new PropertyRead(expr, prop, true);
             }
 
             // a[b]?.c
             else if (this.match(TokenType.QUESTION_LEFT_SQUARE_BRACKET)) {
                 const prop = this.parseExpression();
                 this.consume(TokenType.RIGHT_SQUARE_BRACKET, "Expected ']'.");
-                expr = new SafeMember(expr, prop, true);
+                expr = new SafePropertyRead(expr, prop, true);
             }
 
             // a()
@@ -843,7 +845,7 @@ export class HTMLExpressionParser {
             }
 
             // a?.()
-            else if (this.match("?.(")) {
+            else if (this.match(TokenType.SAFE_CALL)) {
                 const args = this.parseArguments();
                 expr = new SafeCall(expr, args);
             } else {
@@ -927,30 +929,32 @@ export class HTMLExpressionParser {
         if (this.match(TokenType.LBRACE)) {
 
             const token = this.previous();
-            const props: AstExpression[] = [];
+            const props: ObjectProperty[] = [];
 
             if (!this.check(TokenType.RBRACE)) {
                 do {
 
                     let key;
                     if (this.match(TokenType.SPREAD)) {
-                        props.push(this.parseSpread());
+                        props.push({key, value: this.parseSpread()});
                     } else {
                         // key in object-literal can be a string
                         if (this.peek().token == TokenType.STRING) {
-                            key = this.consume(TokenType.STRING,
-                                "Expected property key at line: " );
+                            key = this.peek().value;
+                            this.consume(TokenType.STRING,
+                                "Expected property key at line: ");
                         } else if (this.peek().token == TokenType.IDENTIFIER) {
-                            key = this.consume(TokenType.IDENTIFIER,
+                            key = this.peek().value;
+                            this.consume(TokenType.IDENTIFIER,
                                 "Expected property key at line: ");
                         } else {
-                            throw ("Expected property key at line: " );
+                            throw ("Expected property key at line: ");
                         }
 
                         this.consume(TokenType.COLON,
                             "Expected ':' after property key at line: ");
                         const value = this.parseAssignment();
-                        props.push({ key, value});
+                        props.push({key, value});
 
                     }
 
@@ -958,7 +962,7 @@ export class HTMLExpressionParser {
             }
             this.consume(TokenType.RBRACE,
                 "Expected '}' at line: ");
-            return ObjectLiteral(token, props);
+            return new ObjectLiteral(props);
         }
 
         throw new Error("Expected expression." + this.peek().value.toString());

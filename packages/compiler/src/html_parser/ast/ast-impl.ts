@@ -31,12 +31,12 @@ export abstract class AstVisitor {
     abstract visitUnary(expr: UnaryAST);
     abstract visitBinary(expr: BinaryAST);
 
-    abstract visitPropertyRead(expr: PropertyReadAST);
+    abstract visitPropertyRead(expr: PropertyRead);
     abstract visitPropertyWrite(expr: PropertyWriteAST);
-    abstract visitSafePropertyRead(expr: SafePropertyReadAST);
+    abstract visitSafePropertyRead(expr: SafePropertyRead);
 
-    abstract visitCall(expr: CallAST);
-    abstract visitSafeCall(expr: SafeCallAST);
+    abstract visitCall(expr: Call);
+    abstract visitSafeCall(expr: SafeCall);
 
     abstract visitConditional(expr: ConditionalAST);
     abstract visitSequence(expr: SequenceAST);
@@ -44,8 +44,8 @@ export abstract class AstVisitor {
     abstract visitPipe(expr: BindingPipeAST);
     abstract visitGrouping(expr: GroupingAST);
 
-    abstract visitArrayLiteral(expr: ArrayLiteralAST);
-    abstract visitObjectLiteral(expr: ObjectLiteralAST);
+    abstract visitArrayLiteral(expr: ArrayLiteral);
+    abstract visitObjectLiteral(expr: ObjectLiteral);
 
     abstract visitAssignment(expr: AssignmentAST);
     abstract visitNonNullAssert(expr: NonNullAssertAST);
@@ -55,6 +55,18 @@ export abstract class AstVisitor {
     abstract visitFalse(expr: FalseBooleanAST);
     abstract visitNull(expr: NullAST);
     abstract visitUndefined(expr: UndefinedAST);
+
+    abstract visitComma(param: Comma);
+    abstract visitPostfixUpdate(param: PostfixUpdate);
+    abstract visitPrefixUpdate(param: PrefixUpdate);
+
+    abstract visitBindingPipe(param: BindingPipeAST);
+
+    abstract visitYieldExpression(param: YieldExpression);
+
+    abstract visitNew(param: New);
+    abstract visitSpread(param: Spread);
+
 }
 
 export abstract class AstExpression {
@@ -115,6 +127,7 @@ export class Undefined implements AstExpression, UndefinedAST {
 
 export class NonNullAssert implements AstExpression, NonNullAssertAST {
     accept(visitor: AstVisitor): any {
+        visitor.visitNonNullAssert(this)
     }
 
     expression: AstExpression;
@@ -131,12 +144,19 @@ export class Assignment implements AstExpression, AssignmentAST {
     type: "Assignment";
 }
 
-export class ObjectLiteral implements AstExpression, ObjectLiteralAST {
+export interface ObjectProperty {
+    key: string;
+    value: AstExpression;
+}
+
+export class ObjectLiteral implements AstExpression {
+
+    constructor(public properties: ObjectProperty[]) {}
+
     accept(visitor: AstVisitor): any {
+        visitor.visitObjectLiteral(this);
     }
 
-    properties: { key: string; value: AST }[];
-    type: "ObjectLiteral";
 }
 
 export class ArrayLiteral implements AstExpression {
@@ -144,37 +164,32 @@ export class ArrayLiteral implements AstExpression {
     constructor(public elements: AstExpression[]) {}
 
     accept(visitor: AstVisitor): any {
+        visitor.visitArrayLiteral(this)
     }
 
 }
 
 export class This implements AstExpression, ThisAST {
     accept(visitor: AstVisitor): any {
+        visitor.visitThis(this);
     }
 
     type: "This";
 }
 
-export class SafeCall implements AstExpression, SafeCallAST {
+export class SafePropertyRead implements AstExpression {
+
+    constructor(public receiver: AstExpression, public name: string | AstExpression, public computed: boolean = false) {}
+
     accept(visitor: AstVisitor): any {
+        visitor.visitSafePropertyRead(this);
     }
 
-    args: AstExpression[];
-    receiver: AstExpression;
-    type: "SafeCall";
-}
-
-export class SafePropertyRead implements AstExpression, SafePropertyReadAST {
-    accept(visitor: AstVisitor): any {
-    }
-
-    name: string;
-    receiver: AstExpression;
-    type: "SafePropertyRead";
 }
 
 export class PropertyWrite implements AstExpression, PropertyWriteAST {
     accept(visitor: AstVisitor): any {
+        visitor.visitPropertyWrite(this);
     }
 
     name: string;
@@ -188,6 +203,7 @@ export class Grouping implements AstExpression, GroupingAST {
     type: "Grouping";
 
     accept(visitor: AstVisitor): any {
+        visitor.visitGrouping(this);
     }
 }
 
@@ -198,6 +214,7 @@ export class BindingPipe implements AstExpression, BindingPipeAST {
     type: "Pipe";
 
     accept(visitor: AstVisitor): any {
+        visitor.visitBindingPipe(this)
     }
 }
 
@@ -221,21 +238,28 @@ export class Conditional implements AstExpression, ConditionalAST {
     }
 }
 
-export class Call implements AstExpression, CallAST {
-    args: AST[];
-    callee: AST;
-    type: "Call";
+export class Call implements AstExpression {
+
+    constructor(public callee: AstExpression, public args: AstExpression[]) {}
 
     accept(visitor: AstVisitor): any {
         return visitor.visitCall(this);
     }
 }
 
-export class PropertyRead implements AstExpression, PropertyReadAST {
-    computed: boolean;
-    key: string | AstExpression;
-    receiver: AstExpression | null;
-    type: "PropertyRead";
+export class SafeCall implements AstExpression {
+
+    constructor(public callee: AstExpression, public args: AstExpression[]) {}
+
+    accept(visitor: AstVisitor): any {
+        return visitor.visitSafeCall(this);
+    }
+
+}
+
+export class PropertyRead implements AstExpression {
+
+    constructor(public receiver: AstExpression, public key: string | AstExpression, public computed: boolean = false) {}
 
     accept(visitor: AstVisitor): any {
         return visitor.visitPropertyRead(this);
@@ -274,6 +298,7 @@ export class PrefixUpdate implements AstExpression {
     constructor(public token: Token, public expr: AstExpression) {}
 
     accept(visitor: AstVisitor): any {
+        visitor.visitPrefixUpdate(this)
     }
 }
 
@@ -285,6 +310,7 @@ export class PostfixUpdate implements AstExpression {
     constructor(public token: Token, public expr: AstExpression) {}
 
     accept(visitor: AstVisitor): any {
+        visitor.visitPostfixUpdate(this)
     }
 }
 
@@ -293,6 +319,7 @@ export class Comma implements AstExpression {
     constructor(public left: AstExpression, public right: AstExpression) {}
 
     accept(visitor: AstVisitor): any {
+        visitor.visitComma(this)
     }
 
 }
@@ -302,6 +329,7 @@ export class YieldExpression implements AstExpression {
     constructor(public argument: AstExpression, public delegate: boolean) {}
 
     accept(visitor: AstVisitor): any {
+        visitor.visitYieldExpression(this)
     }
 
 }
@@ -311,6 +339,7 @@ export class New implements AstExpression {
     constructor(public ctor: AstExpression, public args: AstExpression[]) {}
 
     accept(visitor: AstVisitor): any {
+        visitor.visitNew(this)
     }
 
 }
@@ -319,5 +348,6 @@ export class Spread implements AstExpression {
     constructor(public expression: AstExpression) {}
 
     accept(visitor: AstVisitor): any {
+        visitor.visitSpread(this)
     }
 }
