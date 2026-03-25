@@ -23,6 +23,7 @@ import {
     UnaryAST,
     UndefinedAST
 } from "./ast";
+import {Token} from "../expression_parser/tokens";
 
 export abstract class AstVisitor {
     abstract visitIdentifier(expr: IdentifierAST);
@@ -138,12 +139,13 @@ export class ObjectLiteral implements AstExpression, ObjectLiteralAST {
     type: "ObjectLiteral";
 }
 
-export class ArrayLiteral implements AstExpression, ArrayLiteralAST {
+export class ArrayLiteral implements AstExpression {
+
+    constructor(public elements: AstExpression[]) {}
+
     accept(visitor: AstVisitor): any {
     }
 
-    elements: AstExpression[];
-    type: "ArrayLiteral";
 }
 
 export class This implements AstExpression, ThisAST {
@@ -251,13 +253,38 @@ export class Binary implements AstExpression, BinaryAST {
     }
 }
 
-export class Unary implements AstExpression, UnaryAST {
+export class PrefixUnary implements AstExpression, UnaryAST {
     argument: AstExpression;
     operator: string;
     type: "Unary";
 
+    constructor(public token: Token, public expr: AstExpression) {}
+
+
     accept(visitor: AstVisitor): any {
         return visitor.visitUnary(this);
+    }
+}
+
+export class PrefixUpdate implements AstExpression {
+    argument: AST;
+    operator: string;
+    type: "Unary";
+
+    constructor(public token: Token, public expr: AstExpression) {}
+
+    accept(visitor: AstVisitor): any {
+    }
+}
+
+export class PostfixUpdate implements AstExpression {
+    argument: AST;
+    operator: string;
+    type: "Unary";
+
+    constructor(public token: Token, public expr: AstExpression) {}
+
+    accept(visitor: AstVisitor): any {
     }
 }
 
@@ -277,4 +304,20 @@ export class YieldExpression implements AstExpression {
     accept(visitor: AstVisitor): any {
     }
 
+}
+
+export class New implements AstExpression {
+
+    constructor(public ctor: AstExpression, public args: AstExpression[]) {}
+
+    accept(visitor: AstVisitor): any {
+    }
+
+}
+
+export class Spread implements AstExpression {
+    constructor(public expression: AstExpression) {}
+
+    accept(visitor: AstVisitor): any {
+    }
 }
