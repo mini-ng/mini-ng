@@ -1,3 +1,5 @@
+import {SourceSpan} from "../../../../sourcespan/sourceSpan";
+
 export type Attribute = {
     name?: string;
     value?: string;
@@ -6,6 +8,7 @@ export type Attribute = {
 export type Input = {
     name?: string;
     value?: string;
+    type?: "Property" | "Attribute" | "Class" | "Style"
 }
 
 export type Output = {
@@ -21,6 +24,7 @@ export type Reference = {
 export type TemplateAttr = {
     name?: string;
     value?: string;
+    type?: "Property" | "Attribute" | "Class" | "Style"
 }
 
 export type Variable = {
@@ -41,6 +45,7 @@ export interface NodeToken {
     templateAttrs?: TemplateAttr[];
     variables?: Variable[];
     hasStructuralDirective?: boolean;
+    span: SourceSpan
 }
 
 export interface TemplateSyntaxNode {
@@ -49,21 +54,26 @@ export interface TemplateSyntaxNode {
     startTag?: boolean;
     endTag?: boolean;
     expression?: string;
+    blockParameters: string[];
+    span: SourceSpan;
 }
 
 export interface TextToken {
     type: "text";
     name: string;
+    span: SourceSpan;
 }
 
 export interface ExpressionToken {
     type: "expression";
     name: string;
+    span: SourceSpan;
 }
 
 export interface EOFToken {
     type: "EOF";
     name: "EOF";
+    span: SourceSpan;
 }
 
 export type Token = NodeToken | TextToken | ExpressionToken | TemplateSyntaxNode | EOFToken;
