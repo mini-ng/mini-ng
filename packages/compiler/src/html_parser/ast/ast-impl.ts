@@ -26,47 +26,47 @@ import {
 import {Token} from "../expression_parser/tokens";
 
 export abstract class AstVisitor {
-    abstract visitIdentifier(expr: IdentifierAST);
-    abstract visitLiteral(expr: LiteralAST);
-    abstract visitUnary(expr: UnaryAST);
-    abstract visitBinary(expr: BinaryAST);
+    abstract visitIdentifier(expr: Identifier);
+    abstract visitLiteral(expr: Literal);
+    abstract visitBinary(expr: Binary);
 
     abstract visitPropertyRead(expr: PropertyRead);
-    abstract visitPropertyWrite(expr: PropertyWriteAST);
+    abstract visitPropertyWrite(expr: PropertyWrite);
     abstract visitSafePropertyRead(expr: SafePropertyRead);
 
     abstract visitCall(expr: Call);
     abstract visitSafeCall(expr: SafeCall);
 
-    abstract visitConditional(expr: ConditionalAST);
-    abstract visitSequence(expr: SequenceAST);
+    abstract visitConditional(expr: Conditional);
+    abstract visitSequence(expr: Sequence);
 
-    abstract visitPipe(expr: BindingPipeAST);
-    abstract visitGrouping(expr: GroupingAST);
+    abstract visitPipe(expr: BindingPipe);
+    abstract visitGrouping(expr: Grouping);
 
     abstract visitArrayLiteral(expr: ArrayLiteral);
     abstract visitObjectLiteral(expr: ObjectLiteral);
 
-    abstract visitAssignment(expr: AssignmentAST);
-    abstract visitNonNullAssert(expr: NonNullAssertAST);
+    abstract visitAssignment(expr: Assignment);
+    abstract visitNonNullAssert(expr: NonNullAssert);
 
-    abstract visitThis(expr: ThisAST);
-    abstract visitTrue(expr: TrueBooleanAST);
-    abstract visitFalse(expr: FalseBooleanAST);
-    abstract visitNull(expr: NullAST);
-    abstract visitUndefined(expr: UndefinedAST);
+    abstract visitThis(expr: This);
+    abstract visitTrue(expr: True);
+    abstract visitFalse(expr: False);
+    abstract visitNull(expr: Null);
+    abstract visitUndefined(expr: Undefined);
 
     abstract visitComma(param: Comma);
     abstract visitPostfixUpdate(param: PostfixUpdate);
     abstract visitPrefixUpdate(param: PrefixUpdate);
 
-    abstract visitBindingPipe(param: BindingPipeAST);
+    abstract visitBindingPipe(param: BindingPipe);
 
     abstract visitYieldExpression(param: YieldExpression);
 
     abstract visitNew(param: New);
     abstract visitSpread(param: Spread);
 
+    abstract visitPrefixUnary(param: PrefixUnary);
 }
 
 export abstract class AstExpression {
@@ -169,12 +169,11 @@ export class ArrayLiteral implements AstExpression {
 
 }
 
-export class This implements AstExpression, ThisAST {
+export class This implements AstExpression {
     accept(visitor: AstVisitor): any {
         visitor.visitThis(this);
     }
 
-    type: "This";
 }
 
 export class SafePropertyRead implements AstExpression {
@@ -227,7 +226,7 @@ export class Sequence implements AstExpression, SequenceAST {
     }
 }
 
-export class Conditional implements AstExpression, ConditionalAST {
+export class Conditional implements AstExpression {
     alternate: AstExpression;
     consequent: AstExpression;
     test: AstExpression;
@@ -277,16 +276,13 @@ export class Binary implements AstExpression, BinaryAST {
     }
 }
 
-export class PrefixUnary implements AstExpression, UnaryAST {
-    argument: AstExpression;
-    operator: string;
-    type: "Unary";
+export class PrefixUnary implements AstExpression {
 
-    constructor(public token: Token, public expr: AstExpression) {}
+    constructor(public token: Token, public argument: AstExpression) {}
 
 
     accept(visitor: AstVisitor): any {
-        return visitor.visitUnary(this);
+        return visitor.visitPrefixUnary(this);
     }
 }
 
