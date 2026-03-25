@@ -336,7 +336,7 @@ export class HTMLExpressionTokenizer {
                     break
                 }
 
-                case '?': {
+                case "?": {
 
                     if (this.matchNext('?')) {
 
@@ -355,6 +355,13 @@ export class HTMLExpressionTokenizer {
                     if (this.matchNext('.')) {
 
                         this.addToken(TokenType.OPTIONAL_CHAINING, "?.");
+                        break;
+
+                    }
+
+                    if (this.matchNext('[')) {
+
+                        this.addToken(TokenType.QUESTION_LEFT_SQUARE_BRACKET, "?[");
                         break;
 
                     }
