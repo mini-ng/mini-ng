@@ -6,15 +6,20 @@ import {
     Binary,
     BindingPipe,
     Call,
+    Comma,
     Conditional,
     False,
     Grouping,
     Identifier,
-    Literal,
-    PropertyRead,
+    Literal, New,
+    ObjectLiteral,
+    PostfixUpdate,
+    PrefixUnary,
+    PrefixUpdate,
     True,
-    Unary
+    YieldExpression
 } from "../ast/ast-impl";
+import {keywords} from "./expr_tokenizer";
 
 // recursive descent parser
 // Binary
@@ -46,13 +51,43 @@ export class HTMLExpressionParser {
         return this.parsePipe();
     }
 
+    // | pipe
+    parsePipe(): AstExpression {
+
+        let expr = this.parseConditional();
+
+        while (this.match(TokenType.PIPE)) {
+
+            const name = this.peek().value;
+            this.consumeType(TokenType.IDENTIFIER, "Expected pipe name");
+
+            const args: AST[] = [];
+
+            while (this.match(TokenType.COLON)) {
+                args.push(this.parseExpression());
+            }
+
+            const pipe = new BindingPipe();
+            pipe.name = name;
+            pipe.type = "Pipe"
+            pipe.expression = expr
+            pipe.args = args
+
+
+            expr = pipe;
+        }
+
+        return expr;
+    }
+
     // x, y
+    // Associativity: left-to-right
     parseComma() {
 
-        let expr = this.parseSpread();
+        let expr = this.parseYield();
 
         while (this.match(TokenType.COMMA)) {
-            const right = this.parseAssignment();
+            const right = this.parseYield();
             expr = new Comma(expr, right);
         }
 
@@ -73,6 +108,7 @@ export class HTMLExpressionParser {
 
     }
 
+    // Associativity: n/a
     parseYield() {
 
         if (this.match(TokenType.YIELD)) {
@@ -82,29 +118,31 @@ export class HTMLExpressionParser {
                 delegate = true;
             }
 
-            const argument = this.parseAssignment();
+            const argument = this.parseExpression();
             return new YieldExpression(argument, delegate);
         }
 
         return this.parseArrow();
     }
 
+    // TODO: implement this
     parseArrow() {
         return this.parseNullishCoalescingAssignment()
     }
 
     // x ? y : z
+    // right-to-left
     parseConditional(): AstExpression {
 
         let expr = this.parseNullishCoalescingOperator();
 
         if (this.match(TokenType.TERNARY)) {
 
-            const consequent = this.parseExpression();
+            const consequent = this.parseConditional();
 
             this.consumeType(TokenType.COLON, "Expected ':'");
 
-            const alternate = this.parseExpression();
+            const alternate = this.parseConditional();
 
             const conditional = new Conditional();
             conditional.alternate = alternate;
@@ -119,12 +157,13 @@ export class HTMLExpressionParser {
     }
 
     // x ??= y
+    // right-to-left
     parseNullishCoalescingAssignment() {
         let expr = this.parseLogicalORAssignment();
 
         if (this.match(TokenType.NULLISH_COALESCING_ASSIGN)) {
             const token = this.previous()
-            const right = this.parseComma();
+            const right = this.parseNullishCoalescingAssignment();
             expr = this.createBinary(token, expr, right);
         }
 
@@ -137,7 +176,7 @@ export class HTMLExpressionParser {
 
         if (this.match(TokenType.LOGICAL_OR_ASSIGN)) {
             const token = this.previous()
-            const right = this.parseComma();
+            const right = this.parseLogicalORAssignment();
             expr = this.createBinary(token, expr, right);
         }
 
@@ -151,7 +190,7 @@ export class HTMLExpressionParser {
 
         if (this.match(TokenType.LOGICAL_AND_ASSIGN)) {
             const token = this.previous()
-            const right = this.parseComma();
+            const right = this.parseLogicalANDAssignment();
             expr = this.createBinary(token, expr, right);
         }
 
@@ -165,7 +204,7 @@ export class HTMLExpressionParser {
 
         if (this.match(TokenType.BITWISE_OR_ASSIGN)) {
             const token = this.previous()
-            const right = this.parseComma();
+            const right = this.parseBitwiseORAssignment();
             expr = this.createBinary(token, expr, right);
         }
 
@@ -179,7 +218,7 @@ export class HTMLExpressionParser {
 
         if (this.match(TokenType.BITWISE_XOR_ASSIGN)) {
             const token = this.previous()
-            const right = this.parseComma();
+            const right = this.parseBitwiseXORAssignment();
             expr = this.createBinary(token, expr, right);
         }
 
@@ -193,7 +232,7 @@ export class HTMLExpressionParser {
 
         if (this.match(TokenType.BITWISE_AND_ASSIGN)) {
             const token = this.previous()
-            const right = this.parseComma();
+            const right = this.parseBitwiseANDAssignment();
             expr = this.createBinary(token, expr, right);
         }
 
@@ -207,7 +246,7 @@ export class HTMLExpressionParser {
 
         if (this.match(TokenType.UnsignedRightShiftAssignment)) {
             const token = this.previous()
-            const right = this.parseComma();
+            const right = this.parseUnsignedRightShiftAssignment();
             expr = this.createBinary(token, expr, right);
         }
 
@@ -221,7 +260,7 @@ export class HTMLExpressionParser {
 
         if (this.match(TokenType.RightShiftAssignment)) {
             const token = this.previous()
-            const right = this.parseComma();
+            const right = this.parseRightShiftAssignment();
             expr = this.createBinary(token, expr, right);
         }
 
@@ -235,7 +274,7 @@ export class HTMLExpressionParser {
 
         if (this.match(TokenType.LeftShiftAssignment)) {
             const token = this.previous()
-            const right = this.parseComma();
+            const right = this.parseLeftShiftAssignment();
             expr = this.createBinary(token, expr, right);
         }
 
@@ -249,7 +288,7 @@ export class HTMLExpressionParser {
 
         if (this.match(TokenType.RemainderAssignment)) {
             const token = this.previous()
-            const right = this.parseComma();
+            const right = this.parseRemainderAssignment();
             expr = this.createBinary(token, expr, right);
         }
 
@@ -263,7 +302,7 @@ export class HTMLExpressionParser {
 
         if (this.match(TokenType.DivisionAssignment)) {
             const token = this.previous()
-            const right = this.parseComma();
+            const right = this.parseDivisionAssignment();
             expr = this.createBinary(token, expr, right);
         }
 
@@ -277,7 +316,7 @@ export class HTMLExpressionParser {
 
         if (this.match(TokenType.MultiplicationAssignment)) {
             const token = this.previous()
-            const right = this.parseComma();
+            const right = this.parseMultiplicationAssignment();
             expr = this.createBinary(token, expr, right);
         }
 
@@ -291,7 +330,7 @@ export class HTMLExpressionParser {
 
         if (this.match(TokenType.ExponentiationAssignment)) {
             const token = this.previous()
-            const right = this.parseComma();
+            const right = this.parseExponentiationAssignment();
             expr = this.createBinary(token, expr, right);
         }
 
@@ -305,7 +344,7 @@ export class HTMLExpressionParser {
 
         if (this.match(TokenType.SubtractionAssignment)) {
             const token = this.previous()
-            const right = this.parseComma();
+            const right = this.parseSubtractionAssignment();
             expr = this.createBinary(token, expr, right);
         }
 
@@ -315,11 +354,11 @@ export class HTMLExpressionParser {
 
     // x += y
     parseAdditionAssignment() {
-        let expr = this.parseLogicalANDAssignment();
+        let expr = this.parseAssignment();
 
         if (this.match(TokenType.AdditionAssignment)) {
             const token = this.previous()
-            const right = this.parseComma();
+            const right = this.parseAdditionAssignment();
             expr = this.createBinary(token, expr, right);
         }
 
@@ -333,7 +372,7 @@ export class HTMLExpressionParser {
 
         if (this.match(TokenType.Assignment)) {
             const token = this.previous()
-            const right = this.parseComma();
+            const right = this.parseAssignment();
             expr = this.createBinary(token, expr, right);
         }
 
@@ -342,13 +381,14 @@ export class HTMLExpressionParser {
     }
 
     // x ?? y
+    // left-to-right
     parseNullishCoalescingOperator() {
 
         let expr = this.parseLogicalOr();
 
         if (this.match(TokenType.NULLISH_COALESCING)) {
             const token = this.previous()
-            const right = this.parseComma();
+            const right = this.parseLogicalOr();
             expr = this.createBinary(token, expr, right);
         }
 
@@ -388,7 +428,7 @@ export class HTMLExpressionParser {
         let expr = this.parseBitwiseXor();
         while (this.match(TokenType.PIPE)) {
             const op = this.previous();
-            const right = this.parseBitwiseOr();
+            const right = this.parseBitwiseXor();
 
             expr = this.createBinary(op, expr, right);
         }
@@ -400,7 +440,7 @@ export class HTMLExpressionParser {
         let expr = this.parseBitwiseAnd();
         while (this.match(TokenType.BITWISE_XOR)) {
             const op = this.previous();
-            const right = this.parseBitwiseOr();
+            const right = this.parseBitwiseAnd();
 
             expr = this.createBinary(op, expr, right);
         }
@@ -412,7 +452,7 @@ export class HTMLExpressionParser {
         let expr = this.parseStrictEquality();
         while (this.match(TokenType.AND)) {
             const op = this.previous();
-            const right = this.parseBitwiseOr();
+            const right = this.parseStrictEquality();
 
             expr = this.createBinary(op, expr, right);
         }
@@ -425,7 +465,7 @@ export class HTMLExpressionParser {
 
         while (this.match(TokenType.STRICT_EQUAL)) {
             const op = this.previous();
-            const right = this.parseBitwiseOr();
+            const right = this.parseInequality();
 
             expr = this.createBinary(op, expr, right);
         }
@@ -439,7 +479,7 @@ export class HTMLExpressionParser {
 
         while (this.match(TokenType.STRICT_NOTEQUAL)) {
             const op = this.previous();
-            const right = this.parseBitwiseOr();
+            const right = this.parseEquality();
 
             expr = this.createBinary(op, expr, right);
         }
@@ -454,7 +494,7 @@ export class HTMLExpressionParser {
 
         while (this.match(TokenType.EQUAL)) {
             const op = this.previous();
-            const right = this.parseBitwiseOr();
+            const right = this.parseInstanceOf();
 
             expr = this.createBinary(op, expr, right);
         }
@@ -466,9 +506,9 @@ export class HTMLExpressionParser {
     parseInstanceOf() {
         let expr = this.parseIn();
 
-        while (this.match(TokenType.EQUAL)) {
+        while (this.matchKeyword(keywords.instanceof)) {
             const op = this.previous();
-            const right = this.parseBitwiseOr();
+            const right = this.parseIn();
 
             expr = this.createBinary(op, expr, right);
         }
@@ -479,64 +519,201 @@ export class HTMLExpressionParser {
 
     // x in y
     parseIn() {
+        let expr = this.parseGreaterThanOrEqual();
+
+        while (this.matchKeyword(keywords.in)) {
+            const op = this.previous();
+            const right = this.parseGreaterThanOrEqual();
+
+            expr = this.createBinary(op, expr, right);
+        }
+
+        return expr;
 
     }
 
     // x >= y
     parseGreaterThanOrEqual() {
+        let expr = this.parseGreaterThan();
+
+        while (this.match(TokenType.GREATER_EQUAL)) {
+            const op = this.previous();
+            const right = this.parseGreaterThan();
+
+            expr = this.createBinary(op, expr, right);
+        }
+
+        return expr;
 
     }
 
     // x > y
-    parseGreaterThan() {}
+    parseGreaterThan() {
+        let expr = this.parseLessThanOrEqual();
+
+        while (this.match(TokenType.GREATER_THAN)) {
+            const op = this.previous();
+            const right = this.parseLessThanOrEqual();
+
+            expr = this.createBinary(op, expr, right);
+        }
+
+        return expr;
+
+    }
 
     // x <= y
-    parseLessThanOrEqual() {}
+    parseLessThanOrEqual() {
+        let expr = this.parseLessThan();
+
+        while (this.match(TokenType.LESS_EQUAL)) {
+            const op = this.previous();
+            const right = this.parseLessThan();
+
+            expr = this.createBinary(op, expr, right);
+        }
+
+        return expr;
+
+    }
 
     // x < y
-    parseLessThan() {}
+    parseLessThan() {
+        let expr = this.parseUnsignedRightShift();
 
-    // + -
+        while (this.match(TokenType.LESS_THAN)) {
+            const op = this.previous();
+            const right = this.parseUnsignedRightShift();
+
+            expr = this.createBinary(op, expr, right);
+        }
+
+        return expr;
+
+    }
+
+    // x >>> y
+    parseUnsignedRightShift() {
+        let expr = this.parseRightShift();
+
+        while (this.match(TokenType.BIT_SHR)) {
+            const op = this.previous();
+            const right = this.parseRightShift();
+
+            expr = this.createBinary(op, expr, right);
+        }
+
+        return expr;
+    }
+
+    // x >> y
+    parseRightShift() {
+        let expr = this.parseLeftShift();
+
+        while (this.match(TokenType.SHR)) {
+            const op = this.previous();
+            const right = this.parseLeftShift();
+
+            expr = this.createBinary(op, expr, right);
+        }
+
+        return expr;
+
+    }
+
+    // x << y
+    parseLeftShift() {
+        let expr = this.parseSubtraction();
+
+        while (this.match(TokenType.SHL)) {
+            const op = this.previous();
+            const right = this.parseSubtraction();
+
+            expr = this.createBinary(op, expr, right);
+        }
+
+        return expr;
+
+    }
+
+    // -
+    parseSubtraction() {
+        let expr = this.parseAdditive();
+
+        while (this.match(TokenType.SUB)) {
+            const op = this.previous();
+            const right = this.parseAdditive();
+
+            expr = this.createBinary(op, expr, right);
+        }
+
+        return expr;
+    }
+
+    // +
     parseAdditive(): AstExpression {
 
+        let expr = this.parseRemainder();
+
+        while (this.check(TokenType.ADD)) {
+
+            const operator = this.peek().value;
+            this.advance();
+
+            const right = this.parseRemainder();
+
+            const bin = new Binary();
+            bin.type = "Binary"
+            bin.operator = operator;
+            bin.left = expr
+            bin.right = right
+
+            expr = bin;
+        }
+
+        return expr;
+    }
+
+    // x % y
+    parseRemainder() {
+        let expr = this.parseDivision();
+
+        while (this.match(TokenType.Remainder)) {
+            const op = this.previous();
+            const right = this.parseDivision();
+
+            expr = this.createBinary(op, expr, right);
+        }
+
+        return expr;
+    }
+
+    parseDivision() {
         let expr = this.parseMultiplicative();
 
-        while (
-            this.check(TokenType.ADD) ||
-            this.check(TokenType.SUB)
-            ) {
-
-            const operator = this.peek().value;
-            this.advance();
-
+        while (this.match(TokenType.DIV)) {
+            const op = this.previous();
             const right = this.parseMultiplicative();
 
-            const bin = new Binary();
-            bin.type = "Binary"
-            bin.operator = operator;
-            bin.left = expr
-            bin.right = right
-
-            expr = bin;
+            expr = this.createBinary(op, expr, right);
         }
 
         return expr;
     }
 
-    // * /
+    // *
     parseMultiplicative(): AstExpression {
 
-        let expr = this.parseUnary();
+        let expr = this.parseExponentiation();
 
         while (
-            this.check(TokenType.MUL) ||
-            this.check(TokenType.DIV)
+            this.check(TokenType.MUL)
             ) {
 
             const operator = this.peek().value;
             this.advance();
 
-            const right = this.parseUnary();
+            const right = this.parseExponentiation();
 
             const bin = new Binary();
             bin.type = "Binary"
@@ -550,131 +727,132 @@ export class HTMLExpressionParser {
         return expr;
     }
 
-    // | pipe
-    parsePipe(): AstExpression {
+    // x ** y
+    // right-to-left
+    parseExponentiation() {
+        let expr = this.parsePrefixOperators();
 
-        let expr = this.parseConditional();
+        if (this.match(TokenType.Exponentiation)) {
+            const op = this.previous();
+            const right = this.parseExponentiation();
 
-        while (this.match(TokenType.PIPE)) {
-
-            const name = this.peek().value;
-            this.consumeType(TokenType.IDENTIFIER, "Expected pipe name");
-
-            const args: AST[] = [];
-
-            while (this.match(TokenType.COLON)) {
-                args.push(this.parseExpression());
-            }
-
-            const pipe = new BindingPipe();
-            pipe.name = name;
-            pipe.type = "Pipe"
-            pipe.expression = expr
-            pipe.args = args
-
-
-            expr = pipe;
+            expr = this.createBinary(op, expr, right);
         }
 
         return expr;
+
     }
 
-    parseUnary(): AstExpression {
+    // prefix operators
+    // Associativity: n/a
+    // Prefix increment
+    // ++x	[6]
+    // Prefix decrement
+    // --x
+    // Logical NOT
+    // !x
+    // Bitwise NOT
+    // ~x
+    // Unary plus
+    // +x
+    // Unary negation
+    // -x
+    // typeof x
+    // void x
+    // delete x	[7]
+    // await x
+    parsePrefixOperators() {
 
-        if (
-            this.check(TokenType.ADD) ||
-            this.check(TokenType.SUB)
-        ) {
-
-            const operator = this.peek().value;
-            this.advance();
-
-            const argument = this.parseUnary();
-
-            const unary = new Unary()
-            unary.operator = operator;
-            unary.argument = argument;
-
-            return unary;
+        if (this.matchAllKeywords(keywords.typeof, keywords.void, keywords.delete, keywords.await)) {
+            return new PrefixUnary(this.previous(), this.parseExpression());
         }
 
-        return this.parseLHS();
+        if (this.matchAll(TokenType.LOGICAL_NOT, TokenType.BITWISE_NOT, TokenType.ADD, TokenType.SUB)) {
+            return new PrefixUnary(this.previous(), this.parseExpression());
+        }
+
+        if (this.matchAll(TokenType.Increment, TokenType.Decrement)) {
+            return new PrefixUpdate(this.previous(), this.parseExpression());
+        }
+
+        return this.parsePostfixOperators();
+
     }
 
-    parseLHS(): AstExpression {
+    // Associativity: n/a
+    // Postfix increment
+    // x++	[5]
+    // Postfix decrement
+    // x--
+    parsePostfixOperators() {
+
+        if (this.matchAll(TokenType.Increment, TokenType.Decrement)) {
+            return new PostfixUpdate(this.previous(), this.parseExpression());
+        }
+
+        return this.parseNewWithoutArgs();
+
+    }
+
+    parseNewWithoutArgs() {
+
+        if (this.matchKeyword(keywords.new)) {
+            return new New();
+        }
+
+        return this.parseLeftHandSide();
+
+    }
+
+    parseLeftHandSide(): AstExpression {
 
         let expr = this.parsePrimary();
 
         while (true) {
 
-            // call
-            // e.g: call(45, 90)
-            if (this.match(TokenType.LEFT_PAREN)) {
-
-                const args: AST[] = [];
-
-                if (!this.check(TokenType.RIGHT_PAREN)) {
-                    do {
-                        args.push(this.parseExpression());
-                    } while (this.match(TokenType.COMMA));
-                }
-
-                this.consumeType(TokenType.RIGHT_PAREN, "Expected ')'");
-
-                const call = new Call()
-                call.callee = expr;
-                call.args = args
-
-                expr = call;
-
+            // a.b
+            if (this.match(TokenType.DOT)) {
+                const prop = this.consumeIdentifier();
+                expr = new Member(expr, prop);
             }
 
-            // property access
-            // e.g: user.age
-            else if (this.match(TokenType.DOT)) {
-
-                const name = this.peek().value;
-
-                this.consumeType(
-                    TokenType.IDENTIFIER,
-                    "Expected property name"
-                );
-
-                const propertyRead = new PropertyRead()
-                propertyRead.type = "PropertyRead";
-                propertyRead.key = name;
-                propertyRead.computed = false
-                propertyRead.receiver = expr
-
-                expr = propertyRead;
+            // a?.b
+            else if (this.match(TokenType.OPTIONAL_CHAINING)) {
+                const prop = this.consumeIdentifier();
+                expr = new SafeMember(expr, prop);
             }
 
-            // computed access
-            // e.g: user['age']
+            // a[b]
             else if (this.match(TokenType.LEFT_SQUARE_BRACKET)) {
-
-                const key = this.parseExpression();
-
-                this.consumeType(
-                    TokenType.RIGHT_SQUARE_BRACKET,
-                    "Expected ']'"
-                );
-
-                const propertyRead = new PropertyRead()
-                propertyRead.type = "PropertyRead";
-                propertyRead.key = key;
-                propertyRead.computed = true
-                propertyRead.receiver = expr
-
-                expr = propertyRead;
+                const prop = this.parseExpression();
+                this.consume(TokenType.RIGHT_SQUARE_BRACKET, "Expected ']'.");
+                expr = new Member(expr, prop, true);
             }
 
-            else {
+            // a[b]?.c
+            else if (this.match(TokenType.QUESTION_LEFT_SQUARE_BRACKET)) {
+                const prop = this.parseExpression();
+                this.consume(TokenType.RIGHT_SQUARE_BRACKET, "Expected ']'.");
+                expr = new SafeMember(expr, prop, true);
+            }
+
+            // a()
+            else if (this.match(TokenType.LEFT_PAREN)) {
+                const args = this.parseArguments();
+                expr = new Call(expr, args);
+            }
+
+            // a?.()
+            else if (this.match("?.(")) {
+                const args = this.parseArguments();
+                expr = new SafeCall(expr, args);
+            } else {
                 break;
             }
         }
 
         return expr;
+
     }
 
     parsePrimary(): AstExpression {
@@ -741,47 +919,46 @@ export class HTMLExpressionParser {
             this.consumeType(TokenType.RIGHT_SQUARE_BRACKET,
                 "Expected ']' at line: ");
 
-            const arrayLiteral = new ArrayLiteral()
-            return arrayLiteral;
-
-            // return make_unique<ArrayLiteralExpression>(token, std::move(elements));
+            return new ArrayLiteral(elements)
 
         }
 
         // { object literal }
         if (this.match(TokenType.LBRACE)) {
+
             const token = this.previous();
             const props: AstExpression[] = [];
+
             if (!this.check(TokenType.RBRACE)) {
                 do {
 
                     let key;
                     if (this.match(TokenType.SPREAD)) {
-                        props.push({ key, this.parseSpread() });
+                        props.push(this.parseSpread());
                     } else {
                         // key in object-literal can be a string
-                        if (this.peek().type == TokenType.STRING) {
+                        if (this.peek().token == TokenType.STRING) {
                             key = this.consume(TokenType.STRING,
-                                "Expected property key at line: " + to_string(peek().line));
-                        } else if (this.peek().type == TokenType.IDENTIFIER) {
+                                "Expected property key at line: " );
+                        } else if (this.peek().token == TokenType.IDENTIFIER) {
                             key = this.consume(TokenType.IDENTIFIER,
-                                "Expected property key at line: " + to_string(peek().line));
+                                "Expected property key at line: ");
                         } else {
-                            throw ("Expected property key at line: " + to_string(peek().line));
+                            throw ("Expected property key at line: " );
                         }
 
                         this.consume(TokenType.COLON,
-                            "Expected ':' after property key at line: " + to_string(peek().line));
+                            "Expected ':' after property key at line: ");
                         const value = this.parseAssignment();
-                        props.push({ key, std::move(value) });
+                        props.push({ key, value});
 
                     }
 
                 } while (this.match(TokenType.COMMA));
             }
             this.consume(TokenType.RBRACE,
-                "Expected '}' at line: " + to_string(peek().line));
-            return make_unique<ObjectLiteralExpression>(token, std::move(props));
+                "Expected '}' at line: ");
+            return ObjectLiteral(token, props);
         }
 
         throw new Error("Expected expression." + this.peek().value.toString());
@@ -796,6 +973,48 @@ export class HTMLExpressionParser {
         }
 
         return false;
+    }
+
+    matchKeyword(value: string) {
+        if (this.check(TokenType.KEYWORD) && this.checkString(value)) {
+            this.advance();
+            return true;
+        }
+        return false;
+    }
+
+    matchAll(...tokens: TokenType[]) {
+        for (const token of tokens) {
+            if (this.match(token)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    matchAllKeywords(...tokens: string[]) {
+        for (const token of tokens) {
+            if (this.matchString(token)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    matchString(value: string) {
+        if (this.checkString(value)) {
+            this.advance();
+            return true;
+        }
+        return false;
+    }
+
+    checkString(value: string) {
+        if (this.isAtEnd()) return false;
+
+        return this.peek().value === value;
+
     }
 
     check(type: TokenType): boolean {
@@ -843,5 +1062,27 @@ export class HTMLExpressionParser {
         binary.right = right
 
         return binary
+    }
+
+    private consumeIdentifier() {
+        const prop = this.peek();
+        this.consume(TokenType.IDENTIFIER, "There is no identifier");
+        return prop
+    }
+
+    private parseArguments() {
+
+        const args = [];
+
+        do {
+            if (this.match(TokenType.SPREAD)) {
+                args.push(this.parseSpread());
+            } else {
+                args.push(this.parseAssignment());
+            }
+        } while (this.match(TokenType.COMMA));
+
+        return args;
+
     }
 }
