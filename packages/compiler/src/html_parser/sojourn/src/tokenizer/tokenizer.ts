@@ -88,7 +88,7 @@ export class Tokenizer {
             }
 
             // TAG OPEN
-            if (char === "<" && !openTag) {
+            if (char === chars.LT && !openTag) {
 
                 if (textBuffer.length) {
                     tokens.push({
@@ -226,13 +226,13 @@ export class Tokenizer {
                 continue;
             }
 
-            if (char === "@" && nextChar !== " " && !comment && !DOCTYPE) {
+            if (char === chars.AT && nextChar !== " " && !comment && !DOCTYPE) {
                 templateName += char;
                 collectTemplateName = true;
                 continue;
             }
 
-            if (collectTemplateName && (char === "(" || char === " " || char === "{")) {
+            if (collectTemplateName && (char === chars.LPAREN || char === " " || char === chars.LBRACKET)) {
                 collectTemplateName = false;
 
                 if (templatesNodeNames.includes(templateName)) {
@@ -276,7 +276,7 @@ export class Tokenizer {
 
                         while (index < this.html.length) {
 
-                            if (_char === ")") {
+                            if (_char === chars.RPAREN) {
 
                                 if (this.html[index + 1] === "{") {
                                     index += 1;
@@ -319,13 +319,13 @@ export class Tokenizer {
 
                         templateSyntaxCounter++
 
-                        if (_char !== "{") {
+                        if (_char !== chars.LBRACKET) {
                             throw "Template " + templateName + " must be followed by either ( or {";
                         }
 
                     }
 
-                    if(_char === "{") {
+                    if(_char === chars.LBRACKET) {
                         this.pushNodeToken(tokens, {
                             name: templateName,
                             startTag: true,
@@ -352,7 +352,7 @@ export class Tokenizer {
                 continue
             }
 
-            if (char === "}" && templateSyntaxFoundNames && templateSyntaxCounter > 0) {
+            if (char === chars.RBRACKET && templateSyntaxFoundNames && templateSyntaxCounter > 0) {
                 this.pushNodeToken(tokens, {
                     endTag: true,
                     name: templateSyntaxFoundNames[templateSyntaxFoundNames.length - 1],
