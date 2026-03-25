@@ -64,4 +64,6 @@ export enum TokenType {
     Exponentiation, // **
     Assignment, // =
     LOGICAL_NOT, // !
+    Increment, // ++
+    Decrement, // --
 }
