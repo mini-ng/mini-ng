@@ -354,6 +354,13 @@ export class HTMLExpressionTokenizer {
 
                     if (this.matchNext('.')) {
 
+                        if (this.matchNext('(')) {
+
+                            this.addToken(TokenType.SAFE_CALL, "?.(");
+                            break;
+
+                        }
+
                         this.addToken(TokenType.OPTIONAL_CHAINING, "?.");
                         break;
 
