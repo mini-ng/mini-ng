@@ -1,5 +1,6 @@
 import {Attribute, Input, NodeToken, Output, Reference, TemplateAttr, Token, Variable} from "../types/types";
 import {AttributeParser} from "../attr-parser/attribute-parser";
+import {SourcePosition, SourceSpan} from "../../../../sourcespan/sourceSpan";
 
 const SVG_TAG_REWRITE: Record<string, string> = {
     clippath: 'clipPath',
@@ -22,6 +23,9 @@ const chars = {
 };
 
 export class Tokenizer {
+    private offset: number;
+    private line: number;
+    private column: number;
 
     constructor(private html: string) {}
 
@@ -32,7 +36,7 @@ export class Tokenizer {
     public start() {
 
         // remove newlines
-        this.html = this.html.replace(/\n/g, "");
+        // this.html = this.html.replace(/\n/g, "");
 
         let openTag = false;
         let comment = false;
@@ -56,6 +60,8 @@ export class Tokenizer {
 
             const char = this.html[index];
             const nextChar = this.html[index + 1];
+
+            this.advance(char);
 
             // COMMENT START
             if (!openTag && !comment && this.html.startsWith("<!--", index)) {
@@ -93,7 +99,8 @@ export class Tokenizer {
                 if (textBuffer.length) {
                     tokens.push({
                         name: textBuffer,
-                        type: "text"
+                        type: "text",
+                        span: this.createSpan(this.createSourcePosition())
                     });
                     textBuffer = "";
                 }
@@ -125,7 +132,8 @@ export class Tokenizer {
                         this.pushNodeToken(tokens, {
                             name: content.slice(1),
                             endTag: true,
-                            type: "node"
+                            type: "node",
+                            span: this.createSpan(this.createSourcePosition())
                         })
 
                         if (pushNgTemplateCloseTag > 0) {
@@ -133,7 +141,8 @@ export class Tokenizer {
                             this.pushNodeToken(tokens, {
                                 name: "ng-template",
                                 endTag: true,
-                                type: "node"
+                                type: "node",
+                                span: this.createSpan(this.createSourcePosition())
                             })
                         }
 
@@ -163,7 +172,8 @@ export class Tokenizer {
                             references,
                             startTag: true,
                             selfClosing,
-                            type: "node"
+                            type: "node",
+                            span: this.createSpan(this.createSourcePosition())
                         };
 
                         if (templateAttrs && templateAttrs.length && name !== "ng-template") {
@@ -179,7 +189,8 @@ export class Tokenizer {
                                 references: [],
                                 startTag: true,
                                 selfClosing: false,
-                                type: "node"
+                                type: "node",
+                                span: this.createSpan(this.createSourcePosition())
                             }
 
                             token.templateAttrs = [];
@@ -214,7 +225,8 @@ export class Tokenizer {
                     isExpression = false;
                     tokens.push({
                         name: expressionBuffer,
-                        type: "expression"
+                        type: "expression",
+                        span: this.createSpan(this.createSourcePosition())
                     })
                     elementBuffer = "";
                     expressionBuffer = ""
@@ -245,6 +257,7 @@ export class Tokenizer {
                         index++;
                         while (index < this.html.length) {
                             let newChar = this.html[index];
+                            this.advance(newChar)
 
                             if (newChar === "(") {
                                 _char = newChar
@@ -276,6 +289,8 @@ export class Tokenizer {
 
                         while (index < this.html.length) {
 
+                            this.advance(_char);
+
                             if (_char === chars.RPAREN) {
 
                                 if (this.html[index + 1] === "{") {
@@ -290,6 +305,8 @@ export class Tokenizer {
                                 let newChar = this.html[index];
 
                                 while (true) {
+
+                                    this.advance(newChar)
 
                                     if (newChar === "{" && seq.trim().length === 0) {
                                         _char = newChar;
@@ -332,6 +349,7 @@ export class Tokenizer {
                             blockParameters: this._consumeBlockParameters(expression),
                             endTag: false,
                             type: "templateSyntax",
+                            span: this.createSpan(this.createSourcePosition())
                         });
 
                         templateSyntaxFoundNames.push(templateName);
@@ -358,7 +376,8 @@ export class Tokenizer {
                     name: templateSyntaxFoundNames[templateSyntaxFoundNames.length - 1],
                     startTag: false,
                     type: "templateSyntax",
-                    blockParameters: []
+                    blockParameters: [],
+                    span: this.createSpan(this.createSourcePosition())
                 });
                 templateSyntaxFoundNames = templateSyntaxFoundNames.slice(0);
                 templateSyntaxCounter--;
@@ -374,13 +393,15 @@ export class Tokenizer {
         if (textBuffer.length) {
             tokens.push({
                 name: textBuffer,
-                type: "text"
+                type: "text",
+                span: this.createSpan(this.createSourcePosition())
             });
         }
 
         tokens.push({
             name: "EOF",
-            type: "EOF"
+            type: "EOF",
+            span: this.createSpan(this.createSourcePosition())
         });
 
         return tokens.map((token, index) => ({
@@ -396,6 +417,7 @@ export class Tokenizer {
         for (let i = 0; i < str.length; i++) {
 
             const char = str[i];
+            this.advance(char);
 
             if (!quote && (char === '"' || char === "'")) {
                 quote = char;
@@ -446,6 +468,7 @@ export class Tokenizer {
         for (let i = 0; i < expression.length; i++) {
 
             const char = expression.charAt(i);
+            this.advance(char);
 
             if (char === ";") {
                 blockParameters.push(expression.substring(start, i).trim());
@@ -460,6 +483,37 @@ export class Tokenizer {
 
         return blockParameters;
 
+    }
+
+    createSourcePosition() {
+        return {
+            offset: this.offset,
+            line: this.line,
+            column: this.column
+        }
+    }
+
+    private createSpan(start: SourcePosition): SourceSpan {
+        return {
+            text: start.column + " " + start.column + " " + start.line,
+            textEnd: this.offset + " " + this.offset + " " + this.offset + " ",
+            start,
+            end: {
+                offset: this.offset,
+                line: this.line,
+                column: this.column
+            }
+        };
+    }
+
+    private advance(char: string) {
+        this.offset++;
+        if (char === '\n') {
+            this.line++;
+            this.column = 1;
+        } else {
+            this.column++;
+        }
     }
 
 }
