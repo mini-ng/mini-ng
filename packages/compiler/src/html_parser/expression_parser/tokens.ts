@@ -70,4 +70,5 @@ export enum TokenType {
     Increment, // ++
     Decrement, // --
     QUESTION_LEFT_SQUARE_BRACKET, // ?[
+    SAFE_CALL, // ?.(
 }
