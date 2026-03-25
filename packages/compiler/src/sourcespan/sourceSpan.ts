@@ -9,6 +9,7 @@ export class SourceSpan {
     start: SourcePosition
     end:   SourcePosition
     text: string
+    textEnd: string
 
     constructor(start: SourcePosition, end: SourcePosition) {}
 

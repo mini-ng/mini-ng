@@ -111,6 +111,11 @@ export class TemplateVisitor extends AstVisitor {
                 break;
             }
 
+            case "++": {
+                kind = ts.SyntaxKind.PlusPlusToken
+                break;
+            }
+
         }
 
         return kind;
@@ -129,6 +134,11 @@ export class TemplateVisitor extends AstVisitor {
     }
 
     visitCall(visitor: Call) {
+        return factory.createCallExpression(
+            visitor.callee.accept(this),
+            undefined,
+            visitor.args.map(arg => arg.accept(this))
+        )
     }
 
     visitIdentifier(expr: Identifier) {
@@ -157,13 +167,17 @@ export class TemplateVisitor extends AstVisitor {
     }
 
     visitArrayLiteral(arrayLiteral: ArrayLiteral) {
+        return factory.createArrayLiteralExpression(
+            arrayLiteral.elements.map(arrayLit => arrayLit.accept(this)),
+            false
+        );
     }
 
     visitAssignment(assignment: Assignment) {
         return factory.createBinaryExpression(
-            factory.createIdentifier("t"),
+            assignment.left.accept(this),
             factory.createToken(ts.SyntaxKind.EqualsToken),
-            factory.createNumericLiteral("89")
+            assignment.right.accept(this),
         )
     }
 
@@ -226,13 +240,23 @@ export class TemplateVisitor extends AstVisitor {
 
     }
 
-    visitPropertyWrite(expr: PropertyWrite) {
-    }
+    visitPropertyWrite(expr: PropertyWrite) {}
 
     visitSafeCall(expr: SafeCall) {
+        return factory.createCallChain(
+            expr.callee.accept(this),
+            factory.createToken(ts.SyntaxKind.QuestionDotToken),
+            undefined,
+            expr.args.map(arg => arg.accept(this))
+        )
     }
 
     visitSafePropertyRead(expr: SafePropertyRead) {
+        return factory.createPropertyAccessChain(
+            expr.computed ? (expr.name as AstExpression).accept(this) : expr.name,
+            factory.createToken(ts.SyntaxKind.QuestionDotToken),
+            expr.receiver.accept(this),
+        )
     }
 
     visitThis(expr: This) {
@@ -254,12 +278,25 @@ export class TemplateVisitor extends AstVisitor {
     }
 
     visitNew(param: New) {
+        return factory.createNewExpression(
+            param.ctor.accept(this),
+            null,
+            param.args.map(arg => arg.accept(this))
+        )
     }
 
     visitPostfixUpdate(param: PostfixUpdate) {
+        return factory.createPostfixUnaryExpression(
+            param.expr.accept(this),
+            this.visitOperator(param.token.value)
+        )
     }
 
     visitPrefixUpdate(param: PrefixUpdate) {
+        return factory.createPrefixUnaryExpression(
+            this.visitOperator(param.token.value),
+            param.expr.accept(this),
+        )
     }
 
     visitSpread(param: Spread) {
@@ -269,6 +306,10 @@ export class TemplateVisitor extends AstVisitor {
     }
 
     visitPrefixUnary(param: PrefixUnary) {
+        return factory.createPrefixUnaryExpression(
+            this.visitOperator(param.token.value),
+            param.argument.accept(this)
+        )
     }
 
 }

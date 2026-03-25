@@ -965,6 +965,7 @@ export class HTMLExpressionParser {
             return new ObjectLiteral(props);
         }
 
+        console.log(this.tokens, this.index)
         throw new Error("Expected expression." + this.peek().value.toString());
 
     }
