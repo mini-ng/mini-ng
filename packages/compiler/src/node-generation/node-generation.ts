@@ -179,7 +179,29 @@ export function generatePropertyNode(propertyName: string, value: string, implic
     )
 }
 
-export function generateAdvanceNode(index: string) {
+export function generatePropertyNodeV2(propertyName: string, value: ts.Expression, implicitVariables: string[]) {
+
+    return ts.factory.createExpressionStatement(
+        ts.factory.createCallExpression(
+            ts.factory.createPropertyAccessExpression(
+                ts.factory.createIdentifier(i0),
+                ts.factory.createIdentifier(ɵɵproperty)
+            ),
+            undefined,
+            [
+                ts.factory.createStringLiteral(propertyName),
+                value
+            ]
+        )
+    )
+}
+
+export function generateAdvanceNode(index: string | number) {
+
+    if (typeof index === 'number') {
+        index = index.toString()
+    }
+
     return factory.createExpressionStatement(factory.createCallExpression(
         factory.createPropertyAccessExpression(
             factory.createIdentifier(i0),
@@ -222,34 +244,18 @@ export function generateTextInterpolateNode(bindingExpressions: InterpolationTyp
     return expressionStatement
 }
 
-export function _generateTextInterpolateNode(bindingExpressions: any[], implicitVariables: string[]) {
+export function generateTextInterpolateNodeV2(expression: ts.Expression, implicitVariables: string[]) {
 
-    // const exprParser = new ExpressionParser();
-    //
-    // const bindingExpressionStmts = bindingExpressions.map((binding) => {
-    //     if (binding.type === 'text') {
-    //         return factory.createStringLiteral(binding.content)
-    //     } else if (binding.type === 'expression') {
-    //         const transformedNode = exprParser.parse(binding.content, implicitVariables);
-    //         // @ts-ignore
-    //         return transformedNode.statements[0].expression;
-    //     } else if (binding.type === 'statement') {
-    //         return binding.statement
-    //     }
-    // }).filter(Boolean)
-
-    // @ts-ignore
     const expressionStatement = factory.createExpressionStatement(factory.createCallExpression(
         factory.createPropertyAccessExpression(
             factory.createIdentifier(i0),
             ɵɵtextInterpolate
         ), undefined,
-        // @ts-ignore
         [
-            // @ts-ignore
-            // ...bindingExpressionStmts
+            expression
         ]
-    ))
+    ));
+
     return expressionStatement
 }
 
@@ -380,7 +386,24 @@ export function generateConditionalNode(conditionals: any[], containerIndex: num
     );
 }
 
-export function generateRepeaterCreateNode(node: Element, slotIndex: number, functionName: string, emptyTemplateFnName: string, trackBy?: string, ɵɵrepeaterTrackByIdentity?, trackByFunctionName?: string) {
+export function generateConditionalNodeV2(containerIndex: number, containerEndIndex: number, expr: ts.Expression) {
+    return ts.factory.createExpressionStatement(
+        ts.factory.createCallExpression(
+            ts.factory.createPropertyAccessExpression(
+                ts.factory.createIdentifier(i0),
+                ts.factory.createIdentifier(ɵɵconditional)
+            ),
+            undefined,
+            [
+                ts.factory.createNumericLiteral(containerIndex),
+                ts.factory.createNumericLiteral(containerEndIndex),
+                expr
+            ]
+        )
+    );
+}
+
+export function generateRepeaterCreateNode(tagName: string, slotIndex: number, functionName: string, emptyTemplateFnName?: string, trackBy?: string, ɵɵrepeaterTrackByIdentity?, trackByFunctionName?: string) {
     const trackByFnNode = trackBy ? trackByFunctionName ? ts.factory.createIdentifier(trackByFunctionName) : factory.createPropertyAccessExpression(
         factory.createIdentifier("i0"),
         factory.createIdentifier("ɵɵrepeaterTrackByIdentity")
@@ -397,7 +420,7 @@ export function generateRepeaterCreateNode(node: Element, slotIndex: number, fun
                 ts.factory.createIdentifier(functionName),
                 ts.factory.createNumericLiteral(0),
                 ts.factory.createNumericLiteral(0),
-                ts.factory.createStringLiteral(node.tagName),
+                ts.factory.createStringLiteral(tagName),
                 ts.factory.createNull(),
                 trackByFnNode, // trackByFn
                 ts.factory.createNull(),
@@ -423,6 +446,19 @@ export function generateUpdateRepeaterNode(exprParserSourceFile: SourceFile) {
                 // @ts-ignore
                 exprParserSourceFile.statements[0].expression
             ]
+        )
+    )
+}
+
+export function generateUpdateRepeaterNodeV2(node: ts.Expression[]) {
+    return ts.factory.createExpressionStatement(
+        ts.factory.createCallExpression(
+            ts.factory.createPropertyAccessExpression(
+                ts.factory.createIdentifier(i0),
+                ts.factory.createIdentifier(ɵɵrepeater)
+            ),
+            undefined,
+            node
         )
     )
 }

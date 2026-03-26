@@ -663,7 +663,7 @@ export class ViewGenerator {
 
     }
 
-    const repeaterCreateNode = generateRepeaterCreateNode(node, slotIndex, functionName, emptyTemplateFnName, trackBy, ɵɵrepeaterTrackByIdentity, _trackByFunctionName);
+    const repeaterCreateNode = generateRepeaterCreateNode(node.tagName, slotIndex, functionName, emptyTemplateFnName, trackBy, ɵɵrepeaterTrackByIdentity, _trackByFunctionName);
 
     this.updateStmts.push(generateAdvanceNode(slotIndex.toString()))
 
