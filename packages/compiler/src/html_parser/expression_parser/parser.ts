@@ -11,11 +11,16 @@ import {
     False,
     Grouping,
     Identifier,
-    Literal, New,
-    ObjectLiteral, ObjectProperty,
+    Literal,
+    New,
+    ObjectLiteral,
+    ObjectProperty,
     PostfixUpdate,
     PrefixUnary,
-    PrefixUpdate, PropertyRead, SafeCall, SafePropertyRead,
+    PrefixUpdate,
+    PropertyRead,
+    SafeCall,
+    SafePropertyRead,
     True,
     YieldExpression
 } from "../ast/ast-impl";
@@ -840,13 +845,26 @@ export class HTMLExpressionParser {
 
             // a()
             else if (this.match(TokenType.LEFT_PAREN)) {
-                const args = this.parseArguments();
+
+                let args = [];
+
+                if (!this.check(TokenType.RIGHT_PAREN)) {
+                    args = this.parseArguments();
+                }
+
+                this.consume(TokenType.RIGHT_PAREN, " Expected ')'")
                 expr = new Call(expr, args);
+
             }
 
             // a?.()
             else if (this.match(TokenType.SAFE_CALL)) {
-                const args = this.parseArguments();
+                let args = [];
+
+                if (!this.check(TokenType.RIGHT_PAREN)) {
+                    args = this.parseArguments();
+                }
+                this.consume(TokenType.RIGHT_PAREN, " Expected ')'")
                 expr = new SafeCall(expr, args);
             } else {
                 break;
@@ -868,18 +886,11 @@ export class HTMLExpressionParser {
         }
 
         if (this.match(TokenType.STRING)) {
-            const literal = new Literal()
-            literal.value = token.value;
-            literal.valueType = LiteralAstType.STRING;
-
-            return literal;
+            return new Literal(token.value, LiteralAstType.STRING);
         }
 
         if (this.match(TokenType.NUMBER)) {
-            const literal = new Literal()
-            literal.value = token.value;
-            literal.valueType = LiteralAstType.NUMBER;
-            return literal;
+            return new Literal(token.value, LiteralAstType.NUMBER);
         }
 
         if (this.match(TokenType.TRUE)) {
@@ -911,10 +922,11 @@ export class HTMLExpressionParser {
 
             if (!this.check(TokenType.RIGHT_SQUARE_BRACKET)) {
                 do {
+                    if (this.peek().token === TokenType.RIGHT_SQUARE_BRACKET) break;
                     if (this.match(TokenType.SPREAD)) {
                         elements.push(this.parseSpread());
                     } else {
-                        elements.push(this.parseAssignment());
+                        elements.push(this.parseExpression());
                     }
                 } while (this.match(TokenType.COMMA));
             }
@@ -938,15 +950,11 @@ export class HTMLExpressionParser {
                     if (this.match(TokenType.SPREAD)) {
                         props.push({key, value: this.parseSpread()});
                     } else {
-                        // key in object-literal can be a string
+
                         if (this.peek().token == TokenType.STRING) {
-                            key = this.peek().value;
-                            this.consume(TokenType.STRING,
-                                "Expected property key at line: ");
+                            key = this.parsePrimary();
                         } else if (this.peek().token == TokenType.IDENTIFIER) {
-                            key = this.peek().value;
-                            this.consume(TokenType.IDENTIFIER,
-                                "Expected property key at line: ");
+                            key = this.parsePrimary();
                         } else {
                             throw ("Expected property key at line: ");
                         }
@@ -965,8 +973,7 @@ export class HTMLExpressionParser {
             return new ObjectLiteral(props);
         }
 
-        console.log(this.tokens, this.index)
-        throw new Error("Expected expression." + this.peek().value.toString());
+        throw new Error("Expected expression: '" + this.peek().value.toString() + "'");
 
     }
 

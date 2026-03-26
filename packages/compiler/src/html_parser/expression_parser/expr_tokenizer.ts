@@ -469,9 +469,9 @@ export class HTMLExpressionTokenizer {
 
         this.index--;
 
-        if (keywords[0] === alpha) {
+        if (keywords.true === alpha.toUpperCase()) {
             this.tokens.push({token: TokenType.TRUE, value: alpha})
-        } else if (keywords[1] === alpha) {
+        } else if (keywords.false === alpha.toUpperCase()) {
             this.tokens.push({token: TokenType.FALSE, value: alpha})
         } else if (this.checkCharIsKeyword(alpha)) {
             const keyword = keywords[alpha];

@@ -1,4 +1,4 @@
-import {NodeToken, TemplateSyntaxNode, Token, Variable} from "../types/types";
+import {NodeToken, TemplateSyntaxNode, Token} from "../types/types";
 import {BoundText, cloneNode, Document, Element, Template, Text} from "../../../nodes";
 import {HTMLExpressionParser} from "../../../expression_parser/parser";
 import {HTMLExpressionTokenizer} from "../../../expression_parser/expr_tokenizer";
@@ -11,7 +11,6 @@ import {
     IfBlock,
     SwitchNode
 } from "../../../syntax-ast";
-import {parseMicroSyntax} from "../../../../node-generation/node-generation";
 import {BoundAttribute, BoundEvent, HtmlReference, HtmlVariable} from "../../../ast/html-ast";
 
 interface ClosingResult {
@@ -147,7 +146,7 @@ export class Sojourn {
                     const cases = []
                     const switchNode = new SwitchNode([], null, cases, null)
 
-                    const expr = this.parse(token.expression)
+                    const expr = this.parse(token.blockParameters[0])
                     switchNode.expression = expr
 
                     if (children.length) {
@@ -175,7 +174,7 @@ export class Sojourn {
 
                 if (token.name === "@case") {
                     const caseNode = new CaseNode([], null);
-                    const expr = this.parse(token.expression)
+                    const expr = this.parse(token.blockParameters[0])
                     caseNode.expression = expr
 
                     if (children.length) {
@@ -205,7 +204,7 @@ export class Sojourn {
                 if (token.name === "@if") {
 
                     // search for @elseif(s) and @else
-                    const expr = this.parse(token.expression)
+                    const expr = this.parse(token.blockParameters[0])
                     const ifNode = new IfBlock(expr, [], null, null);
                     const elseIfs: ElseIfBlock[] = []
 
@@ -235,7 +234,7 @@ export class Sojourn {
                             }
 
                             if (elseOrElseIfNode instanceof ElseIfBlock) {
-                                const expr = this.parse(current.expression)
+                                const expr = this.parse(current.blockParameters[0])
                                 elseOrElseIfNode.expression = expr;
                             }
 
