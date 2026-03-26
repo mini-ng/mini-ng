@@ -1,13 +1,13 @@
 import {BoundText, Element, Template, Text, Comment, AttributeNode} from "../nodes";
-import {ForLoopBlock, IfBlock, SwitchNode} from "../syntax-ast";
+import {ElseBlock, ElseIfBlock, ForLoopBlock, ForLoopBlockEmpty, IfBlock, SwitchNode} from "../syntax-ast";
 import {ASTWithSource} from "./ast";
 
 export abstract class HtmlAstVisitor {
-    abstract visitElement(expr: Element);
-    abstract visitText(expr: Text);
+    abstract visitElement(expr: Element): void;
+    abstract visitText(expr: Text): void;
     abstract visitBoundText(visitor: BoundText);
     abstract visitTemplate(visitor: Template);
-    abstract visitIfBlock(visitor: IfBlock);
+    abstract visitIfBlock(visitor: IfBlock): void;
     abstract visitForLoopBlock(visitor: ForLoopBlock);
     abstract visitSwitch(visitor: SwitchNode);
     abstract visitComment(visitor: Comment);
@@ -16,22 +16,9 @@ export abstract class HtmlAstVisitor {
     abstract visitBoundEvent(expr: BoundEvent);
     abstract visitReference(expr: HtmlReference);
     abstract visitVariable(expr: HtmlVariable);
-}
-
-export class DefaultHtmlAstVisitor extends HtmlAstVisitor {
-    visitElement(expr: Element) {}
-    visitText(expr: Text) {}
-    visitBoundText(expr: BoundText) {}
-    visitTemplate(expr: Template) {}
-    visitIfBlock(expr: IfBlock) {}
-    visitForLoopBlock(expr: ForLoopBlock) {}
-    visitSwitch(expr: SwitchNode) {}
-    visitComment(expr: Comment) {}
-    visitAttribute(expr: AttributeNode) {}
-    visitBoundAttribute(expr: BoundAttribute) {}
-    visitBoundEvent(expr: BoundEvent) {}
-    visitReference(expr: HtmlReference) {}
-    visitVariable(expr: HtmlVariable) {}
+    abstract visitElseIfBlock(elseIfBlock: ElseIfBlock);
+    abstract visitElseBlock(elseBlock: ElseBlock);
+    abstract visitForLoopBlockEmpty(param: ForLoopBlockEmpty);
 }
 
 export abstract class HtmlAstExpression {

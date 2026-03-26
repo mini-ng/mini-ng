@@ -4,33 +4,28 @@ import {TemplateVisitor} from "./template-visitor";
 import {sojourn} from "../sojourn/src";
 import {AttributeNode, BoundText, ChildNode, Comment, Element, Template, Text} from "../nodes";
 import {
-    _generateTextInterpolateNode,
+    generateTextInterpolateNodeV2,
     generateAdvanceNode,
+    generateConditionalNodeV2,
     generateElementEndNode,
     generateElementStartNode,
     generateListenerNode,
-    generatePropertyNode, generateRepeaterCreateNode,
+    generatePropertyNodeV2,
+    generateRepeaterCreateNode,
     generateTemplateNode,
     generateTextNode
 } from "../../node-generation/node-generation";
-import {ForLoopBlock, IfBlock, SwitchNode} from "../syntax-ast";
+import {ElseBlock, ElseIfBlock, ForLoopBlock, ForLoopBlockEmpty, IfBlock, SwitchNode} from "../syntax-ast";
 import {AttributeMarker} from "../../template/attribute_marker";
 import {
     BoundAttribute,
     BoundEvent,
-    DefaultHtmlAstVisitor,
     HtmlAstVisitor,
     HtmlReference,
     HtmlVariable
 } from "../ast/html-ast";
-
-export class AttributeCollectorVisitor extends DefaultHtmlAstVisitor {
-
-    override visitAttribute(expr: AttributeNode) {
-        return []
-    }
-
-}
+import {Conditional, Literal} from "../ast/ast-impl";
+import {LiteralAstType} from "../ast/ast";
 
 export class HtmlAstVisitorImpl extends HtmlAstVisitor {
 
@@ -82,13 +77,13 @@ export class HtmlAstVisitorImpl extends HtmlAstVisitor {
 
         this.stmts.push(generateTextNode(index));
 
-        this.updateStmts.push(generateAdvanceNode(index.toString()));
+        this.updateStmts.push(generateAdvanceNode(index));
 
-        this.updateStmts.push(_generateTextInterpolateNode(expr.value.ast.accept(this.astVisitor), this.implicitVariables))
+        this.updateStmts.push(generateTextInterpolateNodeV2(expr.value.ast.accept(this.astVisitor), this.implicitVariables))
 
     }
 
-    visitComment(visitor: Comment) {
+    visitComment(comment: Comment) {
 
     }
 
@@ -162,8 +157,95 @@ export class HtmlAstVisitorImpl extends HtmlAstVisitor {
 
     }
 
-    visitIfBlock(visitor: IfBlock) {
-        // this.visitExternalTemplate(forLoop.childNodes);
+    visitForLoopBlockEmpty(param: ForLoopBlockEmpty) {
+    }
+
+    visitIfBlock(ifBlock: IfBlock) {
+
+        const functionName = "Template_" + this._namingIndex() + "_tag_If_Conditional";
+        const index = this.index;
+        let containerEndIndex = index;
+
+        const indexAst = new Literal(index, LiteralAstType.NUMBER)
+
+        let ifCondition = new Conditional();
+        ifCondition.test = ifBlock.expression.ast;
+        ifCondition.consequent = indexAst
+
+        const origCondition = ifCondition;
+
+        const templateNode = generateTemplateNode(index, functionName, "@if");
+        this.stmts.push(templateNode)
+
+        this.visitExternalTemplate(functionName, ifBlock.childNodes);
+
+        this.updateStmts.push(generateAdvanceNode(index))
+
+        for (let i = ifBlock.branches.length - 1; i >= 0; i--) {
+
+            this.incrementIndex();
+
+            const branch = ifBlock.branches[i];
+
+            const elseIfIndex = branch.accept(this);
+
+            const elseIfIndexAst = new Literal(elseIfIndex, LiteralAstType.NUMBER)
+
+            const elseIfCondition = new Conditional();
+            elseIfCondition.test = branch.expression.ast;
+            elseIfCondition.consequent = elseIfIndexAst;
+
+            ifCondition.alternate = elseIfCondition
+
+            ifCondition = elseIfCondition
+
+            containerEndIndex = elseIfIndex
+
+        }
+
+        if (ifBlock.elseBranch) {
+
+            this.incrementIndex()
+
+            const elseIndex = ifBlock.elseBranch.accept(this);
+
+            const elseIndexAst = new Literal(elseIndex, LiteralAstType.NUMBER)
+
+            ifCondition.alternate = elseIndexAst;
+
+            containerEndIndex = elseIndex;
+
+        }
+
+        const updateTemplateNode = generateConditionalNodeV2(index, containerEndIndex, origCondition.accept(this.astVisitor))
+
+        this.updateStmts.push(updateTemplateNode)
+
+    }
+
+    visitElseIfBlock(elseIfBlock: ElseIfBlock) {
+
+        const functionName = "Template_" + this._namingIndex() + "_tag_Else_If_Conditional";
+        const index = this.index;
+
+        this.visitExternalTemplate(functionName, elseIfBlock.childNodes);
+
+        this.stmts.push(generateTemplateNode(index, functionName, "@elseif"));
+
+        return index
+
+    }
+
+    visitElseBlock(elseBlock: ElseBlock) {
+        const functionName = "Template_" + this._namingIndex() + "_tag_Else";
+        const index = this.index;
+
+        this.visitExternalTemplate(functionName, elseBlock.childNodes);
+
+        this.stmts.push(generateTemplateNode(index, functionName, "@else"));
+
+        return index
+
     }
 
     visitSwitch(visitor: SwitchNode) {
@@ -299,7 +381,7 @@ export class HtmlAstVisitorImpl extends HtmlAstVisitor {
 
         this.updateStmts.push(generateAdvanceNode(index.toString()));
 
-        const node = generatePropertyNode(expr.name, expr.value.ast.accept(this.astVisitor), this.implicitVariables);
+        const node = generatePropertyNodeV2(expr.name, expr.value.ast.accept(this.astVisitor), this.implicitVariables);
         this.updateStmts.push(node);
 
         let attr_marker = AttributeMarker.Bindings;
@@ -358,6 +440,7 @@ export class HtmlAstVisitorImpl extends HtmlAstVisitor {
     incrementIndex() {
         this.index++
     }
+
     _namingIndex() { return ++this.namingIndex }
 
 }
