@@ -3,12 +3,18 @@ import {
     Assignment,
     AstExpression,
     AstVisitor,
-    Binary, BindingPipe, Call,
+    Binary,
+    BindingPipe,
+    Call,
     Comma,
-    Conditional, False, Grouping,
+    Conditional,
+    False,
+    Grouping,
     Identifier,
     Literal,
-    New, NonNullAssert, Null,
+    New,
+    NonNullAssert,
+    Null,
     ObjectLiteral,
     PostfixUpdate,
     PrefixUnary,
@@ -19,10 +25,14 @@ import {
     SafePropertyRead,
     Sequence,
     Spread,
-    This, True, Undefined, YieldExpression,
+    This,
+    True,
+    Undefined,
+    YieldExpression,
 } from "../ast/ast-impl";
 import ts from "typescript";
 import {LiteralAstType} from "../ast/ast";
+import {printExpressionStatements} from "../../test/html_tokenizer";
 
 const factory = ts.factory
 
@@ -143,16 +153,17 @@ export class TemplateVisitor extends AstVisitor {
 
     visitIdentifier(expr: Identifier) {
 
-        return ts.factory.createPropertyAccessExpression(
-            ts.factory.createIdentifier(this.ctx),
-            ts.factory.createIdentifier(expr.name)
-        );
+        // return ts.factory.createPropertyAccessExpression(
+        //     ts.factory.createIdentifier(this.ctx),
+            return ts.factory.createIdentifier(expr.name)
+        // );
 
     }
 
     visitLiteral(expr: Literal) {
+
         if (expr.valueType === LiteralAstType.STRING) {
-            return ts.factory.createStringLiteral(expr.name)
+            return ts.factory.createStringLiteral(expr.value as string)
         }
 
         if (expr.valueType === LiteralAstType.NUMBER) {
@@ -160,15 +171,17 @@ export class TemplateVisitor extends AstVisitor {
         }
     }
 
-    visitMember(visitor: AstVisitor) {
-    }
-
     visitSequence(visitor: Sequence) {
     }
 
     visitArrayLiteral(arrayLiteral: ArrayLiteral) {
+
+        const elements = arrayLiteral.elements.map(arrayLit => {
+            return arrayLit.accept(this)
+        });
+
         return factory.createArrayLiteralExpression(
-            arrayLiteral.elements.map(arrayLit => arrayLit.accept(this)),
+            elements,
             false
         );
     }
@@ -209,10 +222,10 @@ export class TemplateVisitor extends AstVisitor {
 
         const props = expr.properties.map(prop => {
             return factory.createPropertyAssignment(
-                factory.createIdentifier(prop.key),
+                prop.key.accept(this),
                 prop.value.accept(this)
             )
-        })
+        });
 
         return factory.createObjectLiteralExpression(
             props,
