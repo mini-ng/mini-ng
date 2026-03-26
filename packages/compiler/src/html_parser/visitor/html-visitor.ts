@@ -13,7 +13,7 @@ import {
     generatePropertyNodeV2,
     generateRepeaterCreateNode,
     generateTemplateNode,
-    generateTextNode
+    generateTextNode, generateUpdateRepeaterNodeV2
 } from "../../node-generation/node-generation";
 import {ElseBlock, ElseIfBlock, ForLoopBlock, ForLoopBlockEmpty, IfBlock, SwitchNode} from "../syntax-ast";
 import {AttributeMarker} from "../../template/attribute_marker";
@@ -154,6 +154,11 @@ export class HtmlAstVisitorImpl extends HtmlAstVisitor {
         const node = generateRepeaterCreateNode("for", this.index, functionName, )
 
         this.stmts.push(node);
+
+        this.updateStmts.push(generateAdvanceNode(this.index))
+
+        const updateRepeaterNode = generateUpdateRepeaterNodeV2([forLoop.expression.accept(this.astVisitor)])
+        this.updateStmts.push(updateRepeaterNode);
 
     }
 

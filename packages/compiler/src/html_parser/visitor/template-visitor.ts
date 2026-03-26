@@ -32,7 +32,6 @@ import {
 } from "../ast/ast-impl";
 import ts from "typescript";
 import {LiteralAstType} from "../ast/ast";
-import {printExpressionStatements} from "../../test/html_tokenizer";
 
 const factory = ts.factory
 
