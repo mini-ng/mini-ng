@@ -487,7 +487,7 @@ export class HTMLExpressionTokenizer {
 
     collectString() {
 
-        let string = this.currentCharacter();
+        let string = "";
         this.increment()
         let char = this.currentCharacter()
 
@@ -496,8 +496,6 @@ export class HTMLExpressionTokenizer {
             this.increment()
             char = this.currentCharacter()
         }
-
-        string += char
 
         this.tokens.push({
             token: TokenType.STRING,

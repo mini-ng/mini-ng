@@ -73,16 +73,13 @@ export abstract class AstExpression {
     abstract accept(visitor: AstVisitor): any;
 }
 
-export class Literal implements AstExpression, LiteralAST {
-    name: string;
+export class Literal implements AstExpression {
+
+    constructor(public value: string | number, public valueType: LiteralAstType) {}
 
     accept(visitor: AstVisitor): void {
         return visitor.visitLiteral(this);
     }
-
-    type: "Literal";
-    value: string | number;
-    valueType: LiteralAstType;
 
 }
 
@@ -145,7 +142,7 @@ export class Assignment implements AstExpression, AssignmentAST {
 }
 
 export interface ObjectProperty {
-    key: string;
+    key: AstExpression;
     value: AstExpression;
 }
 
@@ -154,7 +151,7 @@ export class ObjectLiteral implements AstExpression {
     constructor(public properties: ObjectProperty[]) {}
 
     accept(visitor: AstVisitor): any {
-        visitor.visitObjectLiteral(this);
+        return visitor.visitObjectLiteral(this);
     }
 
 }
@@ -164,7 +161,7 @@ export class ArrayLiteral implements AstExpression {
     constructor(public elements: AstExpression[]) {}
 
     accept(visitor: AstVisitor): any {
-        visitor.visitArrayLiteral(this)
+        return visitor.visitArrayLiteral(this)
     }
 
 }
