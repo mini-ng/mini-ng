@@ -53,36 +53,7 @@ export class HTMLExpressionParser {
     }
 
     parseExpression(): AstExpression {
-        return this.parsePipe();
-    }
-
-    // | pipe
-    parsePipe(): AstExpression {
-
-        let expr = this.parseConditional();
-
-        while (this.match(TokenType.PIPE)) {
-
-            const name = this.peek().value;
-            this.consumeType(TokenType.IDENTIFIER, "Expected pipe name");
-
-            const args: AST[] = [];
-
-            while (this.match(TokenType.COLON)) {
-                args.push(this.parseExpression());
-            }
-
-            const pipe = new BindingPipe();
-            pipe.name = name;
-            pipe.type = "Pipe"
-            pipe.expression = expr
-            pipe.args = args
-
-
-            expr = pipe;
-        }
-
-        return expr;
+        return this.parseConditional();
     }
 
     // x, y
@@ -808,27 +779,13 @@ export class HTMLExpressionParser {
             return new PostfixUpdate(this.previous(), this.parseExpression());
         }
 
-        return this.parseNewWithoutArgs();
-
-    }
-
-    parseNewWithoutArgs() {
-
-        if (this.matchKeyword(keywords.new)) {
-
-            const ctor = this.parsePrimary();
-            const args = this.parseArguments();
-
-            return new New(ctor, args);
-        }
-
         return this.parseLeftHandSide();
 
     }
 
     parseLeftHandSide(): AstExpression {
 
-        let expr = this.parsePrimary();
+        let expr = this.parseNew();
 
         while (true) {
 
@@ -887,6 +844,32 @@ export class HTMLExpressionParser {
         }
 
         return expr;
+
+    }
+
+    parseNew() {
+
+        if (this.matchKeyword(keywords.new)) {
+
+            const ctor = this.parsePrimary();
+
+            if (!this.check(TokenType.LEFT_PAREN)) {
+                return new New(ctor, []);
+            }
+
+            this.consume(TokenType.LEFT_PAREN, "Expected '('.")
+
+            let args = []
+            if (!this.check(TokenType.RIGHT_PAREN)) {
+                args = this.parseArguments();
+            }
+
+            this.consume(TokenType.RIGHT_PAREN, "Expected ')'.")
+
+            return new New(ctor, args);
+        }
+
+        return this.parsePrimary();
 
     }
 
@@ -1101,6 +1084,8 @@ export class HTMLExpressionParser {
 
         const args = [];
 
+        // consume (
+
         do {
             if (this.match(TokenType.SPREAD)) {
                 args.push(this.parseSpread());
@@ -1109,7 +1094,46 @@ export class HTMLExpressionParser {
             }
         } while (this.match(TokenType.COMMA));
 
+        // consume )
+
         return args;
 
     }
+}
+
+export class HTMLExpressionParserWithPipe extends HTMLExpressionParser{
+
+    parseExpression(): AstExpression {
+        return this.parsePipe();
+    }
+
+    // | pipe
+    parsePipe(): AstExpression {
+
+        let expr = this.parseConditional();
+
+        while (this.match(TokenType.PIPE)) {
+
+            const name = this.peek().value;
+            this.consumeType(TokenType.IDENTIFIER, "Expected pipe name");
+
+            const args: AST[] = [];
+
+            while (this.match(TokenType.COLON)) {
+                args.push(this.parseExpression());
+            }
+
+            const pipe = new BindingPipe();
+            pipe.name = name;
+            pipe.type = "Pipe"
+            pipe.expression = expr
+            pipe.args = args
+
+
+            expr = pipe;
+        }
+
+        return expr;
+    }
+
 }
