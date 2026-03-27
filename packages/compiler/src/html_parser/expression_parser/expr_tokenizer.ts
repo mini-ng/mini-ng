@@ -295,7 +295,7 @@ export class HTMLExpressionTokenizer {
 
                         }
 
-                        this.addToken(TokenType.EQUAL, "!=");
+                        this.addToken(TokenType.NOT_EQUAL, "!=");
                         break;
 
                     }

@@ -32,99 +32,19 @@ import {
 } from "../ast/ast-impl";
 import ts from "typescript";
 import {LiteralAstType} from "../ast/ast";
+import {operatorMap, TokenType} from "../expression_parser/tokens";
 
 const factory = ts.factory
 
 export class TemplateVisitor extends AstVisitor {
     private ctx: string = "ctx";
 
-    visitOperator(operator: string) {
+    visitOperator(operator: TokenType): ts.SyntaxKind {
 
-        let kind;
+        let kind = operatorMap[operator];
 
-        switch (operator) {
-
-            case "+": {
-                kind = ts.SyntaxKind.PlusToken;
-                break;
-            }
-
-            case "-": {
-                kind = ts.SyntaxKind.MinusToken;
-                break;
-            }
-
-            case "/": {
-                kind = ts.SyntaxKind.SlashToken;
-                break;
-            }
-
-            case "*": {
-                kind = ts.SyntaxKind.AsteriskToken;
-                break;
-            }
-
-            case "<": {
-                kind = ts.SyntaxKind.LessThanToken
-                break;
-            }
-
-            case "<<": {
-                kind = ts.SyntaxKind.LessThanLessThanToken
-                break;
-
-            }
-
-            case "<=": {
-                kind = ts.SyntaxKind.LessThanEqualsToken
-                break;
-            }
-
-            case ">": {
-                kind = ts.SyntaxKind.GreaterThanToken
-                break;
-            }
-
-            case ">>": {
-                kind = ts.SyntaxKind.GreaterThanGreaterThanToken
-                break;
-            }
-
-            case ">>>": {
-                kind = ts.SyntaxKind.GreaterThanGreaterThanGreaterThanToken
-                break;
-            }
-
-            case ">=": {
-                kind = ts.SyntaxKind.GreaterThanEqualsToken
-                break;
-            }
-
-            case "&": {
-                kind = ts.SyntaxKind.AmpersandToken;
-                break;
-            }
-
-            case "&&": {
-                kind = ts.SyntaxKind.AmpersandAmpersandToken;
-                break;
-            }
-
-            case "||": {
-                kind = ts.SyntaxKind.BarBarEqualsToken
-                break;
-            }
-
-            case "!": {
-                kind = ts.SyntaxKind.ExclamationToken;
-                break;
-            }
-
-            case "++": {
-                kind = ts.SyntaxKind.PlusPlusToken
-                break;
-            }
-
+        if (kind === undefined) {
+            throw new Error(`Unknown operator: ${TokenType[operator]}`);
         }
 
         return kind;
@@ -132,12 +52,12 @@ export class TemplateVisitor extends AstVisitor {
 
     visitBinary(visitor: Binary) {
 
-        const expr = this.visitOperator(visitor.operator);
+        const expr = this.visitOperator(visitor.operator.token);
         const left = (visitor.left as AstExpression).accept(this);
         const right = (visitor.right as AstExpression).accept(this);
 
         return ts.factory.createBinaryExpression(
-            left, expr, right
+            left, expr as ts.BinaryOperator, right
         )
 
     }
@@ -300,13 +220,13 @@ export class TemplateVisitor extends AstVisitor {
     visitPostfixUpdate(param: PostfixUpdate) {
         return factory.createPostfixUnaryExpression(
             param.expr.accept(this),
-            this.visitOperator(param.token.value)
+            this.visitOperator(param.token.token) as ts.PostfixUnaryOperator
         )
     }
 
     visitPrefixUpdate(param: PrefixUpdate) {
         return factory.createPrefixUnaryExpression(
-            this.visitOperator(param.token.value),
+            this.visitOperator(param.token.token) as ts.PrefixUnaryOperator,
             param.expr.accept(this),
         )
     }
@@ -319,7 +239,7 @@ export class TemplateVisitor extends AstVisitor {
 
     visitPrefixUnary(param: PrefixUnary) {
         return factory.createPrefixUnaryExpression(
-            this.visitOperator(param.token.value),
+            this.visitOperator(param.token.token) as ts.PrefixUnaryOperator,
             param.argument.accept(this)
         )
     }

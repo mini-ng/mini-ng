@@ -1,4 +1,5 @@
 import {AstExpression} from "./ast-impl";
+import {Token} from "../expression_parser/tokens";
 
 export type AST =
     | IdentifierAST
@@ -52,7 +53,7 @@ export interface UnaryAST {
 
 export interface BinaryAST {
     type: "Binary";
-    operator: string;
+    operator: Token;
     left: AST;
     right: AST;
 }

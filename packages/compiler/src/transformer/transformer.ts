@@ -4,12 +4,12 @@ import { Parser } from "../template/parser";
 import {CSSParser} from "../css_parser/css_parser";
 import {i0, rf, ɵcmp, ɵfac, ɵɵdefineComponent, ɵɵdirectiveInject} from "../constants/constants";
 import * as path from "node:path";
-import {Template} from "../template/view_generator";
 import {factory} from "typescript";
 import {getTokenExpression} from "../visitor/directive_visitor";
 import {DirectivesToInject} from "../visitor/visitor";
 import {extractInputsOutputs} from "./input_output_transformer";
 import {extractViewChildViewChildren} from "./viewChild_ViewChildren_transformer";
+import {TemplateStmt} from "../template/view_generator";
 
 export type ComponentMetadata = {
   selector: ts.PropertyAssignment;
@@ -744,7 +744,7 @@ export function createClassStaticBlock(node: ts.Block) {
   return ts.factory.createClassStaticBlockDeclaration(node);
 }
 
-function generateTemplateStmts(templateStmts: Template[], sourceFile: ts.SourceFile, hoisted: ts.Statement[]) {
+function generateTemplateStmts(templateStmts: TemplateStmt[], sourceFile: ts.SourceFile, hoisted: ts.Statement[]) {
 
   templateStmts.forEach(node => {
 

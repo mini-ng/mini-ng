@@ -1,7 +1,7 @@
 import ts, {factory} from "typescript";
 import {TemplateStmt} from "../../template/view_generator";
 import {TemplateVisitor} from "./template-visitor";
-import {sojourn} from "../sojourn/src";
+import {sojourn} from "../sojourn";
 import {AttributeNode, BoundText, ChildNode, Comment, Element, Template, Text} from "../nodes";
 import {
     generateTextInterpolateNodeV2,

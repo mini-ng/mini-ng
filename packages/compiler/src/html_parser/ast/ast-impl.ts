@@ -264,7 +264,7 @@ export class PropertyRead implements AstExpression {
 
 export class Binary implements AstExpression, BinaryAST {
     left: AstExpression;
-    operator: string;
+    operator: Token;
     right: AstExpression;
     type: "Binary";
 

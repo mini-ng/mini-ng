@@ -1,6 +1,6 @@
 import {ChildNode, ElementType, NodeWithChildren, Node} from "./nodes";
 import {ASTWithSource} from "./ast/ast";
-import {Variable} from "./sojourn/src/types/types";
+import {Variable} from "./sojourn/types/types";
 import {HtmlAstVisitor} from "./ast/html-ast";
 import {AstExpression} from "./ast/ast-impl";
 

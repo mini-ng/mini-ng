@@ -10,7 +10,6 @@ import {
 } from "../constants/constants";
 import {ExpressionParser} from "../expr_parser/expr_parser";
 import ts, {factory, SourceFile} from "typescript";
-import {Element} from "../html_parser/nodes";
 
 export type InterpolationType = {
     type: 'text' | 'expression' | 'statement',

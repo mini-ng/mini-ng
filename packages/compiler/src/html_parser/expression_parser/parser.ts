@@ -452,14 +452,29 @@ export class HTMLExpressionParser {
 
     // x & y
     parseBitwiseAnd() {
-        let expr = this.parseStrictEquality();
+        let expr = this.parseStrictInEquality();
         while (this.match(TokenType.AND)) {
+            const op = this.previous();
+            const right = this.parseStrictInEquality();
+
+            expr = this.createBinary(op, expr, right);
+        }
+        return expr;
+    }
+
+    parseStrictInEquality() {
+
+        let expr = this.parseStrictEquality();
+
+        while (this.match(TokenType.STRICT_NOTEQUAL)) {
             const op = this.previous();
             const right = this.parseStrictEquality();
 
             expr = this.createBinary(op, expr, right);
         }
+
         return expr;
+
     }
 
     // x === y
@@ -476,11 +491,11 @@ export class HTMLExpressionParser {
         return expr;
     }
 
-    // x !== y
+    // x != y
     parseInequality() {
         let expr = this.parseEquality();
 
-        while (this.match(TokenType.STRICT_NOTEQUAL)) {
+        while (this.match(TokenType.NOT_EQUAL)) {
             const op = this.previous();
             const right = this.parseEquality();
 
@@ -660,7 +675,7 @@ export class HTMLExpressionParser {
 
         while (this.check(TokenType.ADD)) {
 
-            const operator = this.peek().value;
+            const operator = this.peek();
             this.advance();
 
             const right = this.parseRemainder();
@@ -713,7 +728,7 @@ export class HTMLExpressionParser {
             this.check(TokenType.MUL)
             ) {
 
-            const operator = this.peek().value;
+            const operator = this.peek();
             this.advance();
 
             const right = this.parseExponentiation();
@@ -1069,7 +1084,7 @@ export class HTMLExpressionParser {
     createBinary(token: Token, left: AstExpression, right: AstExpression): AstExpression {
         const binary = new Binary();
         binary.type = "Binary"
-        binary.operator = token.value;
+        binary.operator = token;
         binary.left = left
         binary.right = right
 
