@@ -73,6 +73,8 @@ export enum TokenType {
     Decrement, // --
     QUESTION_LEFT_SQUARE_BRACKET, // ?[
     SAFE_CALL, // ?.(
+    ARROW, // =>
+    BITWISE_OR, // |
 }
 
 export const operatorMap: Partial<Record<TokenType, ts.SyntaxKind>> = {
@@ -120,7 +122,7 @@ export const operatorMap: Partial<Record<TokenType, ts.SyntaxKind>> = {
 
     [TokenType.AND]: ts.SyntaxKind.AmpersandToken,
     [TokenType.BITWISE_XOR]: ts.SyntaxKind.CaretToken,
-    // TODO: add TokenType.BITWISE_OR → BarToken
+    [TokenType.BITWISE_OR]: ts.SyntaxKind.BarToken,
 
     [TokenType.SHL]: ts.SyntaxKind.LessThanLessThanToken,
     [TokenType.SHR]: ts.SyntaxKind.GreaterThanGreaterThanToken,
@@ -148,4 +150,6 @@ export const operatorMap: Partial<Record<TokenType, ts.SyntaxKind>> = {
     [TokenType.OPTIONAL_CHAINING]: ts.SyntaxKind.QuestionDotToken,
 
     [TokenType.SPREAD]: ts.SyntaxKind.DotDotDotToken,
+
+    [TokenType.ARROW]: ts.SyntaxKind.EqualsGreaterThanToken,
 };

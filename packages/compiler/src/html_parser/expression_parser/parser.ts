@@ -1,7 +1,7 @@
 import {Token, TokenType} from "./tokens";
 import {AST, LiteralAstType} from "../ast/ast";
 import {
-    ArrayLiteral,
+    ArrayLiteral, ArrowFunction,
     AstExpression,
     Binary,
     BindingPipe,
@@ -20,7 +20,7 @@ import {
     PrefixUpdate,
     PropertyRead,
     SafeCall,
-    SafePropertyRead,
+    SafePropertyRead, SpreadElement,
     True,
     YieldExpression
 } from "../ast/ast-impl";
@@ -53,37 +53,34 @@ export class HTMLExpressionParser {
     }
 
     parseExpression(): AstExpression {
-        return this.parseConditional();
+        return this.parseComma();
     }
 
     // x, y
     // Associativity: left-to-right
-    parseComma() {
-
-        let expr = this.parseYield();
+    parseComma(): AstExpression {
+        let expr = this.parseNullishCoalescingAssignment();
 
         while (this.match(TokenType.COMMA)) {
-            const right = this.parseYield();
+            const right = this.parseNullishCoalescingAssignment();
             expr = new Comma(expr, right);
         }
 
         return expr;
     }
 
-    parseSpread() {
+    parseSpreadElement() {
 
         let expr: AstExpression
 
-        if (this.match(TokenType.SPREAD)) {
-            expr = this.parseExpression();
-        }
+        expr = new SpreadElement(this.parseAssignment());
 
         return expr
 
     }
 
     // Associativity: n/a
-    parseYield() {
+    parseYield(): AstExpression {
 
         if (this.match(TokenType.YIELD)) {
             let delegate = false;
@@ -92,7 +89,16 @@ export class HTMLExpressionParser {
                 delegate = true;
             }
 
-            const argument = this.parseExpression();
+            let argument: AstExpression | null = null;
+
+            if (
+                !this.check(TokenType.COMMA) &&
+                !this.check(TokenType.RIGHT_PAREN) &&
+                !this.check(TokenType.COLON)
+            ) {
+                argument = this.parseAssignment();
+            }
+
             return new YieldExpression(argument, delegate);
         }
 
@@ -100,31 +106,87 @@ export class HTMLExpressionParser {
     }
 
     // TODO: implement this
-    parseArrow() {
-        return this.parseNullishCoalescingAssignment()
+    save() {
+        return this.index;
     }
+
+    restore(pos: number) {
+        this.index = pos;
+    }
+
+    parseArrow(): AstExpression {
+
+        const pos = this.save();
+
+        const params = this.tryParseArrowParams();
+
+        if (params && this.match(TokenType.ARROW)) {
+            const body = this.parseAssignment();
+            return new ArrowFunction(params, [body])
+        }
+
+        this.restore(pos);
+
+        return this.parseConditional();
+    }
+
+    tryParseArrowParams(): AstExpression[] | null {
+
+        if (this.check(TokenType.IDENTIFIER)) {
+            const id = this.peek();
+            this.advance();
+            return [new Identifier(id.value)];
+        }
+
+        if (this.match(TokenType.LEFT_PAREN)) {
+
+            const params: AstExpression[] = [];
+
+            if (!this.check(TokenType.RIGHT_PAREN)) {
+                do {
+                    if (!this.check(TokenType.IDENTIFIER)) {
+                        return null;
+                    }
+
+                    const id = this.peek();
+                    this.advance();
+
+                    params.push(new Identifier(id.value));
+
+                } while (this.match(TokenType.COMMA));
+            }
+
+            if (!this.match(TokenType.RIGHT_PAREN)) {
+                return null;
+            }
+
+            return params;
+        }
+
+        return null;
+    }
+    // TODO: end todo
 
     // x ? y : z
     // right-to-left
     parseConditional(): AstExpression {
 
-        let expr = this.parseNullishCoalescingOperator();
+        let expr = this.parseLogicalOr();
 
         if (this.match(TokenType.TERNARY)) {
 
-            const consequent = this.parseConditional();
+            const consequent = this.parseAssignment();
 
             this.consumeType(TokenType.COLON, "Expected ':'");
 
-            const alternate = this.parseConditional();
+            const alternate = this.parseAssignment();
 
             const conditional = new Conditional();
-            conditional.alternate = alternate;
+            conditional.test = expr;
             conditional.consequent = consequent;
-            conditional.test = expr
+            conditional.alternate = alternate;
 
-            expr = conditional;
-
+            return conditional;
         }
 
         return expr;
@@ -134,7 +196,6 @@ export class HTMLExpressionParser {
     // right-to-left
     parseNullishCoalescingAssignment() {
         let expr = this.parseLogicalORAssignment();
-
         if (this.match(TokenType.NULLISH_COALESCING_ASSIGN)) {
             const token = this.previous()
             const right = this.parseNullishCoalescingAssignment();
@@ -342,16 +403,15 @@ export class HTMLExpressionParser {
 
     // x = y
     parseAssignment() {
-        let expr = this.parseConditional();
+        let expr = this.parseYield();
 
         if (this.match(TokenType.Assignment)) {
-            const token = this.previous()
+            const token = this.previous();
             const right = this.parseAssignment();
             expr = this.createBinary(token, expr, right);
         }
 
         return expr;
-
     }
 
     // x ?? y
@@ -360,7 +420,7 @@ export class HTMLExpressionParser {
 
         let expr = this.parseLogicalOr();
 
-        if (this.match(TokenType.NULLISH_COALESCING)) {
+        while (this.match(TokenType.NULLISH_COALESCING)) {
             const token = this.previous()
             const right = this.parseLogicalOr();
             expr = this.createBinary(token, expr, right);
@@ -400,7 +460,7 @@ export class HTMLExpressionParser {
     // x | y
     parseBitwiseOr() {
         let expr = this.parseBitwiseXor();
-        while (this.match(TokenType.PIPE)) {
+        while (this.match(TokenType.BITWISE_OR)) {
             const op = this.previous();
             const right = this.parseBitwiseXor();
 
@@ -750,22 +810,39 @@ export class HTMLExpressionParser {
     // void x
     // delete x	[7]
     // await x
+
+    // parsePrefixOperators() {
+    //
+    //     if (this.matchAllKeywords(keywords.typeof, keywords.void, keywords.delete, keywords.await)) {
+    //         return new PrefixUnary(this.previous(), this.parseExpression());
+    //     }
+    //
+    //     if (this.matchAll(TokenType.LOGICAL_NOT, TokenType.BITWISE_NOT, TokenType.ADD, TokenType.SUB)) {
+    //         return new PrefixUnary(this.previous(), this.parseExpression());
+    //     }
+    //
+    //     if (this.matchAll(TokenType.Increment, TokenType.Decrement)) {
+    //         return new PrefixUpdate(this.previous(), this.parseExpression());
+    //     }
+    //
+    //     return this.parsePostfixOperators();
+    //
+    // }
     parsePrefixOperators() {
 
         if (this.matchAllKeywords(keywords.typeof, keywords.void, keywords.delete, keywords.await)) {
-            return new PrefixUnary(this.previous(), this.parseExpression());
+            return new PrefixUnary(this.previous(), this.parsePrefixOperators());
         }
 
         if (this.matchAll(TokenType.LOGICAL_NOT, TokenType.BITWISE_NOT, TokenType.ADD, TokenType.SUB)) {
-            return new PrefixUnary(this.previous(), this.parseExpression());
+            return new PrefixUnary(this.previous(), this.parsePrefixOperators());
         }
 
         if (this.matchAll(TokenType.Increment, TokenType.Decrement)) {
-            return new PrefixUpdate(this.previous(), this.parseExpression());
+            return new PrefixUpdate(this.previous(), this.parsePrefixOperators());
         }
 
         return this.parsePostfixOperators();
-
     }
 
     // Associativity: n/a
@@ -773,14 +850,26 @@ export class HTMLExpressionParser {
     // x++	[5]
     // Postfix decrement
     // x--
+
+    // parsePostfixOperators() {
+    //
+    //     if (this.matchAll(TokenType.Increment, TokenType.Decrement)) {
+    //         return new PostfixUpdate(this.previous(), this.parseExpression());
+    //     }
+    //
+    //     return this.parseLeftHandSide();
+    //
+    // }
+
     parsePostfixOperators() {
 
+        let expr = this.parseLeftHandSide();
+
         if (this.matchAll(TokenType.Increment, TokenType.Decrement)) {
-            return new PostfixUpdate(this.previous(), this.parseExpression());
+            return new PostfixUpdate(this.previous(), expr);
         }
 
-        return this.parseLeftHandSide();
-
+        return expr;
     }
 
     parseLeftHandSide(): AstExpression {
@@ -878,8 +967,7 @@ export class HTMLExpressionParser {
         const token = this.peek();
 
         if (this.match(TokenType.IDENTIFIER)) {
-            const identifier = new Identifier();
-            identifier.name = token.value;
+            const identifier = new Identifier(token.value);
             return identifier
         }
 
@@ -922,9 +1010,9 @@ export class HTMLExpressionParser {
                 do {
                     if (this.peek().token === TokenType.RIGHT_SQUARE_BRACKET) break;
                     if (this.match(TokenType.SPREAD)) {
-                        elements.push(this.parseSpread());
+                        elements.push(this.parseSpreadElement());
                     } else {
-                        elements.push(this.parseExpression());
+                        elements.push(this.parseAssignment());
                     }
                 } while (this.match(TokenType.COMMA));
             }
@@ -946,7 +1034,7 @@ export class HTMLExpressionParser {
 
                     let key;
                     if (this.match(TokenType.SPREAD)) {
-                        props.push({key, value: this.parseSpread()});
+                        props.push({key, value: this.parseSpreadElement(), isSpread: true});
                     } else {
 
                         if (this.peek().token == TokenType.STRING) {
@@ -960,7 +1048,7 @@ export class HTMLExpressionParser {
                         this.consume(TokenType.COLON,
                             "Expected ':' after property key at line: ");
                         const value = this.parseAssignment();
-                        props.push({key, value});
+                        props.push({key, value, isSpread: false});
 
                     }
 
@@ -971,6 +1059,7 @@ export class HTMLExpressionParser {
             return new ObjectLiteral(props);
         }
 
+        console.log(this.tokens, this.peek(), this.index);
         throw new Error("Expected expression: '" + this.peek().value.toString() + "'");
 
     }
@@ -1084,17 +1173,13 @@ export class HTMLExpressionParser {
 
         const args = [];
 
-        // consume (
-
         do {
             if (this.match(TokenType.SPREAD)) {
-                args.push(this.parseSpread());
+                args.push(this.parseSpreadElement());
             } else {
                 args.push(this.parseAssignment());
             }
         } while (this.match(TokenType.COMMA));
-
-        // consume )
 
         return args;
 
@@ -1110,30 +1195,40 @@ export class HTMLExpressionParserWithPipe extends HTMLExpressionParser{
     // | pipe
     parsePipe(): AstExpression {
 
-        let expr = this.parseConditional();
+        let expr = this.parseComma();
 
         while (this.match(TokenType.PIPE)) {
-
             const name = this.peek().value;
             this.consumeType(TokenType.IDENTIFIER, "Expected pipe name");
 
-            const args: AST[] = [];
+            const args: AstExpression[] = [];
 
             while (this.match(TokenType.COLON)) {
                 args.push(this.parseExpression());
             }
 
-            const pipe = new BindingPipe();
-            pipe.name = name;
-            pipe.type = "Pipe"
-            pipe.expression = expr
-            pipe.args = args
-
+            const pipe = new BindingPipe(name, expr, args);
 
             expr = pipe;
+
         }
 
         return expr;
     }
+
+    // x && y
+    parseLogicalAnd() {
+
+        let expr = this.parseBitwiseOr();
+
+        while (this.match(TokenType.LOGICAL_AND)) {
+            const op = this.previous();
+            const right = this.parseBitwiseOr();
+
+            expr = this.createBinary(op, expr, right);
+        }
+        return expr;
+    }
+
 
 }

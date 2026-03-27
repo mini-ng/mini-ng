@@ -24,11 +24,12 @@ import {
     SafeCall,
     SafePropertyRead,
     Sequence,
-    Spread,
+    SpreadElement,
     This,
     True,
     Undefined,
     YieldExpression,
+    ArrowFunction
 } from "../ast/ast-impl";
 import ts from "typescript";
 import {LiteralAstType} from "../ast/ast";
@@ -207,6 +208,11 @@ export class TemplateVisitor extends AstVisitor {
     }
 
     visitComma(param: Comma) {
+        return factory.createParenthesizedExpression(factory.createBinaryExpression(
+            param.left.accept(this),
+            factory.createToken(ts.SyntaxKind.CommaToken),
+            param.right.accept(this),
+        ))
     }
 
     visitNew(param: New) {
@@ -231,10 +237,15 @@ export class TemplateVisitor extends AstVisitor {
         )
     }
 
-    visitSpread(param: Spread) {
+    visitSpreadElement(param: SpreadElement) {
+        return factory.createSpreadElement(param.expression.accept(this))
     }
 
     visitYieldExpression(param: YieldExpression) {
+        return factory.createYieldExpression(
+            param.delegate ? factory.createToken(ts.SyntaxKind.AsteriskToken) : undefined,
+            param.argument.accept(this),
+        )
     }
 
     visitPrefixUnary(param: PrefixUnary) {
@@ -242,6 +253,9 @@ export class TemplateVisitor extends AstVisitor {
             this.visitOperator(param.token.token) as ts.PrefixUnaryOperator,
             param.argument.accept(this)
         )
+    }
+
+    visitArrowFunction(param: ArrowFunction) {
     }
 
 }

@@ -1,26 +1,16 @@
 import {
-    ArrayLiteralAST,
-    AssignmentAST, AST, ASTWithSource,
+    AssignmentAST, AST,
     BinaryAST,
     BindingPipeAST,
-    CallAST,
-    ConditionalAST,
     FalseBooleanAST,
     GroupingAST,
     IdentifierAST,
-    LiteralAST,
     LiteralAstType,
     NonNullAssertAST,
     NullAST,
-    ObjectLiteralAST,
-    PropertyReadAST,
     PropertyWriteAST,
-    SafeCallAST,
-    SafePropertyReadAST,
     SequenceAST,
-    ThisAST,
     TrueBooleanAST,
-    UnaryAST,
     UndefinedAST
 } from "./ast";
 import {Token} from "../expression_parser/tokens";
@@ -64,9 +54,11 @@ export abstract class AstVisitor {
     abstract visitYieldExpression(param: YieldExpression);
 
     abstract visitNew(param: New);
-    abstract visitSpread(param: Spread);
+    abstract visitSpreadElement(param: SpreadElement);
 
     abstract visitPrefixUnary(param: PrefixUnary);
+
+    abstract visitArrowFunction(param: ArrowFunction);
 }
 
 export abstract class AstExpression {
@@ -83,14 +75,13 @@ export class Literal implements AstExpression {
 
 }
 
-export class Identifier implements AstExpression, IdentifierAST {
-    type: "Identifier";
+export class Identifier implements AstExpression {
+
+    constructor(public name: string) {}
 
     accept(visitor: AstVisitor) {
         return visitor.visitIdentifier(this);
     }
-
-    name: string;
 
 }
 
@@ -144,6 +135,7 @@ export class Assignment implements AstExpression, AssignmentAST {
 export interface ObjectProperty {
     key: AstExpression;
     value: AstExpression;
+    isSpread: boolean;
 }
 
 export class ObjectLiteral implements AstExpression {
@@ -203,11 +195,9 @@ export class Grouping implements AstExpression, GroupingAST {
     }
 }
 
-export class BindingPipe implements AstExpression, BindingPipeAST {
-    args: AST[];
-    expression: AST;
-    name: string;
-    type: "Pipe";
+export class BindingPipe implements AstExpression {
+
+    constructor(public name: string, public expression: AstExpression, public args: AstExpression[]) {}
 
     accept(visitor: AstVisitor): any {
         visitor.visitBindingPipe(this)
@@ -332,15 +322,25 @@ export class New implements AstExpression {
     constructor(public ctor: AstExpression, public args: AstExpression[]) {}
 
     accept(visitor: AstVisitor): any {
-        visitor.visitNew(this)
+        return visitor.visitNew(this)
     }
 
 }
 
-export class Spread implements AstExpression {
+export class SpreadElement implements AstExpression {
     constructor(public expression: AstExpression) {}
 
     accept(visitor: AstVisitor): any {
-        visitor.visitSpread(this)
+        return visitor.visitSpreadElement(this)
     }
+}
+
+export class ArrowFunction implements AstExpression {
+
+    constructor(public params: AstExpression[], public body: AstExpression[]) {}
+
+    accept(visitor: AstVisitor): any {
+        visitor.visitArrowFunction(this)
+    }
+
 }

@@ -280,6 +280,13 @@ export class HTMLExpressionTokenizer {
 
                     }
 
+                    if (this.matchNext('>')) {
+
+                        this.addToken(TokenType.ARROW, "=>");
+                        break;
+
+                    }
+
                     this.addToken(TokenType.Assignment, char)
                     break;
                 }
@@ -332,6 +339,18 @@ export class HTMLExpressionTokenizer {
                 }
 
                 case ".": {
+
+                    if (this.matchNext('.')) {
+
+                        if (this.matchNext('.')) {
+
+                            this.addToken(TokenType.SPREAD, "...");
+                            break;
+
+                        }
+
+                    }
+
                     this.tokens.push({token: TokenType.DOT, value: char})
                     break
                 }
