@@ -1,6 +1,6 @@
 import {Attribute, Input, NodeToken, Output, Reference, TemplateAttr, Token, Variable} from "../types/types";
 import {AttributeParser} from "../attr-parser/attribute-parser";
-import {SourcePosition, SourceSpan} from "../../../../sourcespan/sourceSpan";
+import {SourcePosition, SourceSpan} from "../../../sourcespan/sourceSpan";
 
 const SVG_TAG_REWRITE: Record<string, string> = {
     clippath: 'clipPath',
@@ -102,7 +102,7 @@ export class Tokenizer {
             }
 
             // TAG OPEN
-            if (char === chars.LT && !openTag) {
+            if (char === chars.LT && !openTag && !isExpression) {
 
                 if (textBuffer.length) {
                     tokens.push({

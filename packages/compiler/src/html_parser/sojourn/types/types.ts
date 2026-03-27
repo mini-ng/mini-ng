@@ -1,4 +1,4 @@
-import {SourceSpan} from "../../../../sourcespan/sourceSpan";
+import {SourceSpan} from "../../../sourcespan/sourceSpan";
 
 export type Attribute = {
     name?: string;

@@ -1,7 +1,7 @@
 import {NodeToken, TemplateSyntaxNode, Token} from "../types/types";
-import {BoundText, cloneNode, Document, Element, Template, Text} from "../../../nodes";
-import {HTMLExpressionParser} from "../../../expression_parser/parser";
-import {HTMLExpressionTokenizer} from "../../../expression_parser/expr_tokenizer";
+import {BoundText, cloneNode, Document, Element, Template, Text} from "../../nodes";
+import {HTMLExpressionParser} from "../../expression_parser/parser";
+import {HTMLExpressionTokenizer} from "../../expression_parser/expr_tokenizer";
 import {
     CaseNode,
     DefaultNode,
@@ -10,8 +10,8 @@ import {
     ForLoopBlockEmpty,
     IfBlock,
     SwitchNode
-} from "../../../syntax-ast";
-import {BoundAttribute, BoundEvent, HtmlReference, HtmlVariable} from "../../../ast/html-ast";
+} from "../../syntax-ast";
+import {BoundAttribute, BoundEvent, HtmlReference, HtmlVariable} from "../../ast/html-ast";
 
 interface ClosingResult {
     closingIndex?: number;
