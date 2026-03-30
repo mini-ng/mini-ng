@@ -1,6 +1,13 @@
+import * as o from "./output_ast"
+
 export type XrefId = number & {
     __brand: "XrefId";
 };
+
+export const ConsumesSlot: unique symbol = Symbol('ConsumesSlot');
+export const DependsOnSlotContext: unique symbol = Symbol('DependsOnSlotContext');
+export const ConsumesVarsTrait: unique symbol = Symbol('ConsumesVars');
+export const UsesVarOffset: unique symbol = Symbol('UsesVarOffset');
 
 export interface Op<OpT extends Op<OpT>> {
     kind: OpKind;
@@ -56,6 +63,43 @@ export class OpList<OpT extends Op<OpT>> {
         op.next = this.tail;
         this.tail.prev = op;
     }
+
+    replace(op: Op<OpT>): void {
+        if (Array.isArray(op)) {
+            for (const o of op) {
+
+            }
+        }
+
+    }
+
+    *[Symbol.iterator]() {
+        let current = this.head.next;
+        while (current !== this.tail) {
+            yield current;
+            current = current.next;
+        }
+    }
+
+    static replace<OpT extends Op<OpT>>(oldOp: OpT, newOp: OpT): void {
+
+    }
+
+    static print(op: OpList<CreateOp>) {
+        let current = op.head;
+        const tail = op.tail;
+
+        while (current.next !== tail) {
+            console.log(current)
+            current = current.next;
+        }
+    }
+}
+
+export interface StatementOp<OpT extends Op<OpT>> extends Op<OpT> {
+    kind: OpKind.Statement;
+
+    statement: o.Statement;
 }
 
 export type CreateOp = TextOp
@@ -63,8 +107,6 @@ export type CreateOp = TextOp
     | ElementEndOp
 
 export type UpdateOp = AdvanceOp
-
-export const ConsumesSlot: unique symbol = Symbol('ConsumesSlot');
 
 export interface Op<OpT extends Op<OpT>> {
     kind: OpKind;
@@ -88,6 +130,18 @@ export const TRAIT_CONSUMES_SLOT: Omit<ConsumesSlotOpTrait, 'xref' | 'handle'> =
     numSlotsUsed: 1,
 } as const;
 
+export interface ConsumesVars {
+    readonly [ConsumesVarsTrait]: true
+}
+
+export interface DependsOnVars {
+    readonly [UsesVarOffset]: true
+}
+
+export interface DependsOnSlot {
+readonly [DependsOnSlotContext]: true
+}
+
 export const NEW_OP: Pick<Op<any>, 'debugListId' | 'prev' | 'next'> = {
     debugListId: null,
     prev: null,
@@ -108,6 +162,7 @@ export enum OpKind {
     Style,
     Class,
     InterpolateText,
+    Statement,
 }
 
 export interface TextOp extends Op<CreateOp>, ConsumesSlotOpTrait {
@@ -174,15 +229,43 @@ export function createElementStartOp(tag: string, xref): ElementStartOp {
 }
 
 export function createElementEndOp(xref): ElementEndOp {
-return {
-    kind: OpKind.ElementEnd,
-    xref,
-    ...NEW_OP
+    return {
+        kind: OpKind.ElementEnd,
+        xref,
+        ...NEW_OP
 
-}
+    }
 }
 
 interface ElementEndOp extends Op<CreateOp> {
     kind: OpKind.ElementEnd;
     xref: XrefId;
+}
+
+export interface InterpolateTextOp
+    extends Op<UpdateOp>, ConsumesVars {
+    kind: OpKind.InterpolateText;
+    target: XrefId;
+    expressions: any[];
+}
+
+class Interpolation {
+}
+
+export function createInterpolateTextOp(textXref, interpolation: Interpolation): InterpolateTextOp {
+    return {
+        [ConsumesVarsTrait]: true,
+        expressions: [],
+        kind: OpKind.InterpolateText,
+        target: textXref,
+        ...NEW_OP
+    };
+}
+
+export function createStatementOp<OpT extends Op<OpT>>(statement: o.Statement): StatementOp<OpT> {
+    return {
+        kind: OpKind.Statement,
+        statement,
+        ...NEW_OP,
+    };
 }

@@ -1,7 +1,30 @@
-import {BoundText, ChildNode, Element, Template} from "../html_parser/nodes";
+import {BoundText, ChildNode, Element, Template, Text} from "../html_parser/nodes";
 import {ForLoopBlock, IfBlock, SwitchNode} from "../html_parser/syntax-ast";
-import {ViewCompilationUnit} from "../ir/compilation";
+import {ComponentCompilationJob, ViewCompilationUnit} from "../ir/compilation";
 import * as ir from "../ir/ir"
+import {
+    ArrayLiteral,
+    ArrowFunction,
+    Binary,
+    Call,
+    Comma,
+    Conditional,
+    False,
+    Grouping,
+    Identifier,
+    Literal,
+    New,
+    ObjectLiteral,
+    PostfixUpdate,
+    PrefixUnary,
+    PrefixUpdate,
+    PropertyRead,
+    SafeCall,
+    SafePropertyRead,
+    SpreadElement,
+    True,
+    YieldExpression
+} from "../html_parser/ast/ast-impl";
 
 export function ingestComponent(job, nodes: ChildNode[]) {
     ingestNodes(job.root, nodes);
@@ -63,4 +86,46 @@ function ingestText(unit: ViewCompilationUnit, node: Text ){
 
 function ingestBoundText(unit: ViewCompilationUnit, node: BoundText) {
 
+    const textXref = unit.job.allocateXrefId();
+
+    unit.create.push(ir.createTextOp(textXref, ''))
+
+    // unit.update.push(
+    //     ir.createInterpolateTextOp(
+    //         textXref,
+    //         new ir.Interpolation(
+    //             value.strings,
+    //             value.expressions.map((expr) => convertAst(expr, unit.job)),
+    //         ),
+    //     ),
+    // );
+
 }
+
+function convertAst(expr, job: ComponentCompilationJob) {
+
+}
+
+Comma
+SpreadElement
+YieldExpression
+ArrowFunction
+Identifier
+Conditional
+Binary
+PrefixUnary
+PrefixUpdate
+PostfixUpdate
+PropertyRead
+SafePropertyRead
+Call
+SafeCall
+New
+Literal
+True
+False
+Grouping
+ArrayLiteral
+ObjectLiteral
+
+
