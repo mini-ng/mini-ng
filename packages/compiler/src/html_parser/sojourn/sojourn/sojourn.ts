@@ -1,6 +1,6 @@
 import {NodeToken, TemplateSyntaxNode, Token} from "../types/types";
 import {BoundText, cloneNode, Document, Element, Template, Text} from "../../nodes";
-import {HTMLExpressionParser} from "../../expression_parser/parser";
+import {HTMLExpressionParser, HTMLExpressionParserWithPipe} from "../../expression_parser/parser";
 import {HTMLExpressionTokenizer} from "../../expression_parser/expr_tokenizer";
 import {
     CaseNode,
@@ -471,7 +471,7 @@ export class Sojourn {
         const tokenizer = HTMLExpressionTokenizer.instance()
         const tokens = tokenizer.tokenize(expr);
 
-        const parser = HTMLExpressionParser.instance(tokens)
+        const parser = HTMLExpressionParserWithPipe.instance(tokens)
         return { ast: parser.start(), source: expr };
 
     }

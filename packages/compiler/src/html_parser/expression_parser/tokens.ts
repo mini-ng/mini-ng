@@ -75,6 +75,8 @@ export enum TokenType {
     SAFE_CALL, // ?.(
     ARROW, // =>
     BITWISE_OR, // |
+    IN, // in
+    INSTANCEOF, // instanceof
 }
 
 export const operatorMap: Partial<Record<TokenType, ts.SyntaxKind>> = {
@@ -123,6 +125,7 @@ export const operatorMap: Partial<Record<TokenType, ts.SyntaxKind>> = {
     [TokenType.AND]: ts.SyntaxKind.AmpersandToken,
     [TokenType.BITWISE_XOR]: ts.SyntaxKind.CaretToken,
     [TokenType.BITWISE_OR]: ts.SyntaxKind.BarToken,
+    [TokenType.PIPE]: ts.SyntaxKind.BarToken,
 
     [TokenType.SHL]: ts.SyntaxKind.LessThanLessThanToken,
     [TokenType.SHR]: ts.SyntaxKind.GreaterThanGreaterThanToken,
@@ -152,4 +155,8 @@ export const operatorMap: Partial<Record<TokenType, ts.SyntaxKind>> = {
     [TokenType.SPREAD]: ts.SyntaxKind.DotDotDotToken,
 
     [TokenType.ARROW]: ts.SyntaxKind.EqualsGreaterThanToken,
+
+    [TokenType.IN]: ts.SyntaxKind.InKeyword,
+    [TokenType.INSTANCEOF]: ts.SyntaxKind.InstanceOfKeyword,
+
 };

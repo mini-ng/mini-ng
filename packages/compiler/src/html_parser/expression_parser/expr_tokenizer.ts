@@ -56,6 +56,11 @@ export const keywords = {
     as: "AS", from: "FROM", of: "OF"
 };
 
+const KEYWORD_OPS = new Map<string, TokenType>([
+    ['in', TokenType.IN],
+    ['instanceof', TokenType.INSTANCEOF],
+]);
+
 export class HTMLExpressionTokenizer {
     expr: string
     index: number = 0
@@ -494,6 +499,10 @@ export class HTMLExpressionTokenizer {
             this.tokens.push({token: TokenType.FALSE, value: alpha})
         } else if (this.checkCharIsKeyword(alpha)) {
             const keyword = keywords[alpha];
+            // check keyword is an operator
+            if (KEYWORD_OPS.get(alpha)) {
+                this.addToken(KEYWORD_OPS.get(alpha), keyword)
+            } else
             this.tokens.push({token: TokenType.KEYWORD, value: keyword})
         } else {
             this.tokens.push({token: TokenType.IDENTIFIER, value: alpha})

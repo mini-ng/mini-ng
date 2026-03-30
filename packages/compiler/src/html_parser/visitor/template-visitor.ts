@@ -34,11 +34,11 @@ import {
 import ts from "typescript";
 import {LiteralAstType} from "../ast/ast";
 import {operatorMap, TokenType} from "../expression_parser/tokens";
+import {i0} from "../../constants/constants";
 
 const factory = ts.factory
 
 export class TemplateVisitor extends AstVisitor {
-    private ctx: string = "ctx";
 
     visitOperator(operator: TokenType): ts.SyntaxKind {
 
@@ -73,10 +73,7 @@ export class TemplateVisitor extends AstVisitor {
 
     visitIdentifier(expr: Identifier) {
 
-        // return ts.factory.createPropertyAccessExpression(
-        //     ts.factory.createIdentifier(this.ctx),
             return ts.factory.createIdentifier(expr.name)
-        // );
 
     }
 
@@ -204,7 +201,18 @@ export class TemplateVisitor extends AstVisitor {
         return ts.factory.createIdentifier("undefined");
     }
 
-    visitBindingPipe(param: BindingPipe) {
+    visitBindingPipe(pipe: BindingPipe/*, index: number, offset: number*/) {
+        console.log(pipe)
+        return factory.createCallExpression(
+            factory.createPropertyAccessExpression(
+                factory.createIdentifier(i0),
+                factory.createIdentifier("ɵɵpipeBind")
+            ),
+            undefined,
+            [
+                //pipe.
+            ]
+        )
     }
 
     visitComma(param: Comma) {
@@ -256,6 +264,36 @@ export class TemplateVisitor extends AstVisitor {
     }
 
     visitArrowFunction(param: ArrowFunction) {
+        return factory.createArrowFunction(
+            undefined,
+            undefined,
+            [
+                ...param.params.map(p => p.accept(this))
+            ],
+            undefined,
+            factory.createToken(ts.SyntaxKind.EqualsGreaterThanToken),
+            factory.createBlock(
+                [
+                    ...param.body.map(body => body.accept(this))
+                ],
+                false
+            )
+        )
     }
+
+}
+
+export class TemplateVisitorWithContext extends TemplateVisitor {
+
+    private ctx: string = "ctx";
+
+    // visitIdentifier(expr: Identifier) {
+    //
+    //     return ts.factory.createPropertyAccessExpression(
+    //         ts.factory.createIdentifier(this.ctx),
+    //         ts.factory.createIdentifier(expr.name)
+    //     );
+    //
+    // }
 
 }

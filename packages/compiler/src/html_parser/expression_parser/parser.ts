@@ -1,7 +1,8 @@
 import {Token, TokenType} from "./tokens";
-import {AST, LiteralAstType} from "../ast/ast";
+import {LiteralAstType} from "../ast/ast";
 import {
-    ArrayLiteral, ArrowFunction,
+    ArrayLiteral,
+    ArrowFunction,
     AstExpression,
     Binary,
     BindingPipe,
@@ -20,7 +21,8 @@ import {
     PrefixUpdate,
     PropertyRead,
     SafeCall,
-    SafePropertyRead, SpreadElement,
+    SafePropertyRead,
+    SpreadElement,
     True,
     YieldExpression
 } from "../ast/ast-impl";
@@ -460,7 +462,7 @@ export class HTMLExpressionParser {
     // x | y
     parseBitwiseOr() {
         let expr = this.parseBitwiseXor();
-        while (this.match(TokenType.BITWISE_OR)) {
+        while (this.match(TokenType.BITWISE_OR) /*|| this.match(TokenType.PIPE)*/) {
             const op = this.previous();
             const right = this.parseBitwiseXor();
 
@@ -1186,7 +1188,13 @@ export class HTMLExpressionParser {
     }
 }
 
-export class HTMLExpressionParserWithPipe extends HTMLExpressionParser{
+export class HTMLExpressionParserWithPipe extends HTMLExpressionParser {
+
+    public static instance(tokens: Token[]) {
+
+        return (new HTMLExpressionParserWithPipe(tokens))
+
+    }
 
     parseExpression(): AstExpression {
         return this.parsePipe();
@@ -1194,10 +1202,13 @@ export class HTMLExpressionParserWithPipe extends HTMLExpressionParser{
 
     // | pipe
     parsePipe(): AstExpression {
+        console.log(this.peek(), this.tokens, this.index)
 
         let expr = this.parseComma();
+        console.log(this.peek(), this.tokens, this.index)
 
-        while (this.match(TokenType.PIPE)) {
+        while (this.match(TokenType.PIPE) || this.match(TokenType.BITWISE_OR)) {
+            console.log(this.peek())
             const name = this.peek().value;
             this.consumeType(TokenType.IDENTIFIER, "Expected pipe name");
 
@@ -1216,18 +1227,8 @@ export class HTMLExpressionParserWithPipe extends HTMLExpressionParser{
         return expr;
     }
 
-    // x && y
-    parseLogicalAnd() {
-
-        let expr = this.parseBitwiseOr();
-
-        while (this.match(TokenType.LOGICAL_AND)) {
-            const op = this.previous();
-            const right = this.parseBitwiseOr();
-
-            expr = this.createBinary(op, expr, right);
-        }
-        return expr;
+    parseBitwiseOr() {
+        return this.parseBitwiseXor();
     }
 
 
