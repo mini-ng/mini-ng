@@ -16,7 +16,8 @@ export function compileComponentFromMetadata(html: string) {
 }
 
 const phases = [
-    {kind: CompilationJobKind.Tmpl, fn: reify}
+    { kind: CompilationJobKind.Tmpl, fn: consumeSlot },
+    { kind: CompilationJobKind.Tmpl, fn: reify }
 ]
 
 function transform(job, tpl) {
@@ -47,3 +48,6 @@ function reifyUpdateOperations(unit: CompilationUnit, ops: ir.OpList<ir.UpdateOp
 
 }
 
+function consumeSlot(job: CompilationJob) {
+
+}

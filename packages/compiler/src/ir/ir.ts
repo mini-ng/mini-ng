@@ -1,8 +1,16 @@
 import * as o from "./output_ast"
+import {Expression} from "./output_ast";
 
 export type XrefId = number & {
     __brand: "XrefId";
 };
+
+// | Trait                  | Meaning                                            |
+// | ---------------------- | -------------------------------------------------- |
+// | `ConsumesSlot`         | “I need storage in LView”                          |
+// | `DependsOnSlotContext` | “I operate on the current cursor (ɵɵadvance)”      |
+// | `ConsumesVars`         | “I use binding variables (change detection slots)” |
+// | `UsesVarOffset`        | “I need to know where binding slots start”         |
 
 export const ConsumesSlot: unique symbol = Symbol('ConsumesSlot');
 export const DependsOnSlotContext: unique symbol = Symbol('DependsOnSlotContext');
@@ -15,14 +23,6 @@ export interface Op<OpT extends Op<OpT>> {
 
     next: OpT | null;
     debugListId: number | null;
-}
-
-export interface Op<OpT extends Op<OpT>> {
-    kind: OpKind;
-
-    prev: OpT | null;
-
-    next: OpT | null;
 }
 
 export class OpList<OpT extends Op<OpT>> {
@@ -75,14 +75,19 @@ export class OpList<OpT extends Op<OpT>> {
 
     *[Symbol.iterator]() {
         let current = this.head.next;
-        while (current !== this.tail) {
+        const tail = this.tail;
+        while (current !== tail) {
             yield current;
             current = current.next;
         }
     }
 
     static replace<OpT extends Op<OpT>>(oldOp: OpT, newOp: OpT): void {
+        oldOp.prev.next = newOp;
+        oldOp.next.prev = newOp;
 
+        newOp.next = oldOp.next
+        newOp.prev = oldOp.prev;
     }
 
     static print(op: OpList<CreateOp>) {
@@ -107,6 +112,7 @@ export type CreateOp = TextOp
     | ElementEndOp
 
 export type UpdateOp = AdvanceOp
+    | InterpolateTextOp;
 
 export interface Op<OpT extends Op<OpT>> {
     kind: OpKind;
@@ -125,21 +131,33 @@ export interface ConsumesSlotOpTrait {
     xref: XrefId;
 }
 
+export interface ConsumesVars {
+    readonly [ConsumesVarsTrait]: true
+}
+
+export interface UsesVarOffset {
+    readonly [UsesVarOffset]: true
+}
+
+export interface DependsOnSlot {
+    readonly [DependsOnSlotContext]: true
+}
+
 export const TRAIT_CONSUMES_SLOT: Omit<ConsumesSlotOpTrait, 'xref' | 'handle'> = {
     [ConsumesSlot]: true,
     numSlotsUsed: 1,
 } as const;
 
-export interface ConsumesVars {
-    readonly [ConsumesVarsTrait]: true
+export const TRAIT_DEPENDS_ON_SLOT_CONTEXT: DependsOnSlot = {
+    [DependsOnSlotContext]: true
 }
 
-export interface DependsOnVars {
-    readonly [UsesVarOffset]: true
+export const TRAIT_USES_VARS: UsesVarOffset = {
+    [UsesVarOffset]: true
 }
 
-export interface DependsOnSlot {
-readonly [DependsOnSlotContext]: true
+export const TRAIT_CONSUMES_VARS: ConsumesVars = {
+    [ConsumesVarsTrait]: true
 }
 
 export const NEW_OP: Pick<Op<any>, 'debugListId' | 'prev' | 'next'> = {
@@ -199,8 +217,7 @@ export interface AdvanceOp extends Op<UpdateOp> {
     delta: number;
 }
 
-export class ArrowFunctionExpr {
-}
+export class ArrowFunctionExpr {}
 
 interface ElementStartOp  extends Op<CreateOp>, ConsumesSlotOpTrait {
     kind: OpKind.ElementStart;
@@ -249,15 +266,22 @@ export interface InterpolateTextOp
     expressions: any[];
 }
 
-class Interpolation {
+export class Interpolation {
+    constructor(
+        public strings: string[],
+        public expressions: Expression[],
+    ) {
+    }
 }
 
-export function createInterpolateTextOp(textXref, interpolation: Interpolation): InterpolateTextOp {
+export function createInterpolateTextOp(
+    xref, interpolation: Interpolation): InterpolateTextOp {
     return {
-        [ConsumesVarsTrait]: true,
         expressions: [],
         kind: OpKind.InterpolateText,
-        target: textXref,
+        target: xref,
+        ...TRAIT_DEPENDS_ON_SLOT_CONTEXT,
+        ...TRAIT_CONSUMES_VARS,
         ...NEW_OP
     };
 }
