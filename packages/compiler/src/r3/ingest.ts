@@ -28,14 +28,16 @@ import {
 import * as e from "../html_parser/ast/ast-impl"
 import * as o from "../ir/output_ast"
 import {
+    ArrayLiteralExpr,
     BinaryExpr,
     BindingPipeExpr,
     CallExpr,
-    CommaExpr,
+    CommaExpr, FalseExpr,
     IdentifierExpr,
-    LiteralExpr,
-    SpreadElementExpr
+    LiteralExpr, ObjectLiteralExpr,
+    SpreadElementExpr, TrueExpr
 } from "../ir/expression";
+import {Expression} from "../ir/output_ast";
 
 export function ingestComponent(job, nodes: ChildNode[]) {
     ingestNodes(job.root, nodes);
@@ -157,6 +159,22 @@ function convertAst(
             ast.args.map(arg => convertAst(arg, job)),
             undefined
         )
+    }
+
+    if (ast instanceof True) {
+        return new TrueExpr()
+    }
+
+    if (ast instanceof False) {
+        return new FalseExpr()
+    }
+
+    if (ast instanceof ArrayLiteral) {
+        return new ArrayLiteralExpr(ast.elements.map(el => convertAst(el, job)), undefined)
+    }
+
+    if (ast instanceof ObjectLiteral) {
+        // return new ObjectLiteralExpr(ast.properties.map(prop => convertAst(prop, job), undefined))
     }
 
     if (ast instanceof BindingPipe) {

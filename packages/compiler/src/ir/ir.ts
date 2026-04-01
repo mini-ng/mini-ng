@@ -64,15 +64,6 @@ export class OpList<OpT extends Op<OpT>> {
         this.tail.prev = op;
     }
 
-    replace(op: Op<OpT>): void {
-        if (Array.isArray(op)) {
-            for (const o of op) {
-
-            }
-        }
-
-    }
-
     *[Symbol.iterator]() {
         let current = this.head.next;
         const tail = this.tail;
