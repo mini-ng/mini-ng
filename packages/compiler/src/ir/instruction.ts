@@ -3,7 +3,11 @@ import * as o from "./output_ast"
 import {LiteralAstType} from "../html_parser/ast/ast";
 
 export function elementStart(slot: number, tag: string) {
-    return call(Identifiers.elementStart, []);
+    const args = [
+        o.literal(slot, undefined, LiteralAstType.NUMBER),
+        o.literal(tag, undefined, LiteralAstType.STRING),
+    ]
+    return call(Identifiers.elementStart, args);
 }
 
 
@@ -12,7 +16,7 @@ export function elementEnd() {
 }
 
 
-const CORE = '';
+const CORE = 'core';
 
 export class Identifiers {
     static text: o.ExternalReference = {

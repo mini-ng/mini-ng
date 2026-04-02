@@ -288,3 +288,7 @@ export function createStatementOp<OpT extends Op<OpT>>(statement: o.Statement): 
         ...NEW_OP,
     };
 }
+
+export function hasConsumesSlot(op) {
+    return op[ConsumesSlot] === true
+}

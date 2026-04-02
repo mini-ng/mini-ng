@@ -471,8 +471,9 @@ export class LiteralExpr extends Expression {
     constructor(
         public value: string | number,
         public valueType: LiteralAstType,
-        type?: Type | null,) {
-        super(type)}
+        type?: Type | null) {
+        super(type)
+    }
 
     clone(): Expression {
         return undefined;

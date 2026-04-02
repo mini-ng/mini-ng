@@ -3,6 +3,7 @@ import {ingestComponent} from "./ingest";
 import {CompilationJob, CompilationJobKind, CompilationUnit, ComponentCompilationJob} from "../ir/compilation";
 import * as ir from "../ir/ir";
 import * as ng from "./../ir/instruction"
+import {hasConsumesSlot} from "../ir/ir";
 
 export function compileComponentFromMetadata(html: string) {
     const ast = sojourn(html);
@@ -52,13 +53,22 @@ function reifyCreateOperations(unit: CompilationUnit, ops: ir.OpList<ir.CreateOp
                     break
                 }
         }
+
     }
 }
 
-function reifyUpdateOperations(unit: CompilationUnit, ops: ir.OpList<ir.UpdateOp>) {
+function reifyUpdateOperations(unit: CompilationUnit, ops: ir.OpList<ir.UpdateOp>) {}
 
-}
+function consumeSlot(job: ComponentCompilationJob) {
+    for (const unit of job.units) {
+        var slot = 0
+        for (const op of unit.create) {
+            if (!ir.hasConsumesSlot(op)) {
+                continue
+            }
 
-function consumeSlot(job: CompilationJob) {
-
+            (op as ir.ConsumesSlotOpTrait).handle.slot = slot;
+            slot += 1;
+        }
+    }
 }
