@@ -72,7 +72,6 @@ export class Parser {
         const tail = unit.create.tail;
         while (current !== tail) {
             const { next, prev, ...printable } = current;
-            // console.log(printable)
 
             // @ts-ignore
             stmts.push(current.statement.visitStatement(visitor))

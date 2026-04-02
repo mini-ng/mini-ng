@@ -32,7 +32,6 @@ export class ExpressionTranslatorVisitor
     }
 
     visitInvokeFunctionExpr(ast: o.InvokeFunctionExpr, context: Context) {
-        console.log(ast)
         return this.factory.createCallExpression(
                 ast.fn.visitExpression(this, context),
                 undefined,
@@ -56,13 +55,15 @@ export class ExpressionTranslatorVisitor
     }
 
     visitLiteralExpr(param: LiteralExpr, context: any) {
-        console.log(param)
+
         if (param.valueType === LiteralAstType.NUMBER) {
             return this.factory.createNumericLiteral(param.value)
         }
         if (param.valueType === LiteralAstType.STRING) {
             return this.factory.createStringLiteral(param.value as string)
         }
+
+        return this.factory.createNull()
     }
 
     visitNewExpr(param: NewExpr, context: any): any {
@@ -108,7 +109,6 @@ export class ExpressionTranslatorVisitor
         //     return this.factory.createIdentifier(ast.value.name);
         // }
 
-        console.log(ast)
         return this.factory.createIdentifier(ast.value.name);
 
     }

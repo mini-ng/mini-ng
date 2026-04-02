@@ -1,13 +1,14 @@
 import {
     ArrayLiteralExpr, ConditionalExpr,
     FalseExpr,
-    GroupingExpr, IdentifierExpr,
+    GroupingExpr, IdentifierExpr, LiteralExpr,
     NewExpr,
     ObjectLiteralExpr,
     SafeCallExpr, SpreadElementExpr,
     TrueExpr, YieldExpressionExpr
 } from "./expression";
 import {ArrayLiteral} from "../html_parser/ast/ast-impl";
+import {LiteralAstType} from "../html_parser/ast/ast";
 
 export enum TypeModifier {
     None = 0,
@@ -53,35 +54,12 @@ export abstract class Expression {
     }
 }
 
-class LiteralExpr extends Expression {
-    constructor(value: any, type: Type) {
-        super(value);
-    }
-
-    clone(): Expression {
-        return undefined;
-    }
-
-    isConstant(): boolean {
-        return false;
-    }
-
-    isEquivalent(e: Expression): boolean {
-        return false;
-    }
-
-    visitExpression(visitor: ExpressionVisitor, context: any): any {
-    }
-
-}
-
 export function literal(
     value: any,
     type?: Type | null,
-
+    valueType?: LiteralAstType | null,
 ) {
-    return new LiteralExpr(value, type);
-
+    return new LiteralExpr(value, valueType, type);
 }
 
 export function importExpr(

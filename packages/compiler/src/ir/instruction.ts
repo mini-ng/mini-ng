@@ -1,5 +1,6 @@
 import * as ir from './ir';
 import * as o from "./output_ast"
+import {LiteralAstType} from "../html_parser/ast/ast";
 
 export function elementStart(slot: number, tag: string) {
     return call(Identifiers.elementStart, []);
@@ -35,9 +36,9 @@ export function text(
     slot: number,
     initialValue: string,
 ): ir.CreateOp {
-    const args: o.Expression[] = [o.literal(slot, null)];
+    const args: o.Expression[] = [o.literal(slot, null, LiteralAstType.NUMBER)];
     if (initialValue !== '') {
-        args.push(o.literal(initialValue));
+        args.push(o.literal(initialValue, null, LiteralAstType.STRING));
     }
     return call(Identifiers.text, args);
 }
