@@ -2,6 +2,11 @@ import * as ir from './ir';
 import * as o from "./output_ast"
 import {LiteralAstType} from "../html_parser/ast/ast";
 
+export function advance(delta: number) {
+    return call(Identifiers.advance, delta > 1 ? [o.literal(delta)] : []);
+}
+
+
 export function elementStart(slot: number, tag: string) {
     const args = [
         o.literal(slot, undefined, LiteralAstType.NUMBER),
@@ -31,6 +36,11 @@ export class Identifiers {
 
     static elementEnd: o.ExternalReference = {
         name: 'ɵɵelementEnd',
+        moduleName: CORE,
+    }
+
+    static advance: o.ExternalReference = {
+        name: 'ɵɵadvance',
         moduleName: CORE,
     }
 
