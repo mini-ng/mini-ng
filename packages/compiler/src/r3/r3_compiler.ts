@@ -38,9 +38,10 @@ function reifyCreateOperations(unit: CompilationUnit, ops: ir.OpList<ir.CreateOp
     for (const op of ops) {
 
         switch (op.kind) {
-            case ir.OpKind.Text:
+            case ir.OpKind.Text: {
                 ir.OpList.replace(op, ng.text(op.handle.slot!, op.initialValue));
                 break;
+            }
 
                 case ir.OpKind.ElementStart: {
                     ir.OpList.replace(op, ng.elementStart(op.handle.slot!, op.tag));
