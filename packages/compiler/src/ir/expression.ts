@@ -487,6 +487,7 @@ export class LiteralExpr extends Expression {
     }
 
     visitExpression(visitor: ExpressionVisitor, context: any): any {
+        console.log(this)
         return visitor.visitLiteralExpr(this, context)
     }
 

@@ -1202,13 +1202,11 @@ export class HTMLExpressionParserWithPipe extends HTMLExpressionParser {
 
     // | pipe
     parsePipe(): AstExpression {
-        console.log(this.peek(), this.tokens, this.index)
 
         let expr = this.parseComma();
-        console.log(this.peek(), this.tokens, this.index)
 
         while (this.match(TokenType.PIPE) || this.match(TokenType.BITWISE_OR)) {
-            console.log(this.peek())
+
             const name = this.peek().value;
             this.consumeType(TokenType.IDENTIFIER, "Expected pipe name");
 

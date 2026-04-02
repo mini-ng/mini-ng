@@ -6,12 +6,13 @@ import * as ng from "./../ir/instruction"
 
 export function compileComponentFromMetadata(html: string) {
     const ast = sojourn(html);
-    const job = new ComponentCompilationJob("", [])
-    const tpl = ingestComponent(job, ast.childNodes)
+    const tpl = ingestComponent(ast.childNodes)
 
-    transform(job, tpl);
+    transform(tpl);
 
-    ir.OpList.print(job.root.create);
+    // ir.OpList.print(job.root.create);
+
+    return tpl;
 
 }
 
@@ -20,7 +21,7 @@ const phases = [
     { kind: CompilationJobKind.Tmpl, fn: reify }
 ]
 
-function transform(job, tpl) {
+function transform(job) {
     for (const phase of phases) {
         phase.fn(job)
     }
@@ -40,6 +41,16 @@ function reifyCreateOperations(unit: CompilationUnit, ops: ir.OpList<ir.CreateOp
             case ir.OpKind.Text:
                 ir.OpList.replace(op, ng.text(op.handle.slot!, op.initialValue));
                 break;
+
+                case ir.OpKind.ElementStart: {
+                    ir.OpList.replace(op, ng.elementStart(op.handle.slot!, op.tag));
+                    break
+                }
+
+                case ir.OpKind.ElementEnd: {
+                    ir.OpList.replace(op, ng.elementEnd());
+                    break
+                }
         }
     }
 }

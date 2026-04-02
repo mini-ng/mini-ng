@@ -1,6 +1,16 @@
 import * as ir from './ir';
 import * as o from "./output_ast"
 
+export function elementStart(slot: number, tag: string) {
+    return call(Identifiers.elementStart, []);
+}
+
+
+export function elementEnd() {
+    return call(Identifiers.elementEnd, []);
+}
+
+
 const CORE = '';
 
 export class Identifiers {
@@ -8,7 +18,17 @@ export class Identifiers {
         name: 'ɵɵtext',
         moduleName: CORE,
     };
-    
+
+    static elementStart: o.ExternalReference = {
+        name: 'ɵɵelementStart',
+        moduleName: CORE,
+    }
+
+    static elementEnd: o.ExternalReference = {
+        name: 'ɵɵelementEnd',
+        moduleName: CORE,
+    }
+
 }
 
 export function text(

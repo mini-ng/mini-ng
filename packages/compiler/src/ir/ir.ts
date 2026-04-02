@@ -81,12 +81,16 @@ export class OpList<OpT extends Op<OpT>> {
         newOp.prev = oldOp.prev;
     }
 
-    static print(op: OpList<CreateOp>) {
-        let current = op.head;
-        const tail = op.tail;
+    static print(opList: OpList<CreateOp>) {
+        let current = opList.head.next;
+        const tail = opList.tail;
 
-        while (current.next !== tail) {
-            console.log(current)
+        while (current !== tail) {
+            // clone the node
+            const { next, prev, ...printable } = current;
+
+            console.log(printable);
+
             current = current.next;
         }
     }

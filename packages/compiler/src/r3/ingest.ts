@@ -37,9 +37,9 @@ import {
     LiteralExpr, ObjectLiteralExpr,
     SpreadElementExpr, TrueExpr
 } from "../ir/expression";
-import {Expression} from "../ir/output_ast";
 
-export function ingestComponent(job, nodes: ChildNode[]) {
+export function ingestComponent(nodes: ChildNode[]) {
+    const job = new ComponentCompilationJob("", [])
     ingestNodes(job.root, nodes);
     return job
 }
@@ -184,9 +184,9 @@ function convertAst(
         )
     }
 
-    throw new Error(
-        `Unhandled expression type "${ast.constructor.name}" in file "`,
-    );
+    // throw new Error(
+    //     `Unhandled expression type "${ast.constructor.name}" in file "`,
+    // );
 
 }
 

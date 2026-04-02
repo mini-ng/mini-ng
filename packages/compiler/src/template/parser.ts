@@ -2,6 +2,10 @@ import ts = require("typescript");
 import { ViewGenerator } from "./view_generator";
 import {factory} from "typescript";
 import {HtmlAstVisitorImpl} from "../html_parser/visitor/html-visitor";
+import {compileComponentFromMetadata} from "../r3/r3_compiler";
+import {CompilationJob} from "../ir/compilation";
+import {OpKind} from "../ir/ir";
+import {ExpressionTranslatorVisitor} from "../transformer/translator";
 
 const parseConfig = {
   lowerCaseTagName: false, // convert tag name to lower case (hurts performance heavily)
@@ -50,12 +54,35 @@ export class Parser {
 
     // const generator = new ViewGenerator();
     const htmlVisitor = new HtmlAstVisitorImpl();
-    const { stmts, updateStmts, consts, templateStmts, outsideStatements } = htmlVisitor.generateView(html);
+    const { stmts, updateStmts, consts, templateStmts, outsideStatements } = {
+        outsideStatements: [],
+        stmts: [],
+        updateStmts: [],
+        consts: [],
+        templateStmts: []
+    } //htmlVisitor.generateView(html);
 
     // const { stmts, updateStmts, consts, templateStmts, outsideStatements } = generator.generateViewCode(html);
 
+      const visitor = new ExpressionTranslatorVisitor()
 
-   const creationNode = ts.factory.createIfStatement(
+    const job: CompilationJob = compileComponentFromMetadata(html);
+    for (const unit of job.units) {
+        let current = unit.create.head.next;
+        const tail = unit.create.tail;
+        while (current !== tail) {
+            const { next, prev, ...printable } = current;
+            // console.log(printable)
+
+            // @ts-ignore
+            stmts.push(current.statement.visitStatement(visitor))
+
+            current = current.next;
+        }
+
+      }
+
+          const creationNode = ts.factory.createIfStatement(
        factory.createBinaryExpression(
         ts.factory.createIdentifier("rf"),
            ts.SyntaxKind.AmpersandToken,
