@@ -594,7 +594,7 @@ export class ArrayLiteralExpr extends Expression {
 
 export class ObjectLiteralExpr extends Expression {
 
-    constructor(public properties: ObjectProperty[], type?: Type | null) {
+    constructor(public properties: { value: Expression; key: Expression }[], type?: Type | null) {
         super(type);
     }
 

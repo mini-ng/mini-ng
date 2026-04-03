@@ -172,13 +172,6 @@ export enum StmtModifier {
     Exported = 1 << 2,
     Static = 1 << 3,
 }
-export interface StatementVisitor {
-    // visitDeclareVarStmt(stmt: DeclareVarStmt, context: any): any;
-    // visitDeclareFunctionStmt(stmt: DeclareFunctionStmt, context: any): any;
-    visitExpressionStmt(stmt: ExpressionStatement, context: any): any;
-    // visitReturnStmt(stmt: ReturnStatement, context: any): any;
-    // visitIfStmt(stmt: IfStmt, context: any): any;
-}
 
 export abstract class Statement {
     constructor(
@@ -194,6 +187,14 @@ export abstract class Statement {
     }
 }
 
+export interface StatementVisitor {
+    // visitDeclareVarStmt(stmt: DeclareVarStmt, context: any): any;
+    visitDeclareFunctionStmt(stmt: DeclareFunctionStmt, context: any): any;
+    visitExpressionStmt(stmt: ExpressionStatement, context: any): any;
+    visitReturnStmt(stmt: ReturnStatement, context: any): any;
+    visitIfStmt(stmt: IfStmt, context: any): any;
+}
+
 export class ExpressionStatement extends Statement {
     constructor(
         public expr: Expression,
@@ -205,5 +206,40 @@ export class ExpressionStatement extends Statement {
     }
     override visitStatement(visitor: StatementVisitor, context: any): any {
         return visitor.visitExpressionStmt(this, context);
+    }
+}
+
+export class ReturnStatement extends Statement {
+    constructor(
+        public value: Expression,
+        // leadingComments?: LeadingComment[],
+    ) {
+        super(StmtModifier.None);
+    }
+    override isEquivalent(stmt: Statement): boolean {
+        return stmt instanceof ReturnStatement && this.value.isEquivalent(stmt.value);
+    }
+    override visitStatement(visitor: StatementVisitor, context: any): any {
+        return visitor.visitReturnStmt(this, context);
+    }
+}
+
+export class IfStmt extends Statement {
+    isEquivalent(stmt: Statement): boolean {
+        return false;
+    }
+
+    visitStatement(visitor: StatementVisitor, context: any): any {
+        return visitor.visitIfStmt(this, context)
+    }
+}
+
+export class DeclareFunctionStmt extends Statement {
+    isEquivalent(stmt: Statement): boolean {
+        return false;
+    }
+
+    visitStatement(visitor: StatementVisitor, context: any): any {
+        return visitor.visitDeclareFunctionStmt(this, context);
     }
 }

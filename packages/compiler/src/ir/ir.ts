@@ -4,6 +4,9 @@ import {Expression} from "./output_ast";
 export type XrefId = number & {
     __brand: "XrefId";
 };
+export type ConstIndex = number & {
+    __brand: "ConstIndex";
+}
 
 // | Trait                  | Meaning                                            |
 // | ---------------------- | -------------------------------------------------- |
@@ -101,13 +104,61 @@ export interface StatementOp<OpT extends Op<OpT>> extends Op<OpT> {
 
     statement: o.Statement;
 }
+export interface ListEndOp<OpT extends Op<OpT>> extends Op<OpT> {
+    kind: OpKind.ListEnd;
+}
 
-export type CreateOp = TextOp
+export type CreateOp =
+    | ListEndOp<CreateOp>
+    | StatementOp<CreateOp>
+    | TextOp
     | ElementStartOp
     | ElementEndOp
+    | ElementOp
+    | ContainerOp
+    | ContainerStartOp
+    | TemplateOp
+    | RepeaterCreateOp
+    | ConditionalCreateOp
+    | ConditionalBranchCreateOp
 
-export type UpdateOp = AdvanceOp
+export type UpdateOp =
+    | ListEndOp<UpdateOp>
+    | StatementOp<UpdateOp>
+    | AdvanceOp
     | InterpolateTextOp;
+
+export interface ElementOp extends ElementOpBase {
+    kind: OpKind.Element;
+}
+
+export interface ContainerOp extends ElementOpBase {
+}
+
+export interface ContainerStartOp extends ElementOpBase {
+}
+
+export interface TemplateOp extends ElementOpBase {
+}
+
+export interface RepeaterCreateOp extends ElementOpBase {
+}
+
+export interface ConditionalCreateOp extends ElementOpBase {
+}
+
+export interface ConditionalBranchCreateOp extends ElementOpBase {
+}
+
+export type ElementOrContainerOps =
+    | ElementOp
+    | ElementStartOp
+    | ContainerOp
+    | ContainerStartOp
+    | TemplateOp
+    | RepeaterCreateOp
+    | ConditionalCreateOp
+    | ConditionalBranchCreateOp;
 
 export interface Op<OpT extends Op<OpT>> {
     kind: OpKind;
@@ -176,6 +227,10 @@ export enum OpKind {
     Class,
     InterpolateText,
     Statement,
+    Element,
+    RepeaterCreate,
+    ConditionalCreate,
+    ConditionalBranchCreate,
 }
 
 export interface TextOp extends Op<CreateOp>, ConsumesSlotOpTrait {
@@ -214,13 +269,41 @@ export interface AdvanceOp extends Op<UpdateOp> {
 
 export class ArrowFunctionExpr {}
 
-interface ElementStartOp  extends Op<CreateOp>, ConsumesSlotOpTrait {
-    kind: OpKind.ElementStart;
+export interface LocalRef {
+    name: string;
+
+    target: string;
+}
+
+export interface ElementOrContainerOpBase extends Op<CreateOp>, ConsumesSlotOpTrait {
+    kind: ElementOrContainerOps['kind'];
 
     xref: XrefId;
-    tag: string;
-    attributes: null,
-    localRefs: [],
+
+    attributes: ConstIndex | null;
+
+    localRefs: LocalRef[] | ConstIndex | null;
+
+    nonBindable: boolean;
+
+}
+
+export interface ElementOpBase extends ElementOrContainerOpBase {
+    kind:
+        | OpKind.Element
+        | OpKind.ElementStart
+        | OpKind.Template
+        | OpKind.RepeaterCreate
+        | OpKind.ConditionalCreate
+        | OpKind.ConditionalBranchCreate;
+
+    tag: string | null;
+
+    namespace: Namespace;
+}
+
+export interface ElementStartOp extends ElementOpBase {
+    kind: OpKind.ElementStart;
 }
 
 interface ElementEndOp extends Op<CreateOp> {
@@ -229,6 +312,8 @@ interface ElementEndOp extends Op<CreateOp> {
 
 export function createElementStartOp(tag: string, xref): ElementStartOp {
     return {
+        namespace: undefined,
+        nonBindable: false,
         handle: new SlotHandle(),
         attributes: null,
         localRefs: [],
@@ -291,4 +376,59 @@ export function createStatementOp<OpT extends Op<OpT>>(statement: o.Statement): 
 
 export function hasConsumesSlot(op) {
     return op[ConsumesSlot] === true
+}
+
+export interface ListenerOp extends Op<CreateOp> {
+    kind: OpKind.Listener;
+
+    target: XrefId;
+    targetSlot: SlotHandle;
+
+    hostListener: boolean;
+
+    name: string;
+
+    tag: string | null;
+
+    handlerOps: OpList<UpdateOp>;
+
+    handlerFnName: string | null;
+
+    consumesDollarEvent: boolean;
+
+    isLegacyAnimationListener: boolean;
+
+    legacyAnimationPhase: string | null;
+
+    eventTarget: string | null;
+
+}
+
+export function createListenerOp(
+    target: XrefId,
+    targetSlot: SlotHandle,
+    name: string,
+    tag: string | null,
+    handlerOps: Array<UpdateOp>,
+    legacyAnimationPhase: string | null,
+    eventTarget: string | null,
+    hostListener: boolean,
+): ListenerOp {
+    const handlerList = new OpList<UpdateOp>();
+    handlerList.push(handlerOps);
+    return {
+        kind: OpKind.Listener,
+        target,
+        targetSlot,
+        tag,
+        hostListener,
+        name,
+        handlerOps: handlerList,
+        handlerFnName: null,
+        consumesDollarEvent: false,
+        isLegacyAnimationListener: legacyAnimationPhase !== null,
+        legacyAnimationPhase: legacyAnimationPhase,
+        eventTarget,
+        ...NEW_OP,
+    };
 }

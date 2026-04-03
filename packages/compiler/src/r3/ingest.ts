@@ -78,12 +78,60 @@ function ingestNodes(unit: ViewCompilationUnit, nodes: ChildNode[]) {
     }
 }
 
+function ingestBindings(unit: ViewCompilationUnit, element: Element, op) {
+
+    for (const attr of element.attributes) {
+    }
+
+    for (const input of element.inputs) {
+    }
+
+    for (const output of element.outputs) {
+
+        const handlerOps = new Array<ir.UpdateOp>();
+        let handlerExprs = [output.handler];
+        const expressions = handlerExprs.map((expr) => convertAst(expr.ast, unit.job));
+        const returnExpr = expressions.pop()!;
+        handlerOps.push(
+            ...expressions.map((e) =>
+                ir.createStatementOp<ir.UpdateOp>(new o.ExpressionStatement(e)),
+            ),
+        );
+        handlerOps.push(ir.createStatementOp(new o.ReturnStatement(returnExpr)));
+
+        const listenerOp = ir.createListenerOp(
+            op.xref,
+            op.handle,
+            output.name,
+            element.tagName,
+            handlerOps,
+            null,
+            output.target,
+            false
+        )
+    }
+
+}
+
+function ingestReferences(op: ir.ElementOpBase, element: Element | Template): void {
+    for (const {name, value} of element.references) {
+        op.localRefs.push({
+            name,
+            target: value,
+        });
+    }
+}
+
 function ingestElement(unit: ViewCompilationUnit, node: Element) {
     const tag = node.tagName;
     const id = unit.job.allocateXrefId()
     // create elementStart
     const startOp = ir.createElementStartOp(tag, id);
     unit.create.push(startOp);
+    
+    ingestBindings(unit, node, startOp)
+
+    ingestReferences(startOp, node)
 
     ingestNodes(unit, node.children);
 
@@ -174,7 +222,15 @@ function convertAst(
     }
 
     if (ast instanceof ObjectLiteral) {
-        // return new ObjectLiteralExpr(ast.properties.map(prop => convertAst(prop, job), undefined))
+
+        const entries = ast.properties.map(prop => {
+            return {
+                value: convertAst(prop.value, job),
+                key: convertAst(prop.key, job)
+            }
+        })
+
+        return new ObjectLiteralExpr(entries, undefined)
     }
 
     if (ast instanceof BindingPipe) {
@@ -184,9 +240,9 @@ function convertAst(
         )
     }
 
-    // throw new Error(
-    //     `Unhandled expression type "${ast.constructor.name}" in file "`,
-    // );
+    throw new Error(
+        `Unhandled expression type "${ast.constructor.name}" in file "`,
+    );
 
 }
 
