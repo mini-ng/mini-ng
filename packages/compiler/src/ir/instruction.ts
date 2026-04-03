@@ -5,7 +5,7 @@ import {FunctionExpr} from "./expression";
 
 export function listener(name: string, listenerFn: FunctionExpr) {
     return call(Identifiers.listener, [
-        o.literal(name),
+        o.literal(name, undefined, LiteralAstType.STRING),
         listenerFn
     ])
 }

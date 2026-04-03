@@ -19,6 +19,7 @@ export function compileComponentFromMetadata(html: string) {
 
 const phases = [
     { kind: CompilationJobKind.Tmpl, fn: consumeSlot },
+    { kind: CompilationJobKind.Tmpl, fn: generateListenerFnNames },
     { kind: CompilationJobKind.Tmpl, fn: reify }
 ]
 
@@ -68,7 +69,7 @@ function reifyCreateOperations(unit: CompilationUnit, ops: ir.OpList<ir.CreateOp
                 //     params.push(new o.FnParam('$event'));
                 // }
 
-                const listenerFn = ng.fn(params, handlerStmts, op.name);
+                const listenerFn = ng.fn(params, handlerStmts, op.handlerFnName);
 
                 ir.OpList.replace(op, ng.listener(op.name, listenerFn))
                 break;
@@ -100,6 +101,17 @@ function consumeSlot(job: ComponentCompilationJob) {
 
             (op as ir.ConsumesSlotOpTrait).handle.slot = slot;
             slot += 1;
+        }
+    }
+}
+
+function generateListenerFnNames(job: ComponentCompilationJob) {
+    for (const unit of job.units) {
+        for (const op of unit.create) {
+            if (op.kind === ir.OpKind.Listener) {
+                const fnName = unit.fnName + "_Listener_" + (op.prev as ir.ConsumesSlotOpTrait).handle.slot.toString()
+                op.handlerFnName = fnName
+            }
         }
     }
 }
