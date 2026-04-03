@@ -34,9 +34,10 @@ import {
     CallExpr,
     CommaExpr, FalseExpr,
     IdentifierExpr,
-    LiteralExpr, ObjectLiteralExpr,
+    ObjectLiteralExpr,
     SpreadElementExpr, TrueExpr
 } from "../ir/expression";
+import {LiteralExpr} from "../ir/output_ast";
 
 export function ingestComponent(nodes: ChildNode[]) {
     const job = new ComponentCompilationJob("", [])
@@ -109,13 +110,15 @@ function ingestBindings(unit: ViewCompilationUnit, element: Element, op) {
             output.target,
             false
         )
+
+        unit.create.push(listenerOp)
     }
 
 }
 
 function ingestReferences(op: ir.ElementOpBase, element: Element | Template): void {
     for (const {name, value} of element.references) {
-        op.localRefs.push({
+        (op.localRefs as unknown as ir.LocalRef[]).push({
             name,
             target: value,
         });

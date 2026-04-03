@@ -1,14 +1,5 @@
-import {
-    ArrayLiteralExpr, ConditionalExpr,
-    FalseExpr,
-    GroupingExpr, IdentifierExpr, LiteralExpr,
-    NewExpr,
-    ObjectLiteralExpr,
-    SafeCallExpr, SpreadElementExpr,
-    TrueExpr, YieldExpressionExpr
-} from "./expression";
-import {ArrayLiteral} from "../html_parser/ast/ast-impl";
 import {LiteralAstType} from "../html_parser/ast/ast";
+import {ExpressionVisitor} from "./visitor";
 
 export enum TypeModifier {
     None = 0,
@@ -135,36 +126,6 @@ export class InvokeFunctionExpr extends Expression {
 
 }
 
-export interface ExpressionVisitor {
-    visitInvokeFunctionExpr(ast: InvokeFunctionExpr, context: any): any;
-
-    visitExternalExpr(ast: ExternalExpr, context: any): any;
-
-    visitObjectLiteral(param: ObjectLiteralExpr, context: any): any;
-
-    visitArrayLiteralExpr(param: ArrayLiteralExpr, context: any): any;
-
-    visitFalseExpr(param: FalseExpr, context: any): any;
-
-    visitTrueExpr(param: TrueExpr, context: any): any;
-
-    visitLiteralExpr(param: LiteralExpr, context: any): void;
-
-    visitGroupingExpr(param: GroupingExpr, context: any): any;
-
-    visitNewExpr(param: NewExpr, context: any): any;
-
-    visitSafeCallExpr(param: SafeCallExpr, context: any): any;
-
-    visitConditionalExpr(param: ConditionalExpr, context: any): any;
-
-    visitIdentifierExpr(param: IdentifierExpr, context: any): any;
-
-    visitSpreadElementExpr(param: SpreadElementExpr, context: any): any;
-
-    visitYieldExpressionExpr(param: YieldExpressionExpr, context: any): any;
-}
-
 export enum StmtModifier {
     None = 0,
     Final = 1 << 0,
@@ -225,6 +186,17 @@ export class ReturnStatement extends Statement {
 }
 
 export class IfStmt extends Statement {
+
+    constructor(
+        public condition: Expression,
+        public trueCase: Statement[],
+        public falseCase: Statement[] = [],
+        // sourceSpan?: ParseSourceSpan | null,
+        // leadingComments?: LeadingComment[],
+    ) {
+        super(StmtModifier.None/*, sourceSpan, leadingComments*/);
+    }
+
     isEquivalent(stmt: Statement): boolean {
         return false;
     }
@@ -235,6 +207,16 @@ export class IfStmt extends Statement {
 }
 
 export class DeclareFunctionStmt extends Statement {
+    constructor(
+        public name: string,
+        public params,
+    public statements,
+    type?: Type | null,
+    modifiers?: StmtModifier[],
+) {
+        super(StmtModifier.None);
+    }
+
     isEquivalent(stmt: Statement): boolean {
         return false;
     }
@@ -242,4 +224,38 @@ export class DeclareFunctionStmt extends Statement {
     visitStatement(visitor: StatementVisitor, context: any): any {
         return visitor.visitDeclareFunctionStmt(this, context);
     }
+}
+
+export class FnParam {
+    constructor(
+        public name: string,
+        public type: Type | null = null,
+    ) {}
+}
+
+export class LiteralExpr extends Expression {
+
+    constructor(
+        public value: string | number,
+        public valueType: LiteralAstType,
+        type?: Type | null) {
+        super(type)
+    }
+
+    clone(): Expression {
+        return undefined;
+    }
+
+    isConstant(): boolean {
+        return false;
+    }
+
+    isEquivalent(e: Expression): boolean {
+        return false;
+    }
+
+    visitExpression(visitor:  ExpressionVisitor, context: any): any {
+        return visitor.visitLiteralExpr(this, context)
+    }
+
 }

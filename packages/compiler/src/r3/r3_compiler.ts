@@ -3,6 +3,7 @@ import {ingestComponent} from "./ingest";
 import {CompilationJob, CompilationJobKind, CompilationUnit, ComponentCompilationJob} from "../ir/compilation";
 import * as ir from "../ir/ir";
 import * as ng from "./../ir/instruction"
+import * as os from "./../ir/output_ast"
 
 export function compileComponentFromMetadata(html: string) {
     const ast = sojourn(html);
@@ -43,15 +44,35 @@ function reifyCreateOperations(unit: CompilationUnit, ops: ir.OpList<ir.CreateOp
                 break;
             }
 
-                case ir.OpKind.ElementStart: {
-                    ir.OpList.replace(op, ng.elementStart(op.handle.slot!, op.tag));
-                    break
+            case ir.OpKind.ElementStart: {
+                ir.OpList.replace(op, ng.elementStart(op.handle.slot!, op.tag));
+                break
+            }
+
+            case ir.OpKind.ElementEnd: {
+                ir.OpList.replace(op, ng.elementEnd());
+                break
+            }
+
+            case ir.OpKind.Listener: {
+
+                const handlerStmts: os.Statement[] = [];
+                for (const _op of (op as ir.ListenerOp).handlerOps) {
+                    if (_op.kind === ir.OpKind.Statement) {
+                        handlerStmts.push(_op.statement);
+                    }
                 }
 
-                case ir.OpKind.ElementEnd: {
-                    ir.OpList.replace(op, ng.elementEnd());
-                    break
-                }
+                const params: os.FnParam[] = [];
+                // if (consumesDollarEvent) {
+                //     params.push(new o.FnParam('$event'));
+                // }
+
+                const listenerFn = ng.fn(params, handlerStmts, op.name);
+
+                ir.OpList.replace(op, ng.listener(op.name, listenerFn))
+                break;
+            }
         }
 
     }

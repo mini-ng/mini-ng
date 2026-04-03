@@ -121,6 +121,7 @@ export type CreateOp =
     | RepeaterCreateOp
     | ConditionalCreateOp
     | ConditionalBranchCreateOp
+    | ListenerOp
 
 export type UpdateOp =
     | ListEndOp<UpdateOp>

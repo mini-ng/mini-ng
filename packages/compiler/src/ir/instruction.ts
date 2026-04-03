@@ -1,6 +1,15 @@
 import * as ir from './ir';
 import * as o from "./output_ast"
 import {LiteralAstType} from "../html_parser/ast/ast";
+import {FunctionExpr} from "./expression";
+
+export function listener(name: string, listenerFn: FunctionExpr) {
+    return call(Identifiers.listener, [
+        o.literal(name),
+        listenerFn
+    ])
+}
+
 
 export function advance(delta: number) {
     return call(Identifiers.advance, delta > 1 ? [o.literal(delta)] : []);
@@ -44,6 +53,11 @@ export class Identifiers {
         moduleName: CORE,
     }
 
+    static listener: o.ExternalReference = {
+        name: 'ɵɵlistener',
+        moduleName: CORE,
+    }
+
 }
 
 export function text(
@@ -63,4 +77,13 @@ function call<OpT extends ir.CreateOp | ir.UpdateOp>(
 ): OpT {
     const expr = o.importExpr(instruction).callFn(args);
     return ir.createStatementOp(new o.ExpressionStatement(expr)) as unknown as OpT;
+}
+
+export function fn(
+    params,
+    body: o.Statement[],
+    fnName: string
+) {
+    // create function expression
+    return new FunctionExpr(params, body, undefined, fnName)
 }

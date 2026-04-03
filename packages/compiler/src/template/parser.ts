@@ -71,7 +71,6 @@ export class Parser {
         let current = unit.create.head.next;
         const tail = unit.create.tail;
         while (current !== tail) {
-            const { next, prev, ...printable } = current;
 
             // @ts-ignore
             stmts.push(current.statement.visitStatement(visitor))
@@ -79,7 +78,21 @@ export class Parser {
             current = current.next;
         }
 
-      }
+        let currentUpdate = unit.update.head;
+        const tailUpdate = unit.update.tail;
+
+        while (currentUpdate !== tailUpdate) {
+            const { next, prev, ...printable } = current;
+
+            // console.log(currentUpdate)
+
+            // @ts-ignore
+            // updateStmts.push(currentUpdate.statement.visitStatement(visitor))
+
+            currentUpdate = currentUpdate.next;
+        }
+
+    }
 
           const creationNode = ts.factory.createIfStatement(
        factory.createBinaryExpression(

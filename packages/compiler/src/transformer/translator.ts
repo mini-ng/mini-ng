@@ -3,10 +3,9 @@ import * as o from "./../ir/output_ast"
 import {
     ArrayLiteralExpr,
     ConditionalExpr,
-    FalseExpr,
+    FalseExpr, FunctionExpr,
     GroupingExpr,
     IdentifierExpr,
-    LiteralExpr,
     NewExpr,
     ObjectLiteralExpr,
     SafeCallExpr,
@@ -15,13 +14,15 @@ import {
     YieldExpressionExpr
 } from "../ir/expression";
 import {LiteralAstType} from "../html_parser/ast/ast";
+import {DeclareFunctionStmt, IfStmt, LiteralExpr, ReturnStatement} from "./../ir/output_ast";
+import {ExpressionVisitor} from "../ir/visitor";
 
 class Context {
     withStatementMode: string;
 }
 
 export class ExpressionTranslatorVisitor
-    implements o.ExpressionVisitor, o.StatementVisitor {
+    implements ExpressionVisitor, o.StatementVisitor {
 
     private readonly factory = ts.factory
 
@@ -111,6 +112,30 @@ export class ExpressionTranslatorVisitor
 
         return this.factory.createIdentifier(ast.value.name);
 
+    }
+
+    visitDeclareFunctionStmt(stmt: DeclareFunctionStmt, context: any): any {
+    }
+
+    visitFunctionExpr(param: FunctionExpr, context: any): any {
+        return this.factory.createFunctionExpression(
+            undefined, undefined,
+            param.name ?? null, undefined,
+            param.params.map((param) => ts.factory.createParameterDeclaration(undefined, undefined, param.name)), undefined,
+            this.factory.createBlock(this.visitStatements(param.statements, context)),
+        );
+    }
+
+    visitIfStmt(stmt: IfStmt, context: any): any {
+    }
+
+    visitReturnStmt(stmt: ReturnStatement, context: any): any {
+    }
+
+    private visitStatements(statements: o.Statement[], context: Context) {
+        return statements
+            .map((stmt) => stmt.visitStatement(this, context))
+            .filter((stmt) => stmt !== undefined);
     }
 
 }
