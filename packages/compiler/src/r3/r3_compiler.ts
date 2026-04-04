@@ -83,9 +83,15 @@ function reifyUpdateOperations(unit: CompilationUnit, ops: ir.OpList<ir.UpdateOp
     for (const op of ops) {
 
         switch (op.kind) {
-            case ir.OpKind.Advance:
+            case ir.OpKind.Advance: {
                 ir.OpList.replace(op, ng.advance(op.delta!));
                 break;
+            }
+
+            case ir.OpKind.InterpolateText: {
+                ir.OpList.replace(op, ng.interpolateText(op.interpolation.strings, op.interpolation.expressions));
+                break;
+            }
         }
 
     }

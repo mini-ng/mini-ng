@@ -3,6 +3,12 @@ import * as o from "./output_ast"
 import {LiteralAstType} from "../html_parser/ast/ast";
 import {FunctionExpr} from "./expression";
 
+export function interpolateText(strings: string[], expressions: o.Expression[]) {
+    console.log(expressions)
+    return undefined;
+}
+
+
 export function listener(name: string, listenerFn: FunctionExpr) {
     return call(Identifiers.listener, [
         o.literal(name, undefined, LiteralAstType.STRING),
@@ -55,6 +61,11 @@ export class Identifiers {
 
     static listener: o.ExternalReference = {
         name: 'ɵɵlistener',
+        moduleName: CORE,
+    }
+
+    static interpolateText: o.ExternalReference = {
+        name: 'ɵɵinterpolateText',
         moduleName: CORE,
     }
 

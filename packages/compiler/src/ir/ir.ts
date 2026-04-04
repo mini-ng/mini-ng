@@ -345,6 +345,7 @@ export interface InterpolateTextOp
     kind: OpKind.InterpolateText;
     target: XrefId;
     expressions: any[];
+    interpolation: Interpolation;
 }
 
 export class Interpolation {
@@ -361,6 +362,7 @@ export function createInterpolateTextOp(
         expressions: [],
         kind: OpKind.InterpolateText,
         target: xref,
+        interpolation,
         ...TRAIT_DEPENDS_ON_SLOT_CONTEXT,
         ...TRAIT_CONSUMES_VARS,
         ...NEW_OP

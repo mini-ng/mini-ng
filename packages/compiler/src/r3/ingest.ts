@@ -159,7 +159,7 @@ function ingestBoundText(unit: ViewCompilationUnit, node: BoundText) {
             textXref,
             new ir.Interpolation(
                 [], // value.strings,
-                [convertAst(node.value.ast, unit.job)]
+                [ convertAst(node.value.ast, unit.job) ]
                 // node.expressions.map((expr) => convertAst(expr, unit.job)),
             ),
         ),
@@ -238,6 +238,7 @@ function convertAst(
 
     if (ast instanceof BindingPipe) {
         return new BindingPipeExpr(
+            ast.name,
             [ast.expression, ...ast.args].map(arg => convertAst(arg, job)),
             undefined
         )

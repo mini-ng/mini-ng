@@ -47,6 +47,7 @@ export class BindingPipeExpr extends ExpressionBase implements ConsumesVars, Use
     readonly [UsesVarOffset] = true;
 
     constructor(
+        public name: string,
         public args: o.Expression[],
         type?: o.Type | null
     ) {
@@ -65,7 +66,7 @@ export class BindingPipeExpr extends ExpressionBase implements ConsumesVars, Use
         return false;
     }
 
-    visitExpression(visitor:  ExpressionVisitor, context: any): any {
+    visitExpression(visitor: ExpressionVisitor, context: any): any {
         for (const arg of this.args) {
             arg.visitExpression(visitor, context);
         }
