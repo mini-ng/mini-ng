@@ -20,21 +20,98 @@ export function transformExpressionsInOp(
     transform: ExpressionTransform,
     flags: VisitorContextFlag,
 ) {
+    switch (op.kind) {
+        case OpKind.ListEnd:
+            break;
+        case OpKind.RepeaterCreate:
+            break;
+        case OpKind.InterpolateText:
+            transformExpressionsInInterpolation(op.interpolation, transform, flags);
+            break;
+        case OpKind.Statement:
+            transformExpressionsInStatement(op.statement, transform, flags);
+            break;
+        case OpKind.Advance:
+        // case OpKind.Container:
+        // case OpKind.ContainerEnd:
+        // case OpKind.ContainerStart:
+        // case OpKind.DeferOn:
+        // case OpKind.DisableBindings:
+        case OpKind.Element:
+        case OpKind.ElementEnd:
+        case OpKind.ElementStart:
+        // case OpKind.EnableBindings:
+        // case OpKind.Namespace:
+        case OpKind.Pipe:
+        // case OpKind.Projection:
+        // case OpKind.ProjectionDef:
+        case OpKind.Template:
+        case OpKind.Text:
+        // case OpKind.DeclareLet:
+        case OpKind.ConditionalCreate:
+        case OpKind.ConditionalBranchCreate:
+        // case OpKind.Control:
+        // case OpKind.ControlCreate:
+            // These operations contain no expressions.
+            break;
+        case OpKind.Listener:
+            break;
+        default:
+            throw new Error(`AssertionError: transformExpressionsInOp doesn't handle ${OpKind[op.kind]}`);
+    }
+}
+
+export function transformExpressionsInExpression(
+    expr: o.Expression,
+    transform: ExpressionTransform,
+    flags: VisitorContextFlag,
+): o.Expression {
+    if (expr instanceof ExpressionBase) {
+        expr.transformInternalExpressions(transform, flags);
+    }
+    return transform(expr, flags);
 
 }
 
-    export function transformExpressionsInExpression(
-        expr: o.Expression,
-        transform: ExpressionTransform,
-        flags: VisitorContextFlag,
-    ): o.Expression {
-        if (expr instanceof ExpressionBase) {
-            expr.transformInternalExpressions(transform, flags);
-        }
-        return transform(expr, flags);
-
+function transformExpressionsInInterpolation(
+    interpolation: Interpolation,
+    transform: ExpressionTransform,
+    flags: VisitorContextFlag,
+) {
+    for (let i = 0; i < interpolation.expressions.length; i++) {
+        interpolation.expressions[i] = transformExpressionsInExpression(
+            interpolation.expressions[i],
+            transform,
+            flags,
+        );
     }
+}
 
+export function transformExpressionsInStatement(
+    stmt: o.Statement,
+    transform: ExpressionTransform,
+    flags: VisitorContextFlag,
+): void {
+    if (stmt instanceof o.ExpressionStatement) {
+        stmt.expr = transformExpressionsInExpression(stmt.expr, transform, flags);
+    } else if (stmt instanceof o.ReturnStatement) {
+        stmt.value = transformExpressionsInExpression(stmt.value, transform, flags);
+    } /*else if (stmt instanceof o.DeclareVarStmt) {
+        if (stmt.value !== undefined) {
+            stmt.value = transformExpressionsInExpression(stmt.value, transform, flags);
+        }
+    }*/ else if (stmt instanceof o.IfStmt) {
+        stmt.condition = transformExpressionsInExpression(stmt.condition, transform, flags);
+        for (const caseStatement of stmt.trueCase) {
+            transformExpressionsInStatement(caseStatement, transform, flags);
+        }
+        for (const caseStatement of stmt.falseCase) {
+            transformExpressionsInStatement(caseStatement, transform, flags);
+        }
+    } else {
+        throw new Error(`Unhandled statement kind: ${stmt.constructor.name}`);
+    }
+}
 
 export type XrefId = number & {
     __brand: "XrefId";

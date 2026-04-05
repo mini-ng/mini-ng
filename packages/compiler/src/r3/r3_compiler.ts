@@ -3,7 +3,7 @@ import {ingestComponent} from "./ingest";
 import {CompilationJob, CompilationJobKind, CompilationUnit, ComponentCompilationJob} from "../ir/compilation";
 import * as ir from "../ir/ir";
 import * as ng from "./../ir/instruction"
-import * as os from "./../ir/output_ast"
+import * as o from "./../ir/output_ast"
 
 export function compileComponentFromMetadata(html: string) {
     const ast = sojourn(html);
@@ -64,14 +64,14 @@ function reifyCreateOperations(unit: CompilationUnit, ops: ir.OpList<ir.CreateOp
 
             case ir.OpKind.Listener: {
 
-                const handlerStmts: os.Statement[] = [];
+                const handlerStmts: o.Statement[] = [];
                 for (const _op of (op as ir.ListenerOp).handlerOps) {
                     if (_op.kind === ir.OpKind.Statement) {
                         handlerStmts.push(_op.statement);
                     }
                 }
 
-                const params: os.FnParam[] = [];
+                const params: o.FnParam[] = [];
                 // if (consumesDollarEvent) {
                 //     params.push(new o.FnParam('$event'));
                 // }
@@ -88,6 +88,12 @@ function reifyCreateOperations(unit: CompilationUnit, ops: ir.OpList<ir.CreateOp
 
 function reifyUpdateOperations(unit: CompilationUnit, ops: ir.OpList<ir.UpdateOp>) {
     for (const op of ops) {
+
+        ir.transformExpressionsInOp(
+            op,
+            (expr) => reifyIrExpression(unit, expr),
+            ir.VisitorContextFlag.None,
+        );
 
         switch (op.kind) {
             case ir.OpKind.Advance: {
