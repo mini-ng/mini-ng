@@ -8,7 +8,6 @@ export function interpolateText(strings: string[], expressions: o.Expression[]) 
     return undefined;
 }
 
-
 export function listener(name: string, listenerFn: FunctionExpr) {
     return call(Identifiers.listener, [
         o.literal(name, undefined, LiteralAstType.STRING),

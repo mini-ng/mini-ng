@@ -23,8 +23,7 @@ import {
 } from "../html_parser/ast/ast-impl";
 import * as o from "./output_ast";
 import {Token} from "../html_parser/expression_parser/tokens";
-import {LiteralAstType} from "../html_parser/ast/ast";
-import {ConsumesVars, ConsumesVarsTrait, UsesVarOffset} from "./ir";
+import {ConsumesVars, ConsumesVarsTrait, ExpressionTransform, UsesVarOffset, VisitorContextFlag} from "./ir";
 import {ExpressionVisitor} from "./visitor";
 
 export enum ExpressionKind {
@@ -36,6 +35,10 @@ export abstract class ExpressionBase extends o.Expression {
 
     protected constructor() {
         super(null);
+    }
+
+    transformInternalExpressions(transform: ExpressionTransform, flags: VisitorContextFlag) {
+
     }
 }
 

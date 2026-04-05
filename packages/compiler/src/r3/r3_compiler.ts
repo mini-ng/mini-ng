@@ -37,7 +37,14 @@ function reify(job: CompilationJob) {
 }
 
 function reifyCreateOperations(unit: CompilationUnit, ops: ir.OpList<ir.CreateOp>) {
+
     for (const op of ops) {
+
+        ir.transformExpressionsInOp(
+            op,
+            (expr) => reifyIrExpression(unit, expr),
+            ir.VisitorContextFlag.None,
+        );
 
         switch (op.kind) {
             case ir.OpKind.Text: {
@@ -119,5 +126,11 @@ function generateListenerFnNames(job: ComponentCompilationJob) {
                 op.handlerFnName = fnName
             }
         }
+    }
+}
+
+function reifyIrExpression(unit: CompilationUnit, expr: o.Expression) {
+    if (!ir.isIrExpression(expr)) {
+        return expr;
     }
 }

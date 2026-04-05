@@ -1,5 +1,40 @@
 import * as o from "./output_ast"
 import {Expression} from "./output_ast";
+import {ExpressionBase} from "./expression";
+
+export function isIrExpression(expr: o.Expression) {
+    return false;
+}
+
+
+export enum VisitorContextFlag {
+    None = 0b0000,
+    InChildOperation = 0b0001,
+    InArrowFunctionOperation = 0b0010,
+}
+
+export type ExpressionTransform = (expr: o.Expression, flags: VisitorContextFlag) => o.Expression;
+
+export function transformExpressionsInOp(
+    op: CreateOp | UpdateOp,
+    transform: ExpressionTransform,
+    flags: VisitorContextFlag,
+) {
+
+}
+
+    export function transformExpressionsInExpression(
+        expr: o.Expression,
+        transform: ExpressionTransform,
+        flags: VisitorContextFlag,
+    ): o.Expression {
+        if (expr instanceof ExpressionBase) {
+            expr.transformInternalExpressions(transform, flags);
+        }
+        return transform(expr, flags);
+
+    }
+
 
 export type XrefId = number & {
     __brand: "XrefId";
