@@ -78,16 +78,18 @@ export class Parser {
             current = current.next;
         }
 
-        let currentUpdate = unit.update.head;
+        let currentUpdate = unit.update.head.next;
         const tailUpdate = unit.update.tail;
 
+        console.log("=======update=========")
         while (currentUpdate !== tailUpdate) {
             const { next, prev, ...printable } = currentUpdate;
 
-            // console.log(currentUpdate)
+            // @ts-ignore
+            console.log(currentUpdate?.statement)
 
             // @ts-ignore
-            // updateStmts.push(currentUpdate.statement.visitStatement(visitor))
+            updateStmts.push(currentUpdate.statement.visitStatement(visitor))
 
             currentUpdate = currentUpdate.next;
         }

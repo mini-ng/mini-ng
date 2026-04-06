@@ -4,6 +4,7 @@ import {CompilationJob, CompilationJobKind, CompilationUnit, ComponentCompilatio
 import * as ir from "../ir/ir";
 import * as ng from "./../ir/instruction"
 import * as o from "./../ir/output_ast"
+import {ExpressionKind} from "../ir/expression";
 
 export function compileComponentFromMetadata(html: string) {
     const ast = sojourn(html);
@@ -12,7 +13,6 @@ export function compileComponentFromMetadata(html: string) {
     transform(tpl);
 
     // ir.OpList.print(job.root.create);
-
     return tpl;
 
 }
@@ -20,6 +20,8 @@ export function compileComponentFromMetadata(html: string) {
 const phases = [
     { kind: CompilationJobKind.Tmpl, fn: consumeSlot },
     { kind: CompilationJobKind.Tmpl, fn: generateListenerFnNames },
+    // generate advance
+    { kind: CompilationJobKind.Tmpl, fn: generateAdvance },
     { kind: CompilationJobKind.Tmpl, fn: reify }
 ]
 
@@ -81,6 +83,10 @@ function reifyCreateOperations(unit: CompilationUnit, ops: ir.OpList<ir.CreateOp
                 ir.OpList.replace(op, ng.listener(op.name, listenerFn))
                 break;
             }
+
+            case ir.OpKind.Pipe: {
+                ir.OpList.replace(op, ng.pipe(op.handle.slot, op.name))
+            }
         }
 
     }
@@ -94,6 +100,7 @@ function reifyUpdateOperations(unit: CompilationUnit, ops: ir.OpList<ir.UpdateOp
             (expr) => reifyIrExpression(unit, expr),
             ir.VisitorContextFlag.None,
         );
+        // console.log(op)
 
         switch (op.kind) {
             case ir.OpKind.Advance: {
@@ -136,7 +143,29 @@ function generateListenerFnNames(job: ComponentCompilationJob) {
 }
 
 function reifyIrExpression(unit: CompilationUnit, expr: o.Expression) {
+
     if (!ir.isIrExpression(expr)) {
         return expr;
+    }
+
+    switch (expr.kind) {
+        case ExpressionKind.PipeBinding: {
+            return ng.pipeBind(expr.targetSlot.slot, expr.varOffset)
+        }
+
+        default:
+            throw new Error(
+                `AssertionError: Unsupported reification of ir.Expression kind:
+                }`,
+            );
+    }
+
+}
+
+function generateAdvance(job: ComponentCompilationJob) {
+    for (const unit of job.units) {
+        for (const op of unit.update) {
+            // if op depends on slot, then prepend advance
+        }
     }
 }

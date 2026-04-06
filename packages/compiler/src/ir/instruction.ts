@@ -2,10 +2,17 @@ import * as ir from './ir';
 import * as o from "./output_ast"
 import {LiteralAstType} from "../html_parser/ast/ast";
 import {FunctionExpr} from "./expression";
+import {literal} from "./output_ast";
+
+export function pipe(slot: number, name: string) {
+    return undefined;
+}
 
 export function interpolateText(strings: string[], expressions: o.Expression[]) {
-    console.log(expressions)
-    return undefined;
+    return call(Identifiers.interpolateText, [
+        ...strings.map( str => o.literal(str, undefined, LiteralAstType.STRING)),
+        ...expressions
+    ]);
 }
 
 export function listener(name: string, listenerFn: FunctionExpr) {
@@ -67,6 +74,10 @@ export class Identifiers {
         name: 'ɵɵinterpolateText',
         moduleName: CORE,
     }
+    static pipeBind: o.ExternalReference = {
+        name: 'ɵɵpipeBind',
+        moduleName: CORE,
+    };
 
 }
 
@@ -96,4 +107,13 @@ export function fn(
 ) {
     // create function expression
     return new FunctionExpr(params, body, undefined, fnName)
+}
+
+export function pipeBind(slot: number, varOffset: number) {
+    let instruction = Identifiers.pipeBind;
+    const expr = o.importExpr(instruction).callFn([
+        o.literal(slot, null, LiteralAstType.NUMBER),
+        o.literal(varOffset, null, LiteralAstType.NUMBER),
+    ]);
+    return expr
 }

@@ -1,9 +1,8 @@
 import * as o from "./output_ast"
-import {Expression} from "./output_ast";
-import {ExpressionBase} from "./expression";
+import {ExpressionBase, Expression} from "./expression";
 
-export function isIrExpression(expr: o.Expression) {
-    return false;
+export function isIrExpression(expr: o.Expression): expr is Expression {
+    return expr instanceof ExpressionBase;
 }
 
 
@@ -20,6 +19,7 @@ export function transformExpressionsInOp(
     transform: ExpressionTransform,
     flags: VisitorContextFlag,
 ) {
+
     switch (op.kind) {
         case OpKind.ListEnd:
             break;
@@ -57,7 +57,7 @@ export function transformExpressionsInOp(
         case OpKind.Listener:
             break;
         default:
-            throw new Error(`AssertionError: transformExpressionsInOp doesn't handle ${OpKind[op.kind]}`);
+            throw new Error(`AssertionError: transformExpressionsInOp doesn't handle`);
     }
 }
 
@@ -170,6 +170,8 @@ export class OpList<OpT extends Op<OpT>> {
             return;
         }
 
+        op.debugListId = this.debugListId;
+
         const oldLast = this.tail.prev!;
 
         op.prev = oldLast;
@@ -180,23 +182,38 @@ export class OpList<OpT extends Op<OpT>> {
     }
 
     *[Symbol.iterator]() {
-        let current = this.head.next;
-        const tail = this.tail;
-        while (current !== tail) {
+        let current = this.head.next!;
+        while (current !== this.tail) {
+
+            const next = current.next!;
             yield current;
-            current = current.next;
+            current = next;
         }
     }
 
     static replace<OpT extends Op<OpT>>(oldOp: OpT, newOp: OpT): void {
-        oldOp.prev.next = newOp;
-        oldOp.next.prev = newOp;
+        // oldOp.prev.next = newOp;
+        // oldOp.next.prev = newOp;
 
-        newOp.next = oldOp.next
-        newOp.prev = oldOp.prev;
+        // newOp.next = oldOp.next
+        // newOp.prev = oldOp.prev;
+
+        // newOp.debugListId = oldOp.debugListId;
+        if (oldOp.prev !== null) {
+            oldOp.prev.next = newOp;
+            newOp.prev = oldOp.prev;
+        }
+        if (oldOp.next !== null) {
+            oldOp.next.prev = newOp;
+            newOp.next = oldOp.next;
+        }
+        oldOp.debugListId = null;
+        oldOp.prev = null;
+        oldOp.next = null;
+
     }
 
-    static print(opList: OpList<CreateOp>) {
+    static print(opList: OpList<CreateOp | UpdateOp>) {
         let current = opList.head.next;
         const tail = opList.tail;
 
@@ -234,6 +251,7 @@ export type CreateOp =
     | ConditionalCreateOp
     | ConditionalBranchCreateOp
     | ListenerOp
+    | PipeOp
 
 export type UpdateOp =
     | ListEndOp<UpdateOp>
@@ -463,7 +481,7 @@ export interface InterpolateTextOp
 export class Interpolation {
     constructor(
         public strings: string[],
-        public expressions: Expression[],
+        public expressions: o.Expression[],
     ) {
     }
 }
@@ -545,5 +563,22 @@ export function createListenerOp(
         legacyAnimationPhase: legacyAnimationPhase,
         eventTarget,
         ...NEW_OP,
+    };
+}
+
+export interface PipeOp extends Op<CreateOp>, ConsumesSlotOpTrait {
+    kind: OpKind.Pipe;
+    xref: XrefId;
+    name: string;
+}
+
+export function createPipeOp(xref: XrefId, slot: SlotHandle, name: string): PipeOp {
+    return {
+        kind: OpKind.Pipe,
+        xref,
+        handle: slot,
+        name,
+        ...NEW_OP,
+        ...TRAIT_CONSUMES_SLOT,
     };
 }

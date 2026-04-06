@@ -21,10 +21,30 @@ class Context {
     withStatementMode: string;
 }
 
+class AstFactory<T, U> {
+}
+
+class ImportRequest {
+    exportModuleSpecifier: string;
+    exportSymbolName: string;
+    requestedFile: string
+}
+
+class ImportGenerator {
+    addImport(request: ImportRequest) {
+
+    }
+}
+
 export class ExpressionTranslatorVisitor
     implements ExpressionVisitor, o.StatementVisitor {
 
     private readonly factory = ts.factory
+    constructor(
+        // private factory: AstFactory<TStatement, TExpression>,
+        private imports: ImportGenerator,
+    ) {
+    }
 
     visitExpressionStmt(stmt: o.ExpressionStatement, context: Context) {
         return this.factory.createExpressionStatement(
@@ -93,7 +113,7 @@ export class ExpressionTranslatorVisitor
         //     return this.imports.addImport({
         //         exportModuleSpecifier: ast.value.moduleName,
         //         exportSymbolName: null,
-        //         requestedFile: this.contextFile,
+        //         requestedFile: null, //this.contextFile,
         //     });
         // }
         // // If a moduleName is specified, this is a normal import. If there's no module name, it's a
@@ -103,7 +123,7 @@ export class ExpressionTranslatorVisitor
         //     return this.imports.addImport({
         //         exportModuleSpecifier: ast.value.moduleName,
         //         exportSymbolName: ast.value.name,
-        //         requestedFile: this.contextFile,
+        //         requestedFile: null, // this.contextFile,
         //     });
         // } else {
         //     // The symbol is ambient, so just reference it.

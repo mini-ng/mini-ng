@@ -238,6 +238,7 @@ function convertAst(
 
     if (ast instanceof BindingPipe) {
         return new BindingPipeExpr(
+            job.allocateXrefId(), new ir.SlotHandle(),
             ast.name,
             [ast.expression, ...ast.args].map(arg => convertAst(arg, job)),
             undefined

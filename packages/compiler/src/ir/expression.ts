@@ -23,8 +23,17 @@ import {
 } from "../html_parser/ast/ast-impl";
 import * as o from "./output_ast";
 import {Token} from "../html_parser/expression_parser/tokens";
-import {ConsumesVars, ConsumesVarsTrait, ExpressionTransform, UsesVarOffset, VisitorContextFlag} from "./ir";
+import {
+    ConsumesVars,
+    ConsumesVarsTrait,
+    ExpressionTransform, SlotHandle,
+    transformExpressionsInExpression,
+    UsesVarOffset,
+    VisitorContextFlag, XrefId
+} from "./ir";
 import {ExpressionVisitor} from "./visitor";
+
+export type Expression = BindingPipeExpr;
 
 export enum ExpressionKind {
     PipeBinding,
@@ -37,9 +46,7 @@ export abstract class ExpressionBase extends o.Expression {
         super(null);
     }
 
-    transformInternalExpressions(transform: ExpressionTransform, flags: VisitorContextFlag) {
-
-    }
+    abstract transformInternalExpressions(transform: ExpressionTransform, flags: VisitorContextFlag): void;
 }
 
 export class BindingPipeExpr extends ExpressionBase implements ConsumesVars, UsesVarOffset {
@@ -50,6 +57,8 @@ export class BindingPipeExpr extends ExpressionBase implements ConsumesVars, Use
     readonly [UsesVarOffset] = true;
 
     constructor(
+        readonly target: XrefId,
+        readonly targetSlot: SlotHandle,
         public name: string,
         public args: o.Expression[],
         type?: o.Type | null
@@ -73,6 +82,12 @@ export class BindingPipeExpr extends ExpressionBase implements ConsumesVars, Use
         for (const arg of this.args) {
             arg.visitExpression(visitor, context);
         }
+    }
+
+    transformInternalExpressions(transform: ExpressionTransform, flags: VisitorContextFlag) {
+        this.args = this.args.map((arg) => {
+            return transformExpressionsInExpression(arg, transform, flags);
+        });
     }
 
 }
