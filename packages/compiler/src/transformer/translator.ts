@@ -42,7 +42,7 @@ export class ExpressionTranslatorVisitor
     private readonly factory = ts.factory
     constructor(
         // private factory: AstFactory<TStatement, TExpression>,
-        private imports: ImportGenerator,
+        // private imports: ImportGenerator,
     ) {
     }
 
@@ -53,6 +53,7 @@ export class ExpressionTranslatorVisitor
     }
 
     visitInvokeFunctionExpr(ast: o.InvokeFunctionExpr, context: Context) {
+        console.log(ast)
         return this.factory.createCallExpression(
                 ast.fn.visitExpression(this, context),
                 undefined,
@@ -73,12 +74,13 @@ export class ExpressionTranslatorVisitor
     }
 
     visitIdentifierExpr(param: IdentifierExpr, context: any): any {
+        return this.factory.createIdentifier(param.name)
     }
 
     visitLiteralExpr(param: LiteralExpr, context: any) {
 
         if (param.valueType === LiteralAstType.NUMBER) {
-            return this.factory.createNumericLiteral(param.value)
+            return this.factory.createNumericLiteral(+param.value)
         }
         if (param.valueType === LiteralAstType.STRING) {
             return this.factory.createStringLiteral(param.value as string)

@@ -213,6 +213,19 @@ export class OpList<OpT extends Op<OpT>> {
 
     }
 
+    static insertBefore<OpT extends Op<OpT>>(newOp: OpT, oldOp: OpT) {
+
+        const oldPrev = oldOp.prev
+        const oldNext = oldOp.next
+
+        newOp.prev = oldPrev;
+        newOp.next = oldOp;
+
+        oldPrev.next = newOp;
+
+        oldOp.prev = newOp;
+    }
+
     static print(opList: OpList<CreateOp | UpdateOp>) {
         let current = opList.head.next;
         const tail = opList.tail;
@@ -318,6 +331,7 @@ export interface UsesVarOffset {
 
 export interface DependsOnSlot {
     readonly [DependsOnSlotContext]: true
+    target: XrefId;
 }
 
 export const TRAIT_CONSUMES_SLOT: Omit<ConsumesSlotOpTrait, 'xref' | 'handle'> = {
@@ -325,7 +339,7 @@ export const TRAIT_CONSUMES_SLOT: Omit<ConsumesSlotOpTrait, 'xref' | 'handle'> =
     numSlotsUsed: 1,
 } as const;
 
-export const TRAIT_DEPENDS_ON_SLOT_CONTEXT: DependsOnSlot = {
+export const TRAIT_DEPENDS_ON_SLOT_CONTEXT: Omit<DependsOnSlot, 'target'> = {
     [DependsOnSlotContext]: true
 }
 
@@ -507,8 +521,12 @@ export function createStatementOp<OpT extends Op<OpT>>(statement: o.Statement): 
     };
 }
 
-export function hasConsumesSlot(op) {
+export function hasConsumesSlot(op: UpdateOp | CreateOp) {
     return op[ConsumesSlot] === true
+}
+
+export function dependsOnSlot(op: UpdateOp | CreateOp): op is UpdateOp & DependsOnSlot {
+    return op[DependsOnSlotContext] === true
 }
 
 export interface ListenerOp extends Op<CreateOp> {
@@ -581,4 +599,12 @@ export function createPipeOp(xref: XrefId, slot: SlotHandle, name: string): Pipe
         ...NEW_OP,
         ...TRAIT_CONSUMES_SLOT,
     };
+}
+
+export function createAdvanceOp(delta: number): AdvanceOp {
+    return {
+        delta,
+        kind: OpKind.Advance,
+        ...NEW_OP
+    }
 }

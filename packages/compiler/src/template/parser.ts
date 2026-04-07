@@ -73,7 +73,7 @@ export class Parser {
         while (current !== tail) {
 
             // @ts-ignore
-            stmts.push(current.statement.visitStatement(visitor))
+            // stmts.push(current.statement.visitStatement(visitor))
 
             current = current.next;
         }
@@ -86,7 +86,7 @@ export class Parser {
             const { next, prev, ...printable } = currentUpdate;
 
             // @ts-ignore
-            console.log(currentUpdate?.statement)
+            // console.log(currentUpdate?.statement)
 
             // @ts-ignore
             updateStmts.push(currentUpdate.statement.visitStatement(visitor))

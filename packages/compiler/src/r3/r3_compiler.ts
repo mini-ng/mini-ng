@@ -5,6 +5,7 @@ import * as ir from "../ir/ir";
 import * as ng from "./../ir/instruction"
 import * as o from "./../ir/output_ast"
 import {ExpressionKind} from "../ir/expression";
+import {dependsOnSlot} from "../ir/ir";
 
 export function compileComponentFromMetadata(html: string) {
     const ast = sojourn(html);
@@ -100,7 +101,6 @@ function reifyUpdateOperations(unit: CompilationUnit, ops: ir.OpList<ir.UpdateOp
             (expr) => reifyIrExpression(unit, expr),
             ir.VisitorContextFlag.None,
         );
-        // console.log(op)
 
         switch (op.kind) {
             case ir.OpKind.Advance: {
@@ -165,7 +165,18 @@ function reifyIrExpression(unit: CompilationUnit, expr: o.Expression) {
 function generateAdvance(job: ComponentCompilationJob) {
     for (const unit of job.units) {
         for (const op of unit.update) {
+
             // if op depends on slot, then prepend advance
+            if (!ir.dependsOnSlot(op)) {
+                continue
+            }
+
+            const advanceOp = ir.createAdvanceOp(op.target)
+
+            ir.OpList.insertBefore<ir.UpdateOp>(advanceOp, op)
+
+            // console.log(op)
+
         }
     }
 }
