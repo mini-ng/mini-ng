@@ -175,8 +175,6 @@ function generateAdvance(job: ComponentCompilationJob) {
 
             ir.OpList.insertBefore<ir.UpdateOp>(advanceOp, op)
 
-            // console.log(op)
-
         }
     }
 }

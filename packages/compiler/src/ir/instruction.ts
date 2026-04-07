@@ -42,7 +42,7 @@ export function elementEnd() {
 }
 
 
-const CORE = 'core';
+const CORE = '@mini-ng/core';
 
 export class Identifiers {
     static text: o.ExternalReference = {

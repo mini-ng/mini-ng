@@ -6,6 +6,7 @@ import {compileComponentFromMetadata} from "../r3/r3_compiler";
 import {CompilationJob} from "../ir/compilation";
 import {OpKind} from "../ir/ir";
 import {ExpressionTranslatorVisitor} from "../transformer/translator";
+import {ImportGenerator} from "../transformer/import-generator/import-generator";
 
 const parseConfig = {
   lowerCaseTagName: false, // convert tag name to lower case (hurts performance heavily)
@@ -50,78 +51,82 @@ export class Parser {
 
   parse() {
 
-    const html = this.template;
+      const html = this.template;
 
-    // const generator = new ViewGenerator();
-    const htmlVisitor = new HtmlAstVisitorImpl();
-    const { stmts, updateStmts, consts, templateStmts, outsideStatements } = {
-        outsideStatements: [],
-        stmts: [],
-        updateStmts: [],
-        consts: [],
-        templateStmts: []
-    } //htmlVisitor.generateView(html);
+      // const generator = new ViewGenerator();
+      const htmlVisitor = new HtmlAstVisitorImpl();
+      const {stmts, updateStmts, consts, templateStmts, outsideStatements} = {
+          outsideStatements: [],
+          stmts: [],
+          updateStmts: [],
+          consts: [],
+          templateStmts: []
+      } //htmlVisitor.generateView(html);
 
-    // const { stmts, updateStmts, consts, templateStmts, outsideStatements } = generator.generateViewCode(html);
+      // const { stmts, updateStmts, consts, templateStmts, outsideStatements } = generator.generateViewCode(html);
 
-      const visitor = new ExpressionTranslatorVisitor()
+      const importManager = new ImportGenerator()
+      const visitor = new ExpressionTranslatorVisitor(importManager)
 
-    const job: CompilationJob = compileComponentFromMetadata(html);
-    for (const unit of job.units) {
-        let current = unit.create.head.next;
-        const tail = unit.create.tail;
-        while (current !== tail) {
+      const job: CompilationJob = compileComponentFromMetadata(html);
+      for (const unit of job.units) {
+          let current = unit.create.head.next;
+          const tail = unit.create.tail;
+          while (current !== tail) {
 
-            // @ts-ignore
-            // stmts.push(current.statement.visitStatement(visitor))
+              // @ts-ignore
+              stmts.push(current.statement.visitStatement(visitor))
 
-            current = current.next;
-        }
+              current = current.next;
+          }
 
-        let currentUpdate = unit.update.head.next;
-        const tailUpdate = unit.update.tail;
+          let currentUpdate = unit.update.head.next;
+          const tailUpdate = unit.update.tail;
 
-        console.log("=======update=========")
-        while (currentUpdate !== tailUpdate) {
-            const { next, prev, ...printable } = currentUpdate;
+          console.log("=======update=========")
+          while (currentUpdate !== tailUpdate) {
+              const {next, prev, ...printable} = currentUpdate;
 
-            // @ts-ignore
-            // console.log(currentUpdate?.statement)
+              // @ts-ignore
+              // console.log(currentUpdate?.statement)
 
-            // @ts-ignore
-            updateStmts.push(currentUpdate.statement.visitStatement(visitor))
+              // @ts-ignore
+              updateStmts.push(currentUpdate.statement.visitStatement(visitor))
 
-            currentUpdate = currentUpdate.next;
-        }
+              currentUpdate = currentUpdate.next;
+          }
 
-    }
+      }
 
-          const creationNode = ts.factory.createIfStatement(
-       factory.createBinaryExpression(
-        ts.factory.createIdentifier("rf"),
-           ts.SyntaxKind.AmpersandToken,
-        ts.factory.createIdentifier(CREATE)
-      ),
-      ts.factory.createBlock([...stmts], true),
-      undefined
-    );
+      const imports = importManager.finalize();
+      outsideStatements.unshift(imports);
 
-   const updateNode = factory.createIfStatement(
-       factory.createBinaryExpression(
-           factory.createIdentifier("rf"),
-           ts.SyntaxKind.AmpersandToken,
-           factory.createIdentifier(UPDATE)
-       ),
-       factory.createBlock([...updateStmts], true),
-       undefined
-   )
+      const creationNode = ts.factory.createIfStatement(
+          factory.createBinaryExpression(
+              ts.factory.createIdentifier("rf"),
+              ts.SyntaxKind.AmpersandToken,
+              ts.factory.createIdentifier(CREATE)
+          ),
+          ts.factory.createBlock([...stmts], true),
+          undefined
+      );
 
-    return {
-        block: ts.factory.createBlock([creationNode, updateNode], true),
-        consts: consts,
-        templateStmts: templateStmts,
-        outsideStatements
-    }
+      const updateNode = factory.createIfStatement(
+          factory.createBinaryExpression(
+              factory.createIdentifier("rf"),
+              ts.SyntaxKind.AmpersandToken,
+              factory.createIdentifier(UPDATE)
+          ),
+          factory.createBlock([...updateStmts], true),
+          undefined
+      )
+
+      return {
+          block: ts.factory.createBlock([creationNode, updateNode], true),
+          consts: consts,
+          templateStmts: templateStmts,
+          outsideStatements
+      }
 
   }
 }

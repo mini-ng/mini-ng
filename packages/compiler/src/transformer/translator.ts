@@ -16,24 +16,10 @@ import {
 import {LiteralAstType} from "../html_parser/ast/ast";
 import {DeclareFunctionStmt, IfStmt, LiteralExpr, ReturnStatement} from "./../ir/output_ast";
 import {ExpressionVisitor} from "../ir/visitor";
+import {ImportGenerator} from "./import-generator/import-generator";
 
 class Context {
     withStatementMode: string;
-}
-
-class AstFactory<T, U> {
-}
-
-class ImportRequest {
-    exportModuleSpecifier: string;
-    exportSymbolName: string;
-    requestedFile: string
-}
-
-class ImportGenerator {
-    addImport(request: ImportRequest) {
-
-    }
 }
 
 export class ExpressionTranslatorVisitor
@@ -42,7 +28,7 @@ export class ExpressionTranslatorVisitor
     private readonly factory = ts.factory
     constructor(
         // private factory: AstFactory<TStatement, TExpression>,
-        // private imports: ImportGenerator,
+        private imports: ImportGenerator,
     ) {
     }
 
@@ -53,7 +39,6 @@ export class ExpressionTranslatorVisitor
     }
 
     visitInvokeFunctionExpr(ast: o.InvokeFunctionExpr, context: Context) {
-        console.log(ast)
         return this.factory.createCallExpression(
                 ast.fn.visitExpression(this, context),
                 undefined,
@@ -108,31 +93,34 @@ export class ExpressionTranslatorVisitor
     }
 
     visitExternalExpr(ast: o.ExternalExpr, _context: Context) {
-        // if (ast.value.name === null) {
-        //     if (ast.value.moduleName === null) {
-        //         throw new Error('Invalid import without name nor moduleName');
-        //     }
-        //     return this.imports.addImport({
-        //         exportModuleSpecifier: ast.value.moduleName,
-        //         exportSymbolName: null,
-        //         requestedFile: null, //this.contextFile,
-        //     });
-        // }
-        // // If a moduleName is specified, this is a normal import. If there's no module name, it's a
-        // // reference to a global/ambient symbol.
-        // if (ast.value.moduleName !== null) {
-        //     // This is a normal import. Find the imported module.
-        //     return this.imports.addImport({
-        //         exportModuleSpecifier: ast.value.moduleName,
-        //         exportSymbolName: ast.value.name,
-        //         requestedFile: null, // this.contextFile,
-        //     });
-        // } else {
-        //     // The symbol is ambient, so just reference it.
-        //     return this.factory.createIdentifier(ast.value.name);
-        // }
-
-        return this.factory.createIdentifier(ast.value.name);
+        console.log(ast)
+        if (ast.value.name === null) {
+            if (ast.value.moduleName === null) {
+                throw new Error('Invalid import without name nor moduleName');
+            }
+            // return this.imports.addImport({
+            //     exportModuleSpecifier: ast.value.moduleName,
+            //     exportSymbolName: null,
+            //     requestedFile: null, //this.contextFile,
+            // });
+            return this.imports.addImport({
+                module: ast.value.moduleName,
+                name: null,
+            });
+        }
+        // If a moduleName is specified, this is a normal import. If there's no module name, it's a
+        // reference to a global/ambient symbol.
+        if (ast.value.moduleName !== null) {
+            // This is a normal import. Find the imported module.
+            return this.imports.addImport({
+                module: ast.value.moduleName,
+                name: ast.value.name,
+                // requestedFile: null, // this.contextFile,
+            });
+        } else {
+            // The symbol is ambient, so just reference it.
+            return this.factory.createIdentifier(ast.value.name);
+        }
 
     }
 
