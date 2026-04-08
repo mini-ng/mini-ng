@@ -7,9 +7,9 @@ import * as o from "./../ir/output_ast"
 import {ExpressionKind} from "../ir/expression";
 import {dependsOnSlot} from "../ir/ir";
 
-export function compileComponentFromMetadata(html: string) {
+export function compileComponentFromMetadata(html: string, componentName: string): CompilationJob {
     const ast = sojourn(html);
-    const tpl = ingestComponent(ast.childNodes)
+    const tpl = ingestComponent(componentName, ast.childNodes)
 
     transform(tpl);
 

@@ -1,7 +1,6 @@
-import ts from "typescript";
 import * as o from "./../ir/output_ast"
 import {
-    ArrayLiteralExpr,
+    ArrayLiteralExpr, CallExpr,
     ConditionalExpr,
     FalseExpr, FunctionExpr,
     GroupingExpr,
@@ -13,10 +12,11 @@ import {
     TrueExpr,
     YieldExpressionExpr
 } from "../ir/expression";
-import {LiteralAstType} from "../html_parser/ast/ast";
 import {DeclareFunctionStmt, IfStmt, LiteralExpr, ReturnStatement} from "./../ir/output_ast";
 import {ExpressionVisitor} from "../ir/visitor";
 import {ImportGenerator} from "./import-generator/import-generator";
+import {AstFactory} from "./ast-factory/ast-factory";
+import ts from "typescript";
 
 class Context {
     withStatementMode: string;
@@ -25,9 +25,8 @@ class Context {
 export class ExpressionTranslatorVisitor
     implements ExpressionVisitor, o.StatementVisitor {
 
-    private readonly factory = ts.factory
     constructor(
-        // private factory: AstFactory<TStatement, TExpression>,
+        private factory: AstFactory,
         private imports: ImportGenerator,
     ) {
     }
@@ -40,10 +39,10 @@ export class ExpressionTranslatorVisitor
 
     visitInvokeFunctionExpr(ast: o.InvokeFunctionExpr, context: Context) {
         return this.factory.createCallExpression(
-                ast.fn.visitExpression(this, context),
-                undefined,
-               ast.args.map((arg) => arg.visitExpression(this, context)),
-            )
+            ast.fn.visitExpression(this, context),
+            ast.args.map((arg) => arg.visitExpression(this, context)),
+            ast.pure
+        )
     }
 
     visitArrayLiteralExpr(param: ArrayLiteralExpr, context: any): any {
@@ -63,15 +62,7 @@ export class ExpressionTranslatorVisitor
     }
 
     visitLiteralExpr(param: LiteralExpr, context: any) {
-
-        if (param.valueType === LiteralAstType.NUMBER) {
-            return this.factory.createNumericLiteral(+param.value)
-        }
-        if (param.valueType === LiteralAstType.STRING) {
-            return this.factory.createStringLiteral(param.value as string)
-        }
-
-        return this.factory.createNull()
+        return this.factory.createLiteral(param.value)
     }
 
     visitNewExpr(param: NewExpr, context: any): any {
@@ -93,16 +84,10 @@ export class ExpressionTranslatorVisitor
     }
 
     visitExternalExpr(ast: o.ExternalExpr, _context: Context) {
-        console.log(ast)
         if (ast.value.name === null) {
             if (ast.value.moduleName === null) {
                 throw new Error('Invalid import without name nor moduleName');
             }
-            // return this.imports.addImport({
-            //     exportModuleSpecifier: ast.value.moduleName,
-            //     exportSymbolName: null,
-            //     requestedFile: null, //this.contextFile,
-            // });
             return this.imports.addImport({
                 module: ast.value.moduleName,
                 name: null,
@@ -115,7 +100,6 @@ export class ExpressionTranslatorVisitor
             return this.imports.addImport({
                 module: ast.value.moduleName,
                 name: ast.value.name,
-                // requestedFile: null, // this.contextFile,
             });
         } else {
             // The symbol is ambient, so just reference it.
@@ -125,27 +109,39 @@ export class ExpressionTranslatorVisitor
     }
 
     visitDeclareFunctionStmt(stmt: DeclareFunctionStmt, context: any): any {
+        console.log("stmt")
     }
 
-    visitFunctionExpr(param: FunctionExpr, context: any): any {
+    visitFunctionExpr(ast: FunctionExpr, context: any): any {
         return this.factory.createFunctionExpression(
-            undefined, undefined,
-            param.name ?? null, undefined,
-            param.params.map((param) => ts.factory.createParameterDeclaration(undefined, undefined, param.name)), undefined,
-            this.factory.createBlock(this.visitStatements(param.statements, context)),
+            ast.name ?? null,
+            ast.params.map((param) => param.name),
+            this.visitStatements(ast.statements, context),
         );
+
     }
 
     visitIfStmt(stmt: IfStmt, context: any): any {
     }
 
     visitReturnStmt(stmt: ReturnStatement, context: any): any {
+        return this.factory.createReturnStatement(
+            stmt.value.visitExpression(this, context?.withExpressionMode),
+        )
     }
 
-    private visitStatements(statements: o.Statement[], context: Context) {
+    private visitStatements(statements: o.Statement[], context: Context): ts.Statement[] {
         return statements
             .map((stmt) => stmt.visitStatement(this, context))
             .filter((stmt) => stmt !== undefined);
+    }
+
+    visitCallExpr(ast: CallExpr, context: any): any {
+        return this.factory.createCallExpression(
+            ast.callee.visitExpression(this, context),
+            ast.args.map((arg) => arg.visitExpression(this, context)),
+            false
+        )
     }
 
 }

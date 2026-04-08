@@ -434,6 +434,7 @@ export class CallExpr extends o.Expression {
     }
 
     visitExpression(visitor: ExpressionVisitor, context: any): any {
+        return visitor.visitCallExpr(this, context);
     }
 
 }

@@ -1,13 +1,12 @@
 import {
-    ArrayLiteralExpr, ConditionalExpr,
+    ArrayLiteralExpr, CallExpr, ConditionalExpr,
     FalseExpr, FunctionExpr,
     GroupingExpr, IdentifierExpr,
-    LiteralExpr,
     NewExpr,
     ObjectLiteralExpr, SafeCallExpr, SpreadElementExpr,
     TrueExpr, YieldExpressionExpr
 } from "./expression";
-import {ExternalExpr, InvokeFunctionExpr} from "./output_ast";
+import {ExternalExpr, InvokeFunctionExpr, LiteralExpr} from "./output_ast";
 
 export interface ExpressionVisitor {
     visitInvokeFunctionExpr(ast: InvokeFunctionExpr, context: any): any;
@@ -39,4 +38,6 @@ export interface ExpressionVisitor {
     visitYieldExpressionExpr(param: YieldExpressionExpr, context: any): any;
 
     visitFunctionExpr(param: FunctionExpr, context: any): any;
+
+    visitCallExpr(param: CallExpr, context: any): any;
 }

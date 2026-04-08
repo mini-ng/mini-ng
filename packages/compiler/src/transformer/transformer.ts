@@ -625,7 +625,7 @@ function generateTemplateInstructions(componentName: string, templateString: str
     const renderFlag = "rf";
     const functionName = componentName + "_Template";
 
-    const parser = new Parser(templateString);
+    const parser = new Parser(templateString, componentName);
     const { block, consts, templateStmts, outsideStatements} = parser.parse();
 
     const template = ts.factory.createPropertyAssignment(

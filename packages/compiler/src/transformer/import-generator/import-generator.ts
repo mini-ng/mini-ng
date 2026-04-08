@@ -54,6 +54,7 @@ export class ImportGenerator {
             );
         }
 
+        // console.log(this.namedImports)
         for (const [module, specifiers] of this.namedImports) {
             const elements = Array.from(specifiers.entries()).map(
                 ([original, local]) =>

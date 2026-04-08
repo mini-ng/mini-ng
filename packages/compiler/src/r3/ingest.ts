@@ -39,8 +39,8 @@ import {
 } from "../ir/expression";
 import {LiteralExpr} from "../ir/output_ast";
 
-export function ingestComponent(nodes: ChildNode[]) {
-    const job = new ComponentCompilationJob("", [])
+export function ingestComponent(componentName: string, nodes: ChildNode[]) {
+    const job = new ComponentCompilationJob(componentName, [])
     ingestNodes(job.root, nodes);
     return job
 }

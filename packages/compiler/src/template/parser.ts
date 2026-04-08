@@ -7,6 +7,7 @@ import {CompilationJob} from "../ir/compilation";
 import {OpKind} from "../ir/ir";
 import {ExpressionTranslatorVisitor} from "../transformer/translator";
 import {ImportGenerator} from "../transformer/import-generator/import-generator";
+import {AstFactory} from "../transformer/ast-factory/ast-factory";
 
 const parseConfig = {
   lowerCaseTagName: false, // convert tag name to lower case (hurts performance heavily)
@@ -45,7 +46,7 @@ export class Parser {
 
   template: string;
 
-  constructor(template: string) {
+  constructor(template: string, public componentName: string) {
     this.template = template;
   }
 
@@ -65,33 +66,46 @@ export class Parser {
 
       // const { stmts, updateStmts, consts, templateStmts, outsideStatements } = generator.generateViewCode(html);
 
-      const importManager = new ImportGenerator()
-      const visitor = new ExpressionTranslatorVisitor(importManager)
+      const importManager = new ImportGenerator();
+      const astFactory = new AstFactory();
+      const visitor = new ExpressionTranslatorVisitor(astFactory, importManager)
 
-      const job: CompilationJob = compileComponentFromMetadata(html);
+      const job: CompilationJob = compileComponentFromMetadata(html, this.componentName);
       for (const unit of job.units) {
           let current = unit.create.head.next;
           const tail = unit.create.tail;
           while (current !== tail) {
 
-              // @ts-ignore
-              stmts.push(current.statement.visitStatement(visitor))
+              try {
+
+                  // @ts-ignore
+                  // console.log(current?.statement?.expr)
+                  // @ts-ignore
+                  stmts.push(current.statement.visitStatement(visitor))
+              } catch (e) {
+                  // console.log(current, e,);
+              }
 
               current = current.next;
           }
 
           let currentUpdate = unit.update.head.next;
           const tailUpdate = unit.update.tail;
+          console.log("=======update=========", this.componentName)
 
-          console.log("=======update=========")
           while (currentUpdate !== tailUpdate) {
               const {next, prev, ...printable} = currentUpdate;
 
               // @ts-ignore
               // console.log(currentUpdate?.statement)
 
-              // @ts-ignore
-              updateStmts.push(currentUpdate.statement.visitStatement(visitor))
+              try {
+                  // @ts-ignore
+                  updateStmts.push(currentUpdate.statement.visitStatement(visitor))
+              } catch (e) {
+                  // @ts-ignore
+                  // console.error(currentUpdate?.statement);
+              }
 
               currentUpdate = currentUpdate.next;
           }
@@ -99,7 +113,7 @@ export class Parser {
       }
 
       const imports = importManager.finalize();
-      outsideStatements.unshift(imports);
+      outsideStatements.push(imports);
 
       const creationNode = ts.factory.createIfStatement(
           factory.createBinaryExpression(
