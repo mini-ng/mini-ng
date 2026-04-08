@@ -12,8 +12,10 @@ import {createDefineDirectiveStatic, createHostBinding, hasDirectiveDecorator} f
 import {stripQuotes} from "../utils/utils";
 import {createDefinePipeStatic} from "./pipe_visitor";
 import {createDefineInjectableStatic} from "./injectable_visitor";
+import {ImportGenerator} from "../transformer/import-generator/import-generator";
 
 export type DirectivesToInject = { fromMiniNgCore: boolean; parameter: ts.ParameterDeclaration; }
+const importManager = new ImportGenerator();
 
 export function transformPlugin(
   program: ts.Program,
@@ -64,13 +66,13 @@ export function transformPlugin(
         let cmpDefNode = null;
 
         if (isDirective) {
-          cmpDefNode = createDefineDirectiveStatic(componentName, metadata, node, hoisted, createHostBinding(node, metadata))
+          cmpDefNode = createDefineDirectiveStatic(componentName, metadata, node, hoisted, createHostBinding(node, metadata), importManager)
         } else if (isComponent) {
-          cmpDefNode = createDefineComponentStatic(componentName, metadata, node, hoisted);
+          cmpDefNode = createDefineComponentStatic(componentName, metadata, node, hoisted, importManager);
         } else if (isInjectable) {
-          cmpDefNode = createDefineInjectableStatic(componentName, metadata, node, hoisted)
+          cmpDefNode = createDefineInjectableStatic(componentName, metadata, node, hoisted, importManager)
         } else if (isPipe) {
-          cmpDefNode = createDefinePipeStatic(componentName, metadata, node, hoisted)
+          cmpDefNode = createDefinePipeStatic(componentName, metadata, node, hoisted, importManager)
         }
 
         miniNgCoreImports = []

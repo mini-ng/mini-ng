@@ -13,7 +13,6 @@ export function compileComponentFromMetadata(html: string, componentName: string
 
     transform(tpl);
 
-    // ir.OpList.print(job.root.create);
     return tpl;
 
 }

@@ -15,13 +15,14 @@
 import {ComponentMetadata} from "../transformer/transformer";
 import * as ts from "typescript";
 import {i0} from "../constants/constants";
+import {ImportGenerator} from "../transformer/import-generator/import-generator";
 
 export function createDefinePipeStatic(
     componentName: string,
     metadata: ComponentMetadata,
     node: ts.Node,
     hoisted: ts.Statement[],
-) {
+    importManager: ImportGenerator) {
 
     const f = ts.factory;
 

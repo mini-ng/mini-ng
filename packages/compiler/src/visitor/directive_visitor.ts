@@ -4,6 +4,7 @@ import {ctx, i0, rf, ɵdir, ɵɵdefineDirective, ɵɵlistener} from "../constant
 import {ExpressionParser} from "../expr_parser/expr_parser";
 import {factory} from "typescript";
 import {stripQuotes} from "../utils/utils";
+import {ImportGenerator} from "../transformer/import-generator/import-generator";
 
 export function hasDirectiveDecorator(node: ts.ClassDeclaration) {
     return classHasDecorator(node, "Directive")
@@ -15,10 +16,10 @@ export function createDefineDirectiveStatic(
     node: ts.Node,
     hoisted: ts.Statement[],
     funcDeclaration: ts.FunctionExpression,
-) {
+    importManager: ImportGenerator) {
     const f = ts.factory;
 
-    const definitions = createCmpDefinitionPropertiesNode(componentName, metadata, node, hoisted)
+    const definitions = createCmpDefinitionPropertiesNode(componentName, metadata, node, hoisted, importManager)
     definitions.push(
         ts.factory.createPropertyAssignment(
             ts.factory.createIdentifier("hostBindings"),

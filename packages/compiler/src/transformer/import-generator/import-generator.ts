@@ -54,7 +54,6 @@ export class ImportGenerator {
             );
         }
 
-        // console.log(this.namedImports)
         for (const [module, specifiers] of this.namedImports) {
             const elements = Array.from(specifiers.entries()).map(
                 ([original, local]) =>
@@ -78,6 +77,7 @@ export class ImportGenerator {
             );
         }
 
+        console.log(this.namedImports)
         return imports;
     }
 
@@ -96,7 +96,8 @@ export class ImportGenerator {
         module: string,
         name: string,
         alias?: string
-    ): ts.Identifier | ts.PropertyAccessExpression {
+    ): ts.Identifier {
+
         if (!this.namedImports.has(module)) {
             this.namedImports.set(module, new Map());
         }
@@ -107,7 +108,10 @@ export class ImportGenerator {
             return ts.factory.createIdentifier(map.get(name)!);
         }
 
-        const localName = alias || this.ensureUnique(name);
+        // ✅ FIX: always ensure uniqueness
+        const localName = alias
+            ? this.ensureUnique(alias)
+            : this.ensureUnique(name);
 
         map.set(name, localName);
 

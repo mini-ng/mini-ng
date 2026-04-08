@@ -46,7 +46,7 @@ export class Parser {
 
   template: string;
 
-  constructor(template: string, public componentName: string) {
+    constructor(template: string, public componentName: string, public importManager: ImportGenerator) {
     this.template = template;
   }
 
@@ -66,9 +66,8 @@ export class Parser {
 
       // const { stmts, updateStmts, consts, templateStmts, outsideStatements } = generator.generateViewCode(html);
 
-      const importManager = new ImportGenerator();
       const astFactory = new AstFactory();
-      const visitor = new ExpressionTranslatorVisitor(astFactory, importManager)
+      const visitor = new ExpressionTranslatorVisitor(astFactory, this.importManager)
 
       const job: CompilationJob = compileComponentFromMetadata(html, this.componentName);
       for (const unit of job.units) {
@@ -111,9 +110,6 @@ export class Parser {
           }
 
       }
-
-      const imports = importManager.finalize();
-      outsideStatements.push(imports);
 
       const creationNode = ts.factory.createIfStatement(
           factory.createBinaryExpression(

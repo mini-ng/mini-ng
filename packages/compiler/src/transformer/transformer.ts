@@ -10,6 +10,7 @@ import {DirectivesToInject} from "../visitor/visitor";
 import {extractInputsOutputs} from "./input_output_transformer";
 import {extractViewChildViewChildren} from "./viewChild_ViewChildren_transformer";
 import {TemplateStmt} from "../template/view_generator";
+import {ImportGenerator} from "./import-generator/import-generator";
 
 export type ComponentMetadata = {
   selector: ts.PropertyAssignment;
@@ -210,11 +211,11 @@ export function createFactoryStatic(componentName: string, node: ts.Node, direct
 }
 
 export function createDefineComponentStatic(
-  componentName: string,
-  metadata: ComponentMetadata,
-  node: ts.Node,
-  hoisted: ts.Statement[]
-) {
+    componentName: string,
+    metadata: ComponentMetadata,
+    node: ts.Node,
+    hoisted: ts.Statement[],
+    importManager: ImportGenerator) {
   const f = ts.factory;
 
   return f.createPropertyDeclaration(
@@ -230,7 +231,7 @@ export function createDefineComponentStatic(
       undefined,
       [
         f.createObjectLiteralExpression(
-          createCmpDefinitionPropertiesNode(componentName, metadata, node, hoisted),
+          createCmpDefinitionPropertiesNode(componentName, metadata, node, hoisted, importManager),
           true,
         ),
       ],
@@ -239,11 +240,11 @@ export function createDefineComponentStatic(
 }
 
 export function createCmpDefinitionPropertiesNode(
-  componentName: string,
-  metadata: ComponentMetadata,
-  node: ts.Node,
-  hoisted: ts.Statement[]
-): ts.ObjectLiteralElementLike[] {
+    componentName: string,
+    metadata: ComponentMetadata,
+    node: ts.Node,
+    hoisted: ts.Statement[],
+    importManager: ImportGenerator): ts.ObjectLiteralElementLike[] {
   const sourceFile = node.getSourceFile();
   const tsFilePath = sourceFile.fileName;
 
@@ -323,11 +324,11 @@ export function createCmpDefinitionPropertiesNode(
     // read templateUrlPath
     const templateString = readTemplate(tsFilePath, templateUrlPath);
 
-    const { templateNode, constsNode, templateStmts, outsideStatements} = generateTemplateInstructions(componentName, templateString);
+    const { templateNode, constsNode, templateStmts, outsideStatements} = generateTemplateInstructions(componentName, templateString, importManager);
     properties.push(templateNode);
     properties.push(constsNode);
 
-    generateTemplateStmts(templateStmts, sourceFile, hoisted)
+    generateTemplateStmts(templateStmts, sourceFile, hoisted, importManager)
 
     if (outsideStatements) {
       outsideStatements.forEach(outsideStatement => {
@@ -344,11 +345,11 @@ export function createCmpDefinitionPropertiesNode(
 
     const templateString = (template.initializer as ts.StringLiteral).text;
 
-    const { templateNode, constsNode, templateStmts, outsideStatements} = generateTemplateInstructions(componentName, templateString);
+    const { templateNode, constsNode, templateStmts, outsideStatements} = generateTemplateInstructions(componentName, templateString, importManager);
     properties.push(templateNode);
     properties.push(constsNode);
 
-    generateTemplateStmts(templateStmts, sourceFile, hoisted)
+    generateTemplateStmts(templateStmts, sourceFile, hoisted, importManager)
 
     if (outsideStatements) {
       outsideStatements.forEach(outsideStatement => {
@@ -619,13 +620,13 @@ function readTemplate(tsFilePath: string, templateUrl: string) {
   return fs.readFileSync(fullPath, 'utf-8');
 }
 
-function generateTemplateInstructions(componentName: string, templateString: string) {
+function generateTemplateInstructions(componentName: string, templateString: string, importManager: ImportGenerator) {
 
     const context = "ctx";
     const renderFlag = "rf";
     const functionName = componentName + "_Template";
 
-    const parser = new Parser(templateString, componentName);
+    const parser = new Parser(templateString, componentName, importManager);
     const { block, consts, templateStmts, outsideStatements} = parser.parse();
 
     const template = ts.factory.createPropertyAssignment(
@@ -666,6 +667,9 @@ function generateTemplateInstructions(componentName: string, templateString: str
             consts
         )
     );
+
+  const imports = importManager.finalize();
+  outsideStatements.push(...imports);
 
     return  {
       templateNode: template,
@@ -744,7 +748,7 @@ export function createClassStaticBlock(node: ts.Block) {
   return ts.factory.createClassStaticBlockDeclaration(node);
 }
 
-function generateTemplateStmts(templateStmts: TemplateStmt[], sourceFile: ts.SourceFile, hoisted: ts.Statement[]) {
+function generateTemplateStmts(templateStmts: TemplateStmt[], sourceFile: ts.SourceFile, hoisted: ts.Statement[], importManager: ImportGenerator) {
 
   templateStmts.forEach(node => {
 
@@ -786,7 +790,7 @@ function generateTemplateStmts(templateStmts: TemplateStmt[], sourceFile: ts.Sou
     hoisted.push(functionDecl)
 
     if (node.templateStmts) {
-      generateTemplateStmts(node.templateStmts, sourceFile, hoisted)
+      generateTemplateStmts(node.templateStmts, sourceFile, hoisted, importManager)
     }
 
   })
