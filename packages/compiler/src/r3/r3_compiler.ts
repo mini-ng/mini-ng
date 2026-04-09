@@ -5,7 +5,6 @@ import * as ir from "../ir/ir";
 import * as ng from "./../ir/instruction"
 import * as o from "./../ir/output_ast"
 import {ExpressionKind} from "../ir/expression";
-import {dependsOnSlot} from "../ir/ir";
 
 export function compileComponentFromMetadata(html: string, componentName: string): CompilationJob {
     const ast = sojourn(html);

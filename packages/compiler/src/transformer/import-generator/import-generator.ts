@@ -1,8 +1,5 @@
 import ts from "typescript";
 
-class AstFactory<T, U> {
-}
-
 // class ImportRequest {
 //     exportModuleSpecifier: string;
 //     exportSymbolName: string;
@@ -77,7 +74,6 @@ export class ImportGenerator {
             );
         }
 
-        console.log(this.namedImports)
         return imports;
     }
 

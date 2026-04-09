@@ -15,6 +15,13 @@ import {
 } from "./ast";
 import {Token} from "../expression_parser/tokens";
 
+export enum BindingType {
+    Property,
+    Attribute,
+    Class,
+    Style
+}
+
 export abstract class AstVisitor {
     abstract visitIdentifier(expr: Identifier);
     abstract visitLiteral(expr: Literal);

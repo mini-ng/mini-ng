@@ -1,4 +1,5 @@
 import {Attribute, Input, Output, Reference, TemplateAttr, Variable} from "../types/types";
+import {BindingType} from "../../ast/ast-impl";
 
 export class AttributeParser {
 
@@ -81,7 +82,7 @@ export class AttributeParser {
                 // we have an input
                 name = name.slice(1, -1);
                 // get type
-                const type = this.getInputType(name)
+                const type = this.getBindingType(name)
                 inputs.push({ name, value, type });
 
             } else if (name.startsWith("#")) {
@@ -92,7 +93,7 @@ export class AttributeParser {
             } else if (name.startsWith("*")) {
 
                 name = name.slice(1);
-                const type = this.getInputType(name)
+                const type = this.getBindingType(name)
                 templateAttrs.push({name, value, type});
 
             } else if (name.startsWith("let-")) {
@@ -122,18 +123,23 @@ export class AttributeParser {
         return char === " " || char === "\n" || char === "\t";
     }
 
-    getInputType(input: string) {
+    getBindingType(attrName: string): BindingType {
 
-        if (input === "class") {
-            return "Class"
+        const raw = attrName
+
+        if (raw.startsWith("attr.")) {
+            return BindingType.Attribute
         }
 
-        if (input === "style") {
-            return "Style"
+        if (raw.startsWith("class.")) {
+            return BindingType.Class
         }
 
-        return "Attribute"
+        if (raw.startsWith("style.")) {
+            return BindingType.Style
+        }
 
+        return BindingType.Property
     }
 
 }

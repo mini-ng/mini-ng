@@ -79,13 +79,53 @@ function ingestNodes(unit: ViewCompilationUnit, nodes: ChildNode[]) {
     }
 }
 
+const BINDING_KINDS = new Map<e.BindingType, ir.BindingKind>([
+    [e.BindingType.Property, ir.BindingKind.Property],
+    // [e.BindingType.TwoWay, ir.BindingKind.TwoWayProperty],
+    [e.BindingType.Attribute, ir.BindingKind.Attribute],
+    [e.BindingType.Class, ir.BindingKind.Class],
+    [e.BindingType.Style, ir.BindingKind.Style],
+    // [e.BindingType.LegacyAnimation, ir.BindingKind.LegacyAnimation],
+    // [e.BindingType.Animation, ir.BindingKind.Animation],
+]);
+
 function ingestBindings(unit: ViewCompilationUnit, element: Element, op) {
 
+    const bindings = [];
+
     for (const attr of element.attributes) {
+        bindings.push(ir.createBindingOp(
+                op.xref,
+                ir.BindingKind.Attribute,
+                attr.name,
+                convertAstWithInterpolation(unit.job, attr.value),
+                null,
+                true,
+                false,
+                null
+            )
+        )
     }
 
     for (const input of element.inputs) {
+        bindings.push(
+            ir.createBindingOp(
+                op.xref,
+                BINDING_KINDS.get(input.type)!,
+                input.name,
+                convertAstWithInterpolation(unit.job, (input.value.ast)),
+                null,
+                false,
+                false,
+                null
+            )
+        )
     }
+
+    unit.create.push(
+        bindings.filter((b): b is ir.ExtractedAttributeOp => b?.kind === ir.OpKind.ExtractedAttribute),
+    );
+    unit.update.push(bindings.filter((b): b is ir.BindingOp => b?.kind === ir.OpKind.Binding));
 
     for (const output of element.outputs) {
 
@@ -165,6 +205,32 @@ function ingestBoundText(unit: ViewCompilationUnit, node: BoundText) {
         ),
     );
 
+}
+
+function convertAstWithInterpolation(
+    job: CompilationJob,
+    value: e.AstExpression | string,
+): o.Expression | ir.Interpolation {
+    let expression: o.Expression | ir.Interpolation;
+
+    // if (value instanceof e.Interpolation) {
+    //     expression = new ir.Interpolation(
+    //         value.strings,
+    //         value.expressions.map((e) => convertAst(e, job)),
+    //     );
+    // } else if (value instanceof e.AST) {
+    //     expression = convertAst(value, job);
+    // } else {
+    //     expression = o.literal(value);
+    // }
+
+    if (value instanceof e.AstExpression) {
+        expression = convertAst(value, job);
+    } else {
+        expression = o.literal(value);
+    }
+
+    return expression;
 }
 
 function convertAst(
@@ -251,24 +317,24 @@ function convertAst(
 
 }
 
-Comma
-SpreadElement
-YieldExpression
-ArrowFunction
-Identifier
-Conditional
-Binary
-PrefixUnary
-PrefixUpdate
-PostfixUpdate
-PropertyRead
-SafePropertyRead
-Call
-SafeCall
-New
-Literal
-True
-False
-Grouping
-ArrayLiteral
-ObjectLiteral
+// Comma
+// SpreadElement
+// YieldExpression
+// ArrowFunction
+// Identifier
+// Conditional
+// Binary
+// PrefixUnary
+// PrefixUpdate
+// PostfixUpdate
+// PropertyRead
+// SafePropertyRead
+// Call
+// SafeCall
+// New
+// Literal
+// True
+// False
+// Grouping
+// ArrayLiteral
+// ObjectLiteral

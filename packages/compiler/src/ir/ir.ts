@@ -1,10 +1,68 @@
 import * as o from "./output_ast"
 import {ExpressionBase, Expression} from "./expression";
 
+export interface BindingOp extends Op<CreateOp> {
+    kind: OpKind.Binding;
+
+    xref: XrefId;
+
+    name: string;
+
+    expression: o.Expression | Interpolation;
+
+    unit: string | null;
+
+    bindingKind: BindingKind;
+
+    isTextAttribute: boolean;
+
+    isStructuralTemplateAttribute: boolean;
+
+    templateKind: TemplateKind | null;
+
+}
+
+export enum TemplateKind {
+    NgTemplate,
+    Structural,
+    Block,
+}
+
+export function createBindingOp(
+    xref,
+    kind: BindingKind,
+    name: string,
+    expression: o.Expression | Interpolation,
+    unit: string | null,
+    isTextAttribute: boolean,
+    isStructuralTemplateAttribute: boolean,
+    templateKind: TemplateKind | null,
+): BindingOp {
+    return {
+        xref,
+        kind: OpKind.Binding,
+        bindingKind: kind,
+        name,
+        expression,
+        unit,
+        isTextAttribute,
+        isStructuralTemplateAttribute,
+        templateKind,
+        ...NEW_OP
+    }
+}
+
+
 export function isIrExpression(expr: o.Expression): expr is Expression {
     return expr instanceof ExpressionBase;
 }
 
+export enum BindingKind {
+    Attribute,
+    Style,
+    Property,
+    Class
+}
 
 export enum VisitorContextFlag {
     None = 0b0000,
@@ -376,6 +434,9 @@ export enum OpKind {
     RepeaterCreate,
     ConditionalCreate,
     ConditionalBranchCreate,
+    ProjectionDef,
+    Projection,
+    Binding,
 }
 
 export interface TextOp extends Op<CreateOp>, ConsumesSlotOpTrait {

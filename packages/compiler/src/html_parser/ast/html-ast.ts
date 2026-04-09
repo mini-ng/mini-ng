@@ -1,6 +1,7 @@
 import {BoundText, Element, Template, Text, Comment, AttributeNode} from "../nodes";
 import {ElseBlock, ElseIfBlock, ForLoopBlock, ForLoopBlockEmpty, IfBlock, SwitchNode} from "../syntax-ast";
 import {ASTWithSource} from "./ast";
+import {BindingType} from "./ast-impl";
 
 export abstract class HtmlAstVisitor {
     abstract visitElement(expr: Element): void;
@@ -27,7 +28,7 @@ export abstract class HtmlAstExpression {
 
 export class BoundAttribute implements HtmlAstExpression {
     constructor(
-        public type: "Property" | "Attribute" | "Class" | "Style", // binding type
+        public type: BindingType, // binding type
         public name: string,
         public value: ASTWithSource,         // expression/value
         public unit?: string,                // e.g., 'px' for style

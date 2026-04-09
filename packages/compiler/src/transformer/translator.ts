@@ -109,7 +109,6 @@ export class ExpressionTranslatorVisitor
     }
 
     visitDeclareFunctionStmt(stmt: DeclareFunctionStmt, context: any): any {
-        console.log("stmt")
     }
 
     visitFunctionExpr(ast: FunctionExpr, context: any): any {

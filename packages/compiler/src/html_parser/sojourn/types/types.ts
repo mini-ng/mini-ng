@@ -1,4 +1,5 @@
 import {SourceSpan} from "../../../sourcespan/sourceSpan";
+import {BindingType} from "../../ast/html-ast";
 
 export type Attribute = {
     name?: string;
@@ -8,7 +9,7 @@ export type Attribute = {
 export type Input = {
     name?: string;
     value?: string;
-    type?: "Property" | "Attribute" | "Class" | "Style"
+    type?: BindingType
 }
 
 export type Output = {
@@ -24,7 +25,7 @@ export type Reference = {
 export type TemplateAttr = {
     name?: string;
     value?: string;
-    type?: "Property" | "Attribute" | "Class" | "Style"
+    type?: BindingType
 }
 
 export type Variable = {
