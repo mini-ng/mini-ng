@@ -91,7 +91,7 @@ const BINDING_KINDS = new Map<e.BindingType, ir.BindingKind>([
 
 function ingestBindings(unit: ViewCompilationUnit, element: Element, op) {
 
-    const bindings = [];
+    const bindings = new Array<ir.BindingOp | ir.ExtractedAttributeOp>();
 
     for (const attr of element.attributes) {
         bindings.push(ir.createBindingOp(

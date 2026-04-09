@@ -1,7 +1,7 @@
 import * as o from "./output_ast"
 import {ExpressionBase, Expression} from "./expression";
 
-export interface BindingOp extends Op<CreateOp> {
+export interface BindingOp extends Op<UpdateOp> {
     kind: OpKind.Binding;
 
     xref: XrefId;
@@ -323,12 +323,14 @@ export type CreateOp =
     | ConditionalBranchCreateOp
     | ListenerOp
     | PipeOp
+    | ExtractedAttributeOp
 
 export type UpdateOp =
     | ListEndOp<UpdateOp>
     | StatementOp<UpdateOp>
     | AdvanceOp
-    | InterpolateTextOp;
+    | InterpolateTextOp
+    | BindingOp;
 
 export interface ElementOp extends ElementOpBase {
     kind: OpKind.Element;
@@ -437,6 +439,7 @@ export enum OpKind {
     ProjectionDef,
     Projection,
     Binding,
+    ExtractedAttribute,
 }
 
 export interface TextOp extends Op<CreateOp>, ConsumesSlotOpTrait {
@@ -668,4 +671,40 @@ export function createAdvanceOp(delta: number): AdvanceOp {
         kind: OpKind.Advance,
         ...NEW_OP
     }
+}
+
+export interface ExtractedAttributeOp extends Op<CreateOp> {
+    kind: OpKind.ExtractedAttribute;
+
+    target: XrefId;
+
+    bindingKind: BindingKind;
+
+    namespace: string | null;
+
+    name: string;
+
+    expression: o.Expression | null;
+
+    trustedValueFn: o.Expression | null;
+
+}
+
+export function createExtractedAttributeOp(
+    target: XrefId,
+    bindingKind: BindingKind,
+    namespace: string | null,
+    name: string,
+    expression: o.Expression | null,
+): ExtractedAttributeOp {
+    return {
+        kind: OpKind.ExtractedAttribute,
+        target,
+        bindingKind,
+        namespace,
+        name,
+        expression,
+        trustedValueFn: null,
+        ...NEW_OP,
+    };
 }
