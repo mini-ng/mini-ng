@@ -1,14 +1,5 @@
 import {LiteralAstType} from "../html_parser/ast/ast";
 import {ExpressionVisitor} from "./visitor";
-import {
-    ConsumesVars,
-    ConsumesVarsTrait,
-    ExpressionTransform,
-    SlotHandle, transformExpressionsInExpression,
-    UsesVarOffset,
-    VisitorContextFlag,
-    XrefId
-} from "./ir";
 import {Token, TokenType} from "../html_parser/expression_parser/tokens";
 import {AstExpression} from "../html_parser/ast/ast-impl";
 
@@ -419,9 +410,9 @@ export class IdentifierExpr extends  Expression {
 export class ConditionalExpr extends  Expression {
 
     constructor(
-        public alternate:  Expression ,
-        public consequent:  Expression ,
-        public test:  Expression ,
+        public alternate: Expression,
+        public consequent:  Expression,
+        public test: Expression,
         type?:  Type | null
     ) {
         super(type);

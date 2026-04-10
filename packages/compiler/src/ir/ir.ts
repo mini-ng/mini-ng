@@ -79,6 +79,37 @@ export function transformExpressionsInOp(
 ) {
 
     switch (op.kind) {
+
+        case OpKind.Conditional:
+            for (const condition of op.conditions) {
+                if (condition.expr === null) {
+                    // This is a default case.
+                    continue;
+                }
+                condition.expr = transformExpressionsInExpression(condition.expr, transform, flags);
+            }
+            if (op.processed !== null) {
+                op.processed = transformExpressionsInExpression(op.processed, transform, flags);
+            }
+            if (op.contextValue !== null) {
+                op.contextValue = transformExpressionsInExpression(op.contextValue, transform, flags);
+            }
+            break;
+
+        // case OpKind.StyleProp:
+        // case OpKind.StyleMap:
+        // case OpKind.ClassProp:
+        // case OpKind.ClassMap:
+        // case OpKind.AnimationString:
+        // case OpKind.AnimationBinding:
+        case OpKind.Binding:
+            // console.log(op)
+            if (op.expression instanceof Interpolation) {
+                transformExpressionsInInterpolation(op.expression, transform, flags);
+            } else {
+                op.expression = transformExpressionsInExpression(op.expression, transform, flags);
+            }
+            break;
         case OpKind.ListEnd:
             break;
         case OpKind.RepeaterCreate:
@@ -115,7 +146,8 @@ export function transformExpressionsInOp(
         case OpKind.Listener:
             break;
         default:
-            throw new Error(`AssertionError: transformExpressionsInOp doesn't handle`);
+            console.error(op);
+            throw new Error(`AssertionError: transformExpressionsInOp doesn't handle ` + op);
     }
 }
 
@@ -124,9 +156,14 @@ export function transformExpressionsInExpression(
     transform: ExpressionTransform,
     flags: VisitorContextFlag,
 ): o.Expression {
+
     if (expr instanceof ExpressionBase) {
         expr.transformInternalExpressions(transform, flags);
-    }
+    } else if (
+        expr instanceof o.ExternalExpr ||
+        expr instanceof o.LiteralExpr
+    ) {}
+
     return transform(expr, flags);
 
 }

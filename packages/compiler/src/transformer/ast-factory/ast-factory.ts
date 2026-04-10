@@ -113,7 +113,13 @@ export class AstFactory {
     }
 
     createConditional(cond: ts.Expression, t: ts.Expression, f: ts.Expression) {
-        return ts.factory.createConditionalExpression(cond, undefined, t, undefined, f);
+        return ts.factory.createConditionalExpression(
+            cond,
+            ts.factory.createToken(ts.SyntaxKind.QuestionToken),
+            t,
+            ts.factory.createToken(ts.SyntaxKind.ColonToken),
+            f
+        );
     }
 
     createCallExpression(fn: ts.Expression, args: ts.Expression[], pure = false) {

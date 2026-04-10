@@ -2,6 +2,14 @@ import * as ir from './ir';
 import * as o from "./output_ast"
 import {LiteralAstType} from "../html_parser/ast/ast";
 
+export function conditional(processed: o.Expression, contextValue: o.Expression) {
+    return call(Identifiers.conditional, [processed]);
+}
+
+export function conditionalCreate(tag: string, slot: number, fnName: string, attributes: ir.ConstIndex, localRefs: ir.ConstIndex | ir.LocalRef[]) {
+    return call(Identifiers.conditionalCreate, [o.literal(tag), o.literal(fnName)]);
+}
+
 export function pipe(slot: number, name: string) {
     return call(Identifiers.pipe, [o.literal(name), o.literal(slot)]);
 }
@@ -79,6 +87,16 @@ export class Identifiers {
 
     static pipe: o.ExternalReference = {
         name: 'ɵɵpipe',
+        moduleName: CORE,
+    }
+
+    static conditionalCreate: o.ExternalReference = {
+        name: 'ɵɵconditionalCreate',
+        moduleName: CORE,
+    }
+
+    static conditional: o.ExternalReference = {
+        name: 'ɵɵconditional',
         moduleName: CORE,
     }
 

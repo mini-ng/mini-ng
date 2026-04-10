@@ -11,6 +11,7 @@ import * as ir from "../ir";
 import * as ng from "./../ir/instruction"
 import * as o from "./../ir/output_ast"
 import {TokenType} from "../html_parser/expression_parser/tokens";
+import ts from "typescript";
 
 const RENDER_FLAGS = "rf";
 const CONTEXT_NAME = "ctx";
@@ -23,7 +24,7 @@ export function compileComponentFromMetadata(html: string, componentName: string
 
     transform(tpl);
 
-    const templateFn = emitTemplateFn(tpl, constantPool);
+    const templateFn = null//emitTemplateFn(tpl, constantPool);
 
     return { tpl, templateFn };
 
@@ -107,6 +108,7 @@ function maybeGenerateRfBlock(flag: number, statements: o.Statement[]): o.Statem
 
 const phases = [
     { kind: CompilationJobKind.Tmpl, fn: consumeSlot },
+    { kind: CompilationJobKind.Tmpl, fn: generateConditionals },
     { kind: CompilationJobKind.Tmpl, fn: generateListenerFnNames },
     // generate advance
     { kind: CompilationJobKind.Tmpl, fn: generateAdvance },
@@ -173,10 +175,21 @@ function reifyCreateOperations(unit: CompilationUnit, ops: ir.OpList<ir.CreateOp
             }
 
             case ir.OpKind.Pipe: {
-                ir.OpList.replace(op, ng.pipe(op.handle.slot, op.name))
+                ir.OpList.replace(op, ng.pipe(op.handle.slot, op.name));
+                break;
             }
 
             case ir.OpKind.ConditionalCreate: {
+
+                if (!(unit instanceof ViewCompilationUnit)) {
+                    throw new Error(`AssertionError: must be compiling a component`);
+                }
+
+                const conditionalCreateChildView = unit.job.views.get(op.xref)!;
+
+                ir.OpList.replace(op, ng.conditionalCreate(op.tag, op.handle.slot, conditionalCreateChildView.fnName,             op.attributes,
+                    op.localRefs,
+                ))
                 break;
             }
 
@@ -206,6 +219,10 @@ function reifyUpdateOperations(unit: CompilationUnit, ops: ir.OpList<ir.UpdateOp
             }
 
             case ir.OpKind.Conditional: {
+                if (op.processed === null) {
+                    throw new Error(`Conditional test was not set.`);
+                }
+                ir.OpList.replace(op, ng.conditional(op.processed, op.contextValue));
                 break
             }
         }
@@ -234,6 +251,37 @@ function generateListenerFnNames(job: ComponentCompilationJob) {
                 const fnName = unit.fnName + "_Listener_" + (op.prev as ir.ConsumesSlotOpTrait).handle.slot.toString()
                 op.handlerFnName = fnName
             }
+        }
+    }
+}
+
+function generateConditionals(job: ComponentCompilationJob) {
+    for (const unit of job.units) {
+        for (const op of unit.update) {
+
+            if (op.kind !== ir.OpKind.Conditional) {
+                continue
+            }
+
+            // console.log(op)
+
+            let expr: o.Expression = o.literal(-1)
+
+            // we are targeting test ? 0 : 1
+            for (let i = 0; i < op.conditions.length; i++) {
+                const condition = op.conditions[i];
+
+                expr = new o.ConditionalExpr(
+                    expr,
+                    o.literal(condition.targetSlot.slot),
+                    condition.expr
+                );
+
+            }
+
+            op.processed = expr;
+            op.conditions = [];
+
         }
     }
 }
