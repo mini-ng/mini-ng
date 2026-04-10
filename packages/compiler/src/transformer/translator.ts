@@ -39,7 +39,6 @@ export class ExpressionTranslatorVisitor
     }
 
     visitConditionalExpr(ast: o.ConditionalExpr, context: any): any {
-        console.log(ast.alternate)
         return this.factory.createConditional(
             ast.test.visitExpression(this, context),
             ast.consequent.visitExpression(this, context),
@@ -81,6 +80,8 @@ export class ExpressionTranslatorVisitor
     }
 
     visitSpreadElementExpr(param: o.SpreadElementExpr, context: any): any {
+        const expression = param.expression.visitExpression(this, context);
+        return this.factory.createSpreadElement(expression);
     }
 
     visitTrueExpr(param: o.TrueExpr, context: any): any {

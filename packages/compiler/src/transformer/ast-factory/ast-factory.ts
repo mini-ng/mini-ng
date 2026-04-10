@@ -298,4 +298,8 @@ export class AstFactory {
             ts.factory.createBlock(statements, true)
         )
     }
+
+    createSpreadElement(expression: any) {
+        return ts.factory.createSpreadElement(expression ?? undefined);
+    }
 }
