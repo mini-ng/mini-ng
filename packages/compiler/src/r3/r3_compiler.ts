@@ -263,16 +263,14 @@ function generateConditionals(job: ComponentCompilationJob) {
                 continue
             }
 
-            // console.log(op)
-
-            let expr: o.Expression = o.literal(-1)
+            let expr: o.Expression
 
             // we are targeting test ? 0 : 1
             for (let i = 0; i < op.conditions.length; i++) {
                 const condition = op.conditions[i];
 
                 expr = new o.ConditionalExpr(
-                    expr,
+                    !expr ? (expr = o.literal(-1)): expr,
                     o.literal(condition.targetSlot.slot),
                     condition.expr
                 );

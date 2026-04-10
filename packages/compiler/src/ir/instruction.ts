@@ -7,7 +7,7 @@ export function conditional(processed: o.Expression, contextValue: o.Expression)
 }
 
 export function conditionalCreate(tag: string, slot: number, fnName: string, attributes: ir.ConstIndex, localRefs: ir.ConstIndex | ir.LocalRef[]) {
-    return call(Identifiers.conditionalCreate, [o.literal(tag), o.literal(fnName)]);
+    return call(Identifiers.conditionalCreate, [o.literal(slot), o.literal(tag), o.literal(fnName)]);
 }
 
 export function pipe(slot: number, name: string) {

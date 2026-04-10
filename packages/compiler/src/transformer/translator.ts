@@ -38,7 +38,13 @@ export class ExpressionTranslatorVisitor
         )
     }
 
-    visitConditionalExpr(param: o.ConditionalExpr, context: any): any {
+    visitConditionalExpr(ast: o.ConditionalExpr, context: any): any {
+        console.log(ast.alternate)
+        return this.factory.createConditional(
+            ast.test.visitExpression(this, context),
+            ast.consequent.visitExpression(this, context),
+            ast.alternate.visitExpression(this, context)
+        )
     }
 
     visitFalseExpr(param: o.FalseExpr, context: any): any {
@@ -57,10 +63,18 @@ export class ExpressionTranslatorVisitor
     }
 
     visitNewExpr(param: o.NewExpr, context: any): any {
-        // return this.factory.createNew(param.callFn., param.args.map((arg) => arg.visitExpression(this, context)))
+        return this.factory.createNew(param.ctor.visitExpression(this, context), param.args.map((arg) => arg.visitExpression(this, context)))
     }
 
     visitObjectLiteral(param: o.ObjectLiteralExpr, context: any): any {
+        // return this.factory.createObjectLiteral(
+        //     param.properties.map(prop => {
+        //         return {
+        //             key: prop.key.visitExpression(this, context),
+        //             value: prop.value.visitExpression(this, context)
+        //         }
+        //     })
+        // )
     }
 
     visitSafeCallExpr(param: o.SafeCallExpr, context: any): any {
