@@ -37,6 +37,7 @@ export type Expression = BindingPipeExpr;
 
 export enum ExpressionKind {
     PipeBinding,
+    ConditionalCase,
 }
 
 export abstract class ExpressionBase extends o.Expression {
@@ -90,6 +91,46 @@ export class BindingPipeExpr extends ExpressionBase implements ConsumesVars, Use
         });
     }
 
+}
+
+export class ConditionalCaseExpr extends ExpressionBase {
+    override readonly kind = ExpressionKind.ConditionalCase;
+
+    constructor(
+        public expr: o.Expression | null,
+        readonly target: XrefId,
+        readonly targetSlot: SlotHandle,
+    ) {
+        super();
+    }
+
+    override visitExpression(visitor: ExpressionVisitor, context: any): any {
+        if (this.expr !== null) {
+            this.expr.visitExpression(visitor, context);
+        }
+    }
+
+    override isEquivalent(e: Expression): boolean {
+        return false
+        // return e instanceof ConditionalCaseExpr && e.expr === this.expr;
+    }
+
+    override isConstant() {
+        return true;
+    }
+
+    override clone(): ConditionalCaseExpr {
+        return new ConditionalCaseExpr(this.expr, this.target, this.targetSlot);
+    }
+
+    override transformInternalExpressions(
+        transform: ExpressionTransform,
+        flags: VisitorContextFlag,
+    ): void {
+        if (this.expr !== null) {
+            this.expr = transformExpressionsInExpression(this.expr, transform, flags);
+        }
+    }
 }
 
 export class CommaExpr extends o.Expression {

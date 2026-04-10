@@ -1,5 +1,5 @@
 import * as o from "./output_ast"
-import {ExpressionBase, Expression} from "./expression";
+import {ExpressionBase, Expression, ConditionalCaseExpr} from "./expression";
 
 export interface BindingOp extends Op<UpdateOp> {
     kind: OpKind.Binding;
@@ -330,7 +330,8 @@ export type UpdateOp =
     | StatementOp<UpdateOp>
     | AdvanceOp
     | InterpolateTextOp
-    | BindingOp;
+    | BindingOp
+    | ConditionalOp;
 
 export interface ElementOp extends ElementOpBase {
     kind: OpKind.Element;
@@ -440,6 +441,7 @@ export enum OpKind {
     Projection,
     Binding,
     ExtractedAttribute,
+    Conditional,
 }
 
 export interface TextOp extends Op<CreateOp>, ConsumesSlotOpTrait {
@@ -706,5 +708,96 @@ export function createExtractedAttributeOp(
         expression,
         trustedValueFn: null,
         ...NEW_OP,
+    };
+}
+
+export function createConditionalBranchCreateOp(
+    xref: XrefId,
+    templateKind: TemplateKind,
+    tag: string | null,
+    functionNameSuffix: string,
+    namespace: Namespace,
+): ConditionalCreateOp {
+    return {
+        kind: OpKind.ConditionalCreate,
+        xref,
+        templateKind,
+        attributes: null,
+        tag,
+        handle: new SlotHandle(),
+        functionNameSuffix,
+        localRefs: [],
+        nonBindable: false,
+        namespace,
+        ...TRAIT_CONSUMES_SLOT,
+        ...NEW_OP,
+    };
+
+}
+
+export interface ConditionalCreateOp extends ElementOpBase {
+    kind: OpKind.ConditionalCreate;
+
+    templateKind: TemplateKind;
+
+    functionNameSuffix: string;
+
+}
+
+export function createConditionalCreateOp(
+    xref: XrefId,
+    templateKind: TemplateKind,
+    tag: string | null,
+    functionNameSuffix: string,
+    namespace: Namespace,
+): ConditionalCreateOp {
+    return {
+        kind: OpKind.ConditionalCreate,
+        xref,
+        templateKind,
+        attributes: null,
+        tag,
+        handle: new SlotHandle(),
+        functionNameSuffix,
+        localRefs: [],
+        nonBindable: false,
+        namespace,
+        ...TRAIT_CONSUMES_SLOT,
+        ...NEW_OP,
+    };
+
+}
+
+export interface ConditionalOp
+    extends Op<ConditionalOp>, DependsOnSlot, ConsumesVars {
+
+    kind: OpKind.Conditional;
+
+    target: XrefId;
+
+    test: o.Expression | null;
+
+    conditions: Array<ConditionalCaseExpr>;
+
+    processed: o.Expression | null;
+
+    contextValue: o.Expression | null;
+}
+
+export function createConditionalOp(
+    target: XrefId,
+    test: o.Expression | null,
+    conditions: Array<ConditionalCaseExpr>,
+): ConditionalOp {
+    return {
+        kind: OpKind.Conditional,
+        target,
+        test,
+        conditions,
+        processed: null,
+        contextValue: null,
+        ...NEW_OP,
+        ...TRAIT_DEPENDS_ON_SLOT_CONTEXT,
+        ...TRAIT_CONSUMES_VARS,
     };
 }

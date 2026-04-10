@@ -32,7 +32,7 @@ import {
     BinaryExpr,
     BindingPipeExpr,
     CallExpr,
-    CommaExpr, FalseExpr,
+    CommaExpr, ConditionalCaseExpr, FalseExpr,
     IdentifierExpr,
     ObjectLiteralExpr,
     SpreadElementExpr, TrueExpr
@@ -53,28 +53,36 @@ function ingestNodes(unit: ViewCompilationUnit, nodes: ChildNode[]) {
             ingestElement(unit, node);
         }
 
-        if (node instanceof Text) {
+        else if (node instanceof Text) {
             ingestText(unit, node);
         }
 
-        if (node instanceof BoundText) {
+        else if (node instanceof BoundText) {
             ingestBoundText(unit, node);
         }
 
-        if (node instanceof Template) {
+        // else if (node instanceof Content) {
+        //     ingestContent(unit, node);
+        // }
+
+        else if (node instanceof Template) {
 
         }
 
-        if (node instanceof IfBlock) {
+        else if (node instanceof IfBlock) {
+            ingestIfBlock(unit, node)
+        }
+
+        else if (node instanceof ForLoopBlock) {
 
         }
 
-        if (node instanceof ForLoopBlock) {
+        else if (node instanceof SwitchNode) {
 
         }
 
-        if (node instanceof SwitchNode) {
-
+        else {
+            throw new Error("Unsupported element found.")
         }
     }
 }
@@ -205,6 +213,43 @@ function ingestBoundText(unit: ViewCompilationUnit, node: BoundText) {
         ),
     );
 
+}
+
+function ingestIfBlock(unit: ViewCompilationUnit, ifBlock: IfBlock) {
+
+    let firstXref: ir.XrefId | null = null;
+    let conditions: Array<ConditionalCaseExpr> = [];
+
+    for (let i = 0; i < ifBlock.branches.length; i++) {
+        const ifCase = ifBlock.branches[i];
+        const cView = unit.job.allocateView(unit.xref);
+        const tagName = "" //ingestControlFlowInsertionPoint(unit, cView.xref, ifCase);
+
+        const createOp = i === 0 ? ir.createConditionalCreateOp : ir.createConditionalBranchCreateOp;
+
+        const conditionalCreateOp = createOp(
+            cView.xref,
+            ir.TemplateKind.Block,
+            tagName,
+            'Conditional',
+            ir.Namespace.HTML,
+        );
+        unit.create.push(conditionalCreateOp);
+
+        if (firstXref === null) {
+            firstXref = cView.xref;
+        }
+
+        const caseExpr = ifCase.expression ? convertAst(ifCase.expression.ast, unit.job) : null;
+        const conditionalCaseExpr = new ConditionalCaseExpr(
+            caseExpr,
+            conditionalCreateOp.xref,
+            conditionalCreateOp.handle,
+        );
+        conditions.push(conditionalCaseExpr);
+        ingestNodes(cView, ifCase.children);
+    }
+    unit.update.push(ir.createConditionalOp(firstXref!, null, conditions));
 }
 
 function convertAstWithInterpolation(

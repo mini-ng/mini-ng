@@ -1,5 +1,5 @@
 import {SourceSpan} from "../../../sourcespan/sourceSpan";
-import {BindingType} from "../../ast/html-ast";
+import {BindingType} from "../../ast/ast-impl";
 
 export type Attribute = {
     name?: string;
@@ -71,10 +71,14 @@ export interface ExpressionToken {
     span: SourceSpan;
 }
 
+export interface ContentToken {
+    type: "content";
+}
+
 export interface EOFToken {
     type: "EOF";
     name: "EOF";
     span: SourceSpan;
 }
 
-export type Token = NodeToken | TextToken | ExpressionToken | TemplateSyntaxNode | EOFToken;
+export type Token = NodeToken | TextToken | ExpressionToken | ContentToken | TemplateSyntaxNode | EOFToken;
