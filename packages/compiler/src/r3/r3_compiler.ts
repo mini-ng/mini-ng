@@ -7,29 +7,29 @@ import {
     ComponentCompilationJob, ConstantPool,
     ViewCompilationUnit
 } from "../ir/compilation";
-import * as ir from "../ir/ir";
+import * as ir from "../ir";
 import * as ng from "./../ir/instruction"
 import * as o from "./../ir/output_ast"
-import {BinaryExpr, ExpressionKind, FunctionExpr} from "../ir/expression";
-import {BinaryOperator, TokenType} from "../html_parser/expression_parser/tokens";
+import {TokenType} from "../html_parser/expression_parser/tokens";
 
 const RENDER_FLAGS = "rf";
 const CONTEXT_NAME = "ctx";
 
-export function compileComponentFromMetadata(html: string, componentName: string): { tpl: CompilationJob, templateFn: FunctionExpr} {
+export function compileComponentFromMetadata(html: string, componentName: string): { tpl: CompilationJob, templateFn: o.FunctionExpr} {
     const ast = sojourn(html);
-    const tpl = ingestComponent(componentName, ast.childNodes)
+    const constantPool = new ConstantPool();
+
+    const tpl = ingestComponent(componentName, ast.childNodes, constantPool)
 
     transform(tpl);
 
-    const constantPool = new ConstantPool();
     const templateFn = emitTemplateFn(tpl, constantPool);
 
     return { tpl, templateFn };
 
 }
 
-export function emitTemplateFn(tpl: ComponentCompilationJob, pool: ConstantPool): FunctionExpr {
+export function emitTemplateFn(tpl: ComponentCompilationJob, pool: ConstantPool): o.FunctionExpr {
     const rootFn = emitView(tpl.root);
     emitChildViews(tpl.root, pool);
     return rootFn;
@@ -49,7 +49,7 @@ function emitChildViews(parent: ViewCompilationUnit, pool: ConstantPool): void {
     }
 }
 
-function emitView(view: ViewCompilationUnit): FunctionExpr {
+function emitView(view: ViewCompilationUnit): o.FunctionExpr {
     if (view.fnName === null) {
         throw new Error(`AssertionError: view ${view.xref} is unnamed`);
     }
@@ -95,7 +95,7 @@ function maybeGenerateRfBlock(flag: number, statements: o.Statement[]): o.Statem
 
     return [
         o.ifStmt(
-            new BinaryExpr(
+            new o.BinaryExpr(
                 o.variable(RENDER_FLAGS),
                 o.literal(flag),
                 TokenType.AND,
@@ -175,6 +175,11 @@ function reifyCreateOperations(unit: CompilationUnit, ops: ir.OpList<ir.CreateOp
             case ir.OpKind.Pipe: {
                 ir.OpList.replace(op, ng.pipe(op.handle.slot, op.name))
             }
+
+            case ir.OpKind.ConditionalCreate: {
+                break;
+            }
+
         }
 
     }
@@ -198,6 +203,10 @@ function reifyUpdateOperations(unit: CompilationUnit, ops: ir.OpList<ir.UpdateOp
             case ir.OpKind.InterpolateText: {
                 ir.OpList.replace(op, ng.interpolateText(op.interpolation.strings, op.interpolation.expressions));
                 break;
+            }
+
+            case ir.OpKind.Conditional: {
+                break
             }
         }
 
@@ -236,7 +245,7 @@ function reifyIrExpression(unit: CompilationUnit, expr: o.Expression) {
     }
 
     switch (expr.kind) {
-        case ExpressionKind.PipeBinding: {
+        case ir.ExpressionKind.PipeBinding: {
             return ng.pipeBind(expr.targetSlot.slot, expr.varOffset)
         }
 

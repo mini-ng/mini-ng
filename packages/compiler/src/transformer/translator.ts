@@ -1,17 +1,4 @@
 import * as o from "./../ir/output_ast"
-import {
-    ArrayLiteralExpr, CallExpr,
-    ConditionalExpr,
-    FalseExpr, FunctionExpr,
-    GroupingExpr,
-    IdentifierExpr,
-    NewExpr,
-    ObjectLiteralExpr, ReadVariable,
-    SafeCallExpr,
-    SpreadElementExpr,
-    TrueExpr,
-    YieldExpressionExpr
-} from "../ir/expression";
 import {DeclareFunctionStmt, IfStmt, LiteralExpr, ReturnStatement} from "./../ir/output_ast";
 import {ExpressionVisitor} from "../ir/visitor";
 import {ImportGenerator} from "./import-generator/import-generator";
@@ -45,19 +32,23 @@ export class ExpressionTranslatorVisitor
         )
     }
 
-    visitArrayLiteralExpr(param: ArrayLiteralExpr, context: any): any {
+    visitArrayLiteralExpr(param: o.ArrayLiteralExpr, context: any): any {
+        return this.factory.createArrayLiteral(
+            param.elements.map(el => el.visitExpression(this, context))
+        )
     }
 
-    visitConditionalExpr(param: ConditionalExpr, context: any): any {
+    visitConditionalExpr(param: o.ConditionalExpr, context: any): any {
     }
 
-    visitFalseExpr(param: FalseExpr, context: any): any {
+    visitFalseExpr(param: o.FalseExpr, context: any): any {
+        return this.factory.createBooleanLiteral(false)
     }
 
-    visitGroupingExpr(param: GroupingExpr, context: any): any {
+    visitGroupingExpr(param: o.GroupingExpr, context: any): any {
     }
 
-    visitIdentifierExpr(param: IdentifierExpr, context: any): any {
+    visitIdentifierExpr(param: o.IdentifierExpr, context: any): any {
         return this.factory.createIdentifier(param.name)
     }
 
@@ -65,22 +56,24 @@ export class ExpressionTranslatorVisitor
         return this.factory.createLiteral(param.value)
     }
 
-    visitNewExpr(param: NewExpr, context: any): any {
+    visitNewExpr(param: o.NewExpr, context: any): any {
+        // return this.factory.createNew(param.callFn., param.args.map((arg) => arg.visitExpression(this, context)))
     }
 
-    visitObjectLiteral(param: ObjectLiteralExpr, context: any): any {
+    visitObjectLiteral(param: o.ObjectLiteralExpr, context: any): any {
     }
 
-    visitSafeCallExpr(param: SafeCallExpr, context: any): any {
+    visitSafeCallExpr(param: o.SafeCallExpr, context: any): any {
     }
 
-    visitSpreadElementExpr(param: SpreadElementExpr, context: any): any {
+    visitSpreadElementExpr(param: o.SpreadElementExpr, context: any): any {
     }
 
-    visitTrueExpr(param: TrueExpr, context: any): any {
+    visitTrueExpr(param: o.TrueExpr, context: any): any {
+        return this.factory.createBooleanLiteral(true)
     }
 
-    visitYieldExpressionExpr(param: YieldExpressionExpr, context: any): any {
+    visitYieldExpressionExpr(param: o.YieldExpressionExpr, context: any): any {
     }
 
     visitExternalExpr(ast: o.ExternalExpr, _context: Context) {
@@ -116,7 +109,7 @@ export class ExpressionTranslatorVisitor
         )
     }
 
-    visitFunctionExpr(ast: FunctionExpr, context: any): any {
+    visitFunctionExpr(ast: o.FunctionExpr, context: any): any {
         return this.factory.createFunctionExpression(
             ast.name ?? null,
             ast.params.map((param) => param.name),
@@ -140,7 +133,7 @@ export class ExpressionTranslatorVisitor
             .filter((stmt) => stmt !== undefined);
     }
 
-    visitCallExpr(ast: CallExpr, context: any): any {
+    visitCallExpr(ast: o.CallExpr, context: any): any {
         return this.factory.createCallExpression(
             ast.callee.visitExpression(this, context),
             ast.args.map((arg) => arg.visitExpression(this, context)),
@@ -148,8 +141,8 @@ export class ExpressionTranslatorVisitor
         )
     }
 
-    visitReadVariable(param: ReadVariable, context: any): any {
-        return this.factory.createIdentifier(param.value)
+    visitReadVariable(param: o.ReadVariable, context: any): any {
+        return this.factory.createIdentifier(param.value.toString())
     }
 
 }

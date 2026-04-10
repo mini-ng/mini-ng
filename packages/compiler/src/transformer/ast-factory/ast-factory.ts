@@ -76,6 +76,11 @@ export class AstFactory {
         return ts.factory.createStringLiteral(String(value));
     }
 
+    createBooleanLiteral(value: boolean): ts.Expression {
+        if (value === false) return ts.factory.createFalse();
+        if (value === true) return ts.factory.createTrue();
+    }
+
     createArrayLiteral(elements: ts.Expression[]) {
         return ts.factory.createArrayLiteralExpression(elements);
     }

@@ -69,7 +69,8 @@ export class Parser {
       const astFactory = new AstFactory();
       const visitor = new ExpressionTranslatorVisitor(astFactory, this.importManager)
 
-      const job: CompilationJob = compileComponentFromMetadata(html, this.componentName);
+      const { tpl: job, templateFn } = compileComponentFromMetadata(html, this.componentName);
+
       for (const unit of job.units) {
           let current = unit.create.head.next;
           const tail = unit.create.tail;

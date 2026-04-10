@@ -73,6 +73,7 @@ export interface ExpressionToken {
 
 export interface ContentToken {
     type: "content";
+    name: "ng-content";
 }
 
 export interface EOFToken {

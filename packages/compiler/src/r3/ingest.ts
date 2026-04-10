@@ -1,7 +1,7 @@
 import {BoundText, ChildNode, Element, Template, Text} from "../html_parser/nodes";
 import {ForLoopBlock, IfBlock, SwitchNode} from "../html_parser/syntax-ast";
-import {CompilationJob, ComponentCompilationJob, ViewCompilationUnit} from "../ir/compilation";
-import * as ir from "../ir/ir"
+import {CompilationJob, ComponentCompilationJob, ConstantPool, ViewCompilationUnit} from "../ir/compilation";
+import * as ir from "../ir"
 import {
     ArrayLiteral,
     ArrowFunction,
@@ -27,20 +27,10 @@ import {
 } from "../html_parser/ast/ast-impl";
 import * as e from "../html_parser/ast/ast-impl"
 import * as o from "../ir/output_ast"
-import {
-    ArrayLiteralExpr,
-    BinaryExpr,
-    BindingPipeExpr,
-    CallExpr,
-    CommaExpr, ConditionalCaseExpr, FalseExpr,
-    IdentifierExpr,
-    ObjectLiteralExpr,
-    SpreadElementExpr, TrueExpr
-} from "../ir/expression";
 import {LiteralExpr} from "../ir/output_ast";
 
-export function ingestComponent(componentName: string, nodes: ChildNode[]) {
-    const job = new ComponentCompilationJob(componentName, [])
+export function ingestComponent(componentName: string, nodes: ChildNode[], constantPool: ConstantPool) {
+    const job = new ComponentCompilationJob(componentName, constantPool)
     ingestNodes(job.root, nodes);
     return job
 }
@@ -218,7 +208,7 @@ function ingestBoundText(unit: ViewCompilationUnit, node: BoundText) {
 function ingestIfBlock(unit: ViewCompilationUnit, ifBlock: IfBlock) {
 
     let firstXref: ir.XrefId | null = null;
-    let conditions: Array<ConditionalCaseExpr> = [];
+    let conditions: Array<ir.ConditionalCaseExpr> = [];
 
     const branches = []
 
@@ -263,7 +253,7 @@ function ingestIfBlock(unit: ViewCompilationUnit, ifBlock: IfBlock) {
         }
 
         const caseExpr = ifCase.expression ? convertAst(ifCase.expression.ast, unit.job) : null;
-        const conditionalCaseExpr = new ConditionalCaseExpr(
+        const conditionalCaseExpr = new ir.ConditionalCaseExpr(
             caseExpr,
             conditionalCreateOp.xref,
             conditionalCreateOp.handle,
@@ -306,18 +296,18 @@ function convertAst(
 ): o.Expression {
 
     if (ast instanceof Comma) {
-        return new CommaExpr(convertAst(ast.left, job), convertAst(ast.right, job));
+        return new o.CommaExpr(convertAst(ast.left, job), convertAst(ast.right, job));
     }
 
     if (ast instanceof SpreadElement) {
-        return new SpreadElementExpr(convertAst(ast.expression, job), undefined)
+        return new o.SpreadElementExpr(convertAst(ast.expression, job), undefined)
     }
 
     if (ast instanceof Binary) {
-        return new BinaryExpr(
+        return new o.BinaryExpr(
             convertAst(ast.left, job),
             convertAst(ast.right, job),
-            ast.operator,
+            ast.operator.token,
             undefined
         )
     }
@@ -331,14 +321,14 @@ function convertAst(
     }
 
     if (ast instanceof Identifier) {
-        return new IdentifierExpr(
+        return new o.IdentifierExpr(
             ast.name,
             undefined
         )
     }
 
     if (ast instanceof Call) {
-        return new CallExpr(
+        return new o.CallExpr(
             convertAst(ast.callee, job),
             ast.args.map(arg => convertAst(arg, job)),
             undefined
@@ -346,15 +336,15 @@ function convertAst(
     }
 
     if (ast instanceof True) {
-        return new TrueExpr()
+        return new o.TrueExpr()
     }
 
     if (ast instanceof False) {
-        return new FalseExpr()
+        return new o.FalseExpr()
     }
 
     if (ast instanceof ArrayLiteral) {
-        return new ArrayLiteralExpr(ast.elements.map(el => convertAst(el, job)), undefined)
+        return new o.ArrayLiteralExpr(ast.elements.map(el => convertAst(el, job)), undefined)
     }
 
     if (ast instanceof ObjectLiteral) {
@@ -366,11 +356,11 @@ function convertAst(
             }
         })
 
-        return new ObjectLiteralExpr(entries, undefined)
+        return new o.ObjectLiteralExpr(entries, undefined)
     }
 
     if (ast instanceof BindingPipe) {
-        return new BindingPipeExpr(
+        return new ir.BindingPipeExpr(
             job.allocateXrefId(), new ir.SlotHandle(),
             ast.name,
             [ast.expression, ...ast.args].map(arg => convertAst(arg, job)),
