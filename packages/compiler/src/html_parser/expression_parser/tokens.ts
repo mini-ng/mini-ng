@@ -160,3 +160,39 @@ export const operatorMap: Partial<Record<TokenType, ts.SyntaxKind>> = {
     [TokenType.INSTANCEOF]: ts.SyntaxKind.InstanceOfKeyword,
 
 };
+
+export enum BinaryOperator {
+    ADD,                // +
+    SUB,                // -
+    MUL,                // *
+    DIV,                // /
+    Remainder,          // %
+
+    Exponentiation,     // **
+
+    LESS_THAN,          // <
+    GREATER_THAN,       // >
+    LESS_EQUAL,         // <=
+    GREATER_EQUAL,      // >=
+
+    EQUAL,              // ==
+    NOT_EQUAL,          // !=
+    STRICT_EQUAL,       // ===
+    STRICT_NOTEQUAL,    // !==
+
+    LOGICAL_AND,        // &&
+    LOGICAL_OR,         // ||
+
+    NULLISH_COALESCING, // ??
+
+    BITWISE_AND,        // &
+    BITWISE_OR,         // |
+    BITWISE_XOR,        // ^
+
+    SHL,                // <<
+    SHR,                // >>
+    BIT_SHR,            // >>>
+
+    INSTANCEOF,         // instanceof
+    IN,                 // in
+}

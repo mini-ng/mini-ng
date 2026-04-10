@@ -22,7 +22,7 @@ import {
     YieldExpression
 } from "../html_parser/ast/ast-impl";
 import * as o from "./output_ast";
-import {Token} from "../html_parser/expression_parser/tokens";
+import {Token, TokenType} from "../html_parser/expression_parser/tokens";
 import {
     ConsumesVars,
     ConsumesVarsTrait,
@@ -298,7 +298,7 @@ export class BinaryExpr extends o.Expression {
     constructor(
         public left: o.Expression ,
         public right: o.Expression ,
-        public operator: Token,
+        public operator: TokenType,
         type?: o.Type | null
     ) {
         super(type);
@@ -689,6 +689,33 @@ export class FunctionExpr extends o.Expression {
 
     isEquivalent(e: o.Expression): boolean {
         return false;
+    }
+
+}
+
+export class ReadVariable extends o.Expression {
+
+    constructor(
+        public value: string | number,
+        type?: o.Type | null,
+    ) {
+        super(type);
+    }
+
+    clone(): Expression {
+        return undefined;
+    }
+
+    isConstant(): boolean {
+        return false;
+    }
+
+    isEquivalent(e: Expression): boolean {
+        return false;
+    }
+
+    visitExpression(visitor: ExpressionVisitor, context: any): any {
+        return visitor.visitReadVariable(this, context)
     }
 
 }

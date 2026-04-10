@@ -1,5 +1,20 @@
 import {LiteralAstType} from "../html_parser/ast/ast";
 import {ExpressionVisitor} from "./visitor";
+import {FunctionExpr, ReadVariable} from "./expression";
+
+export function variable(value: string | number) {
+    return new ReadVariable(value);
+}
+
+
+// this will return a function statement
+export function fn(fnParams: FnParam[], statements: Statement[], type, sourceSpan, fnName: string) {
+    return new FunctionExpr(fnParams, statements, undefined, fnName);
+}
+
+export function ifStmt(expr: Expression, statements: Statement[]) {
+    return new IfStmt(expr, statements);
+}
 
 export enum TypeModifier {
     None = 0,
@@ -210,10 +225,10 @@ export class DeclareFunctionStmt extends Statement {
     constructor(
         public name: string,
         public params,
-    public statements,
-    type?: Type | null,
-    modifiers?: StmtModifier[],
-) {
+        public statements,
+        type?: Type | null,
+        modifiers?: StmtModifier[],
+    ) {
         super(StmtModifier.None);
     }
 

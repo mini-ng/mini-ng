@@ -6,7 +6,7 @@ import {
     GroupingExpr,
     IdentifierExpr,
     NewExpr,
-    ObjectLiteralExpr,
+    ObjectLiteralExpr, ReadVariable,
     SafeCallExpr,
     SpreadElementExpr,
     TrueExpr,
@@ -109,6 +109,11 @@ export class ExpressionTranslatorVisitor
     }
 
     visitDeclareFunctionStmt(stmt: DeclareFunctionStmt, context: any): any {
+        return this.factory.createFunctionStatement(
+            stmt.name ?? null,
+            stmt.params.map((param) => param.name),
+            this.visitStatements(stmt.statements, context)
+        )
     }
 
     visitFunctionExpr(ast: FunctionExpr, context: any): any {
@@ -141,6 +146,10 @@ export class ExpressionTranslatorVisitor
             ast.args.map((arg) => arg.visitExpression(this, context)),
             false
         )
+    }
+
+    visitReadVariable(param: ReadVariable, context: any): any {
+        return this.factory.createIdentifier(param.value)
     }
 
 }

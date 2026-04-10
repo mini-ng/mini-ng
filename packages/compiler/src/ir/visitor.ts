@@ -3,7 +3,7 @@ import {
     FalseExpr, FunctionExpr,
     GroupingExpr, IdentifierExpr,
     NewExpr,
-    ObjectLiteralExpr, SafeCallExpr, SpreadElementExpr,
+    ObjectLiteralExpr, ReadVariable, SafeCallExpr, SpreadElementExpr,
     TrueExpr, YieldExpressionExpr
 } from "./expression";
 import {ExternalExpr, InvokeFunctionExpr, LiteralExpr} from "./output_ast";
@@ -40,4 +40,6 @@ export interface ExpressionVisitor {
     visitFunctionExpr(param: FunctionExpr, context: any): any;
 
     visitCallExpr(param: CallExpr, context: any): any;
+
+    visitReadVariable(param: ReadVariable, context: any): any;
 }

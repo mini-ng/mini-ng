@@ -220,8 +220,30 @@ function ingestIfBlock(unit: ViewCompilationUnit, ifBlock: IfBlock) {
     let firstXref: ir.XrefId | null = null;
     let conditions: Array<ConditionalCaseExpr> = [];
 
-    for (let i = 0; i < ifBlock.branches.length; i++) {
-        const ifCase = ifBlock.branches[i];
+    const branches = []
+
+    if (ifBlock.elseBranch) {
+        branches.push(
+            {
+                expression: ifBlock.elseBranch.expression,
+                children: ifBlock.elseBranch.children,
+            }
+        )
+    }
+
+    if (ifBlock.branches) {
+        branches.unshift(
+            ...ifBlock.branches
+        )
+    }
+
+    branches.unshift({
+        expression: ifBlock.expression,
+        children: ifBlock.children,
+    })
+
+    for (let i = 0; i < branches.length; i++) {
+        const ifCase = branches[i];
         const cView = unit.job.allocateView(unit.xref);
         const tagName = "" //ingestControlFlowInsertionPoint(unit, cView.xref, ifCase);
 

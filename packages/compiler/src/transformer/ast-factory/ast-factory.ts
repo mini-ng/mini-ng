@@ -267,4 +267,16 @@ export class AstFactory {
     createReturnStatement(expression: ts.Expression | null) {
         return ts.factory.createReturnStatement(expression ?? undefined);
     }
+
+    createFunctionStatement(s: string, params: string[], statements: ts.Statement[]) {
+        return ts.factory.createFunctionDeclaration(
+            undefined,
+            undefined,
+            s,
+            undefined,
+            params.map(p => ts.factory.createParameterDeclaration(undefined, undefined, p)),
+            undefined,
+            ts.factory.createBlock(statements, true)
+        )
+    }
 }

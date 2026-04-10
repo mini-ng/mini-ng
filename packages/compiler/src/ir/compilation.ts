@@ -1,11 +1,14 @@
 import * as ir from "./ir"
+import * as o from "./output_ast"
 
 export enum CompilationJobKind {
     Both,
     Tmpl,
 }
 
-export class ConstantPool {}
+export class ConstantPool {
+    statements: o.Statement[];
+}
 
 export abstract class CompilationJob {
     constructor(
@@ -56,7 +59,7 @@ export class ComponentCompilationJob extends CompilationJob {
 
     readonly views = new Map<ir.XrefId, ViewCompilationUnit>();
 
-    // public contentSelectors: o.Expression | null = null;
+    public contentSelectors: o.Expression | null = null;
 
     allocateView(parent: ir.XrefId): ViewCompilationUnit {
         const view = new ViewCompilationUnit(this, this.allocateXrefId(), parent);
@@ -68,23 +71,23 @@ export class ComponentCompilationJob extends CompilationJob {
         return this.views.values();
     }
 
-    // addConst(newConst: o.Expression, initializers?: o.Statement[]): ir.ConstIndex {
-    //     for (let idx = 0; idx < this.consts.length; idx++) {
-    //         if (this.consts[idx].isEquivalent(newConst)) {
-    //             return idx as ir.ConstIndex;
-    //         }
-    //     }
-    //     const idx = this.consts.length;
-    //     this.consts.push(newConst);
-    //     if (initializers) {
-    //         this.constsInitializers.push(...initializers);
-    //     }
-    //     return idx as ir.ConstIndex;
-    // }
+    addConst(newConst: o.Expression, initializers?: o.Statement[]): ir.ConstIndex {
+        for (let idx = 0; idx < this.consts.length; idx++) {
+            if (this.consts[idx].isEquivalent(newConst)) {
+                return idx as ir.ConstIndex;
+            }
+        }
+        const idx = this.consts.length;
+        this.consts.push(newConst);
+        if (initializers) {
+            this.constsInitializers.push(...initializers);
+        }
+        return idx as ir.ConstIndex;
+    }
 
-    // readonly consts: o.Expression[] = [];
+    readonly consts: o.Expression[] = [];
 
-    // readonly constsInitializers: o.Statement[] = [];
+    readonly constsInitializers: o.Statement[] = [];
 }
 
 export abstract class CompilationUnit {
@@ -102,33 +105,34 @@ export abstract class CompilationUnit {
 
     vars: number | null = null;
 
-    // *ops(): Generator<ir.CreateOp | ir.UpdateOp> {
-    //     for (const expr of this.functions) {
-    //         for (const op of expr.ops) {
-    //             yield op;
-    //         }
-    //     }
-    //     for (const op of this.create) {
-    //         yield op;
-    //         if (
-    //             op.kind === ir.OpKind.Listener ||
-    //             op.kind === ir.OpKind.Animation ||
-    //             op.kind === ir.OpKind.AnimationListener ||
-    //             op.kind === ir.OpKind.TwoWayListener
-    //         ) {
-    //             for (const listenerOp of op.handlerOps) {
-    //                 yield listenerOp;
-    //             }
-    //         } else if (op.kind === ir.OpKind.RepeaterCreate && op.trackByOps !== null) {
-    //             for (const trackOp of op.trackByOps) {
-    //                 yield trackOp;
-    //             }
-    //         }
-    //     }
-    //     for (const op of this.update) {
-    //         yield op;
-    //     }
-    // }
+    *ops(): Generator<ir.CreateOp | ir.UpdateOp> {
+        for (const expr of this.functions) {
+            // for (const op of expr.ops) {
+            //     yield op;
+            // }
+        }
+        for (const op of this.create) {
+            yield op;
+            if (
+                op.kind === ir.OpKind.Listener //||
+                // op.kind === ir.OpKind.Animation ||
+                // op.kind === ir.OpKind.AnimationListener ||
+                // op.kind === ir.OpKind.TwoWayListener
+            ) {
+                for (const listenerOp of op.handlerOps) {
+                    yield listenerOp;
+                }
+            }
+            // else if (op.kind === ir.OpKind.RepeaterCreate && op.trackByOps !== null) {
+            //     for (const trackOp of op.trackByOps) {
+            //         yield trackOp;
+            //     }
+            // }
+        }
+        for (const op of this.update) {
+            yield op;
+        }
+    }
 }
 
 export class ViewCompilationUnit extends CompilationUnit {
