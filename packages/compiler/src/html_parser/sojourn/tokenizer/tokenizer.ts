@@ -393,7 +393,9 @@ export class Tokenizer {
             }
 
             // TEXT
-            textBuffer += char;
+            if (char !== "\n") {
+                textBuffer += char;
+            }
 
         }
 
