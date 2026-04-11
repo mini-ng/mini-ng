@@ -21,11 +21,7 @@ export function generatePipes(job: ComponentCompilationJob) {
 
                     if (!ir.hasConsumesSlot(current)) continue
 
-                    // ir.OpList.printOp(op)
-                    // ir.OpList.printOp(current)
-                    // console.log("===================")
-
-                    if (current.xref !== (op as any).xref) continue
+                    if (current.xref !== (op as any).target) continue
 
                     while (current.next!.kind === ir.OpKind.Pipe) {
                         current = current.next!;
@@ -33,9 +29,7 @@ export function generatePipes(job: ComponentCompilationJob) {
 
                     // create pipe
                     const pipe = ir.createPipeOp(expr.target, expr.targetSlot, expr.name) as ir.CreateOp;
-                    console.log(current.next)
                     ir.OpList.insertBefore(pipe, current.next);
-                    console.log(current.next)
 
                     return;
                 }

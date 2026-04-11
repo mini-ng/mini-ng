@@ -11,7 +11,7 @@ export function conditionalCreate(tag: string, slot: number, fnName: string, att
 }
 
 export function pipe(slot: number, name: string) {
-    return call(Identifiers.pipe, [o.literal(name), o.literal(slot)]);
+    return call(Identifiers.pipe, [o.literal(slot), o.literal(name)]);
 }
 
 export function interpolateText(strings: string[], expressions: o.Expression[]) {

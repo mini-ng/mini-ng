@@ -110,12 +110,12 @@ function maybeGenerateRfBlock(flag: number, statements: o.Statement[]): o.Statem
 }
 
 const phases = [
-    { kind: CompilationJobKind.Tmpl, fn: consumeSlot },
     { kind: CompilationJobKind.Tmpl, fn: extractAttributes },
-    { kind: CompilationJobKind.Tmpl, fn: constCollection },
     { kind: CompilationJobKind.Tmpl, fn: generateConditionals },
-    { kind: CompilationJobKind.Tmpl, fn: generateListenerFnNames },
     { kind: CompilationJobKind.Tmpl, fn: generatePipes },
+    { kind: CompilationJobKind.Tmpl, fn: consumeSlot },
+    { kind: CompilationJobKind.Tmpl, fn: constCollection },
+    { kind: CompilationJobKind.Tmpl, fn: generateListenerFnNames },
     // generate advance
     { kind: CompilationJobKind.Tmpl, fn: generateAdvance },
     { kind: CompilationJobKind.Tmpl, fn: reify }
@@ -181,7 +181,6 @@ function reifyCreateOperations(unit: CompilationUnit, ops: ir.OpList<ir.CreateOp
             }
 
             case ir.OpKind.Pipe: {
-                console.log("pipe", op)
                 ir.OpList.replace(op, ng.pipe(op.handle.slot, op.name));
                 break;
             }

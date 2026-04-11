@@ -610,7 +610,6 @@ export interface InterpolateTextOp
     extends Op<UpdateOp>, ConsumesVars {
     kind: OpKind.InterpolateText;
     target: XrefId;
-    expressions: any[];
     interpolation: Interpolation;
 }
 
@@ -625,7 +624,6 @@ export class Interpolation {
 export function createInterpolateTextOp(
     xref, interpolation: Interpolation): InterpolateTextOp {
     return {
-        expressions: [],
         kind: OpKind.InterpolateText,
         target: xref,
         interpolation,
