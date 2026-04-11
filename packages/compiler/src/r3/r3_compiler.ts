@@ -4,14 +4,17 @@ import {
     CompilationJob,
     CompilationJobKind,
     CompilationUnit,
-    ComponentCompilationJob, ConstantPool,
+    ComponentCompilationJob,
+    ConstantPool,
     ViewCompilationUnit
 } from "../ir/compilation";
 import * as ir from "../ir";
 import * as ng from "./../ir/instruction"
 import * as o from "./../ir/output_ast"
 import {TokenType} from "../html_parser/expression_parser/tokens";
-import ts from "typescript";
+import {extractAttributes} from "./phases/extract_attributes";
+import {generatePipes} from "./phases/generate_pipes";
+import {constCollection} from "./phases/consts_collection";
 
 const RENDER_FLAGS = "rf";
 const CONTEXT_NAME = "ctx";
@@ -108,8 +111,11 @@ function maybeGenerateRfBlock(flag: number, statements: o.Statement[]): o.Statem
 
 const phases = [
     { kind: CompilationJobKind.Tmpl, fn: consumeSlot },
+    { kind: CompilationJobKind.Tmpl, fn: extractAttributes },
+    { kind: CompilationJobKind.Tmpl, fn: constCollection },
     { kind: CompilationJobKind.Tmpl, fn: generateConditionals },
     { kind: CompilationJobKind.Tmpl, fn: generateListenerFnNames },
+    { kind: CompilationJobKind.Tmpl, fn: generatePipes },
     // generate advance
     { kind: CompilationJobKind.Tmpl, fn: generateAdvance },
     { kind: CompilationJobKind.Tmpl, fn: reify }
@@ -175,6 +181,7 @@ function reifyCreateOperations(unit: CompilationUnit, ops: ir.OpList<ir.CreateOp
             }
 
             case ir.OpKind.Pipe: {
+                console.log("pipe", op)
                 ir.OpList.replace(op, ng.pipe(op.handle.slot, op.name));
                 break;
             }
@@ -232,7 +239,7 @@ function reifyUpdateOperations(unit: CompilationUnit, ops: ir.OpList<ir.UpdateOp
 
 function consumeSlot(job: ComponentCompilationJob) {
     for (const unit of job.units) {
-        var slot = 0
+        let slot = 0;
         for (const op of unit.create) {
             if (!ir.hasConsumesSlot(op)) {
                 continue
@@ -257,7 +264,7 @@ function generateListenerFnNames(job: ComponentCompilationJob) {
 
 function generateConditionals(job: ComponentCompilationJob) {
     for (const unit of job.units) {
-        for (const op of unit.update) {
+        for (const op of unit.ops()) {
 
             if (op.kind !== ir.OpKind.Conditional) {
                 continue
@@ -306,16 +313,57 @@ function reifyIrExpression(unit: CompilationUnit, expr: o.Expression) {
 
 function generateAdvance(job: ComponentCompilationJob) {
     for (const unit of job.units) {
-        for (const op of unit.update) {
 
-            // if op depends on slot, then prepend advance
-            if (!ir.dependsOnSlot(op)) {
-                continue
+        const slotMap = new Map<ir.XrefId, number>();
+        for (const op of unit.create) {
+            if (!ir.hasConsumesSlot(op)) {
+                continue;
+            } else if (op.handle.slot === null) {
+                throw new Error(
+                    `AssertionError: expected slots to have been allocated before generating advance() calls`,
+                );
             }
 
-            const advanceOp = ir.createAdvanceOp(op.target)
+            slotMap.set(op.xref, op.handle.slot);
+        }
 
-            ir.OpList.insertBefore<ir.UpdateOp>(advanceOp, op)
+        let slotContext = 0;
+
+        for (const op of unit.update) {
+
+            let consumer = null;
+
+            // if op depends on slot, then prepend advance
+            if (ir.dependsOnSlot(op)) {
+                consumer = op
+            } else {
+                ir.visitExpressionsInOp(op, (expr) => {
+
+                    if (consumer === null && ir.hasDependsOnSlot(expr)) {
+                        consumer = expr;
+                    }
+                });
+            }
+
+            if (consumer === null) continue
+
+            if (!slotMap.has(consumer.target)) {
+                throw new Error(`AssertionError: reference to unknown slot for target ${consumer.target}`);
+            }
+
+            const slot = slotMap.get(consumer.target)!;
+
+            // Does the slot counter need to be adjusted?
+            if (slotContext !== slot) {
+                // If so, generate an `ir.AdvanceOp` to advance the counter.
+                const delta = slot - slotContext;
+                if (delta < 0) {
+                    throw new Error(`AssertionError: slot counter should never need to move backwards`);
+                }
+
+                ir.OpList.insertBefore<ir.UpdateOp>(ir.createAdvanceOp(delta), op);
+                slotContext = slot;
+            }
 
         }
     }

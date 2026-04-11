@@ -4,6 +4,7 @@ import * as o from "./output_ast"
 export enum CompilationJobKind {
     Both,
     Tmpl,
+    Host,
 }
 
 export class ConstantPool {

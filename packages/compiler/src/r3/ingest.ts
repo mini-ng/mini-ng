@@ -64,11 +64,11 @@ function ingestNodes(unit: ViewCompilationUnit, nodes: ChildNode[]) {
         }
 
         else if (node instanceof ForLoopBlock) {
-
+            ingestForLoopBlock(unit, node)
         }
 
         else if (node instanceof SwitchNode) {
-
+            ingestSwitch(unit, node)
         }
 
         else {
@@ -262,6 +262,14 @@ function ingestIfBlock(unit: ViewCompilationUnit, ifBlock: IfBlock) {
         ingestNodes(cView, ifCase.children);
     }
     unit.update.push(ir.createConditionalOp(firstXref!, null, conditions));
+}
+
+function ingestForLoopBlock(unit: ViewCompilationUnit, node:  ForLoopBlock) {
+
+}
+
+function ingestSwitch(unit: ViewCompilationUnit, node: SwitchNode) {
+
 }
 
 function convertAstWithInterpolation(

@@ -1,28 +1,4 @@
-import {
-    ArrayLiteral,
-    ArrowFunction, AstExpression,
-    Binary,
-    Call,
-    Comma,
-    Conditional,
-    False,
-    Grouping,
-    Identifier,
-    Literal,
-    New,
-    ObjectLiteral, ObjectProperty,
-    PostfixUpdate,
-    PrefixUnary,
-    PrefixUpdate,
-    PropertyRead,
-    SafeCall,
-    SafePropertyRead,
-    SpreadElement,
-    True,
-    YieldExpression
-} from "../html_parser/ast/ast-impl";
 import * as o from "./output_ast";
-import {Token, TokenType} from "../html_parser/expression_parser/tokens";
 import {
     ConsumesVars,
     ConsumesVarsTrait,

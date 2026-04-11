@@ -61,7 +61,8 @@ export enum BindingKind {
     Attribute,
     Style,
     Property,
-    Class
+    Class,
+    Template,
 }
 
 export enum VisitorContextFlag {
@@ -103,7 +104,6 @@ export function transformExpressionsInOp(
         // case OpKind.AnimationString:
         // case OpKind.AnimationBinding:
         case OpKind.Binding:
-            // console.log(op)
             if (op.expression instanceof Interpolation) {
                 transformExpressionsInInterpolation(op.expression, transform, flags);
             } else {
@@ -334,6 +334,24 @@ export class OpList<OpT extends Op<OpT>> {
             current = current.next;
         }
     }
+
+    static printOp(op) {
+
+        const {next, prev, ...rem} = op
+
+        console.log(rem)
+
+    }
+
+    static remove<T extends Op<T>>(op: T) {
+        op.next.prev = op.prev
+        op.prev.next = op.next;
+
+        op.debugListId = null;
+        op.prev = null;
+        op.next = null;
+
+    }
 }
 
 export interface StatementOp<OpT extends Op<OpT>> extends Op<OpT> {
@@ -368,7 +386,8 @@ export type UpdateOp =
     | AdvanceOp
     | InterpolateTextOp
     | BindingOp
-    | ConditionalOp;
+    | ConditionalOp
+    | AttributeOp;
 
 export interface ElementOp extends ElementOpBase {
     kind: OpKind.Element;
@@ -624,12 +643,16 @@ export function createStatementOp<OpT extends Op<OpT>>(statement: o.Statement): 
     };
 }
 
-export function hasConsumesSlot(op: UpdateOp | CreateOp) {
+export function hasConsumesSlot(op: UpdateOp | CreateOp): op is CreateOp & ConsumesSlotOpTrait {
     return op[ConsumesSlot] === true
 }
 
 export function dependsOnSlot(op: UpdateOp | CreateOp): op is UpdateOp & DependsOnSlot {
     return op[DependsOnSlotContext] === true
+}
+
+export function hasDependsOnSlot(expr: o.Expression): expr is Expression & DependsOnSlot {
+    return expr[DependsOnSlotContext] === true;
 }
 
 export interface ListenerOp extends Op<CreateOp> {
@@ -836,5 +859,66 @@ export function createConditionalOp(
         ...NEW_OP,
         ...TRAIT_DEPENDS_ON_SLOT_CONTEXT,
         ...TRAIT_CONSUMES_VARS,
+    };
+}
+
+export function visitExpressionsInOp(
+    op: CreateOp | UpdateOp,
+    visitor: (expr: o.Expression, flags: VisitorContextFlag) => void,
+): void {
+    transformExpressionsInOp(
+        op,
+        (expr, flags) => {
+            visitor(expr, flags);
+            return expr;
+        },
+        VisitorContextFlag.None,
+    );
+}
+
+export interface AttributeOp extends Op<UpdateOp> {
+    kind: OpKind.Attribute;
+
+    target: XrefId;
+
+    namespace: string | null;
+
+    name: string;
+
+    expression: o.Expression | Interpolation;
+
+    sanitizer: o.Expression | null;
+
+    isTextAttribute: boolean;
+
+    isStructuralTemplateAttribute: boolean;
+
+    templateKind: TemplateKind | null;
+
+}
+
+
+export function createAttributeOp(
+    target: XrefId,
+    namespace: string | null,
+    name: string,
+    expression: o.Expression | Interpolation,
+    isTextAttribute: boolean,
+    isStructuralTemplateAttribute: boolean,
+    templateKind: TemplateKind | null,
+): AttributeOp {
+    return {
+        kind: OpKind.Attribute,
+        target,
+        namespace,
+        name,
+        expression,
+        sanitizer: null,
+        isTextAttribute,
+        isStructuralTemplateAttribute,
+        templateKind,
+        ...TRAIT_DEPENDS_ON_SLOT_CONTEXT,
+        ...TRAIT_CONSUMES_VARS,
+        ...NEW_OP,
     };
 }
