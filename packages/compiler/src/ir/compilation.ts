@@ -15,7 +15,7 @@ export abstract class CompilationJob {
     constructor(
         readonly componentName: string,
         readonly pool: ConstantPool,
-        // readonly compatibility: ir.CompatibilityMode,
+        readonly compatibility: ir.CompatibilityMode,
         // readonly mode: TemplateCompilationMode,
     ) {}
 
@@ -38,7 +38,7 @@ export class ComponentCompilationJob extends CompilationJob {
     constructor(
         componentName: string,
         pool: ConstantPool,
-        // compatibility: ir.CompatibilityMode,
+        compatibility: ir.CompatibilityMode,
         // mode: TemplateCompilationMode,
         // readonly relativeContextFilePath: string,
         // readonly i18nUseExternalIds: boolean,
@@ -47,7 +47,7 @@ export class ComponentCompilationJob extends CompilationJob {
         // readonly relativeTemplatePath: string | null,
         // readonly enableDebugLocations: boolean,
     ) {
-        super(componentName, pool); //, compatibility, mode);
+        super(componentName, pool, compatibility)//, mode);
         this.root = new ViewCompilationUnit(this, this.allocateXrefId(), null);
         this.views.set(this.root.xref, this.root);
     }
@@ -108,9 +108,9 @@ export abstract class CompilationUnit {
 
     *ops(): Generator<ir.CreateOp | ir.UpdateOp> {
         for (const expr of this.functions) {
-            // for (const op of expr.ops) {
-            //     yield op;
-            // }
+            for (const op of expr.ops) {
+                yield op;
+            }
         }
         for (const op of this.create) {
             yield op;

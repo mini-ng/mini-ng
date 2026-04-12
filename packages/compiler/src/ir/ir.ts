@@ -1,10 +1,19 @@
 import * as o from "./output_ast"
 import {ExpressionBase, Expression, ConditionalCaseExpr} from "./expression";
+import {LiteralExpr} from "./output_ast";
+
+export function isStringLiteral(expr: o.Expression) {
+    return expr instanceof o.LiteralExpr && typeof expr.value === 'string';
+}
+
+export enum CompatibilityMode {
+    TemplateDefinitionBuilder
+}
 
 export interface BindingOp extends Op<UpdateOp> {
     kind: OpKind.Binding;
 
-    xref: XrefId;
+    target: XrefId;
 
     name: string;
 
@@ -29,7 +38,7 @@ export enum TemplateKind {
 }
 
 export function createBindingOp(
-    xref,
+    target: XrefId,
     kind: BindingKind,
     name: string,
     expression: o.Expression | Interpolation,
@@ -39,7 +48,7 @@ export function createBindingOp(
     templateKind: TemplateKind | null,
 ): BindingOp {
     return {
-        xref,
+        target,
         kind: OpKind.Binding,
         bindingKind: kind,
         name,
@@ -534,7 +543,9 @@ export interface AdvanceOp extends Op<UpdateOp> {
     delta: number;
 }
 
-export class ArrowFunctionExpr {}
+export class ArrowFunctionExpr {
+    ops: any;
+}
 
 export interface LocalRef {
     name: string;
@@ -919,4 +930,19 @@ export function createAttributeOp(
         ...TRAIT_CONSUMES_VARS,
         ...NEW_OP,
     };
+}
+
+const elementContainerOpKinds = new Set([
+    OpKind.Element,
+    OpKind.ElementStart,
+    // OpKind.Container,
+    // OpKind.ContainerStart,
+    OpKind.Template,
+    OpKind.RepeaterCreate,
+    OpKind.ConditionalCreate,
+    OpKind.ConditionalBranchCreate,
+]);
+
+export function isElementOrContainerOp(op: CreateOp): op is ElementOrContainerOps {
+    return elementContainerOpKinds.has(op.kind);
 }

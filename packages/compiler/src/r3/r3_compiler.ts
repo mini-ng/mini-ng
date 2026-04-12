@@ -15,6 +15,7 @@ import {TokenType} from "../html_parser/expression_parser/tokens";
 import {extractAttributes} from "./phases/extract_attributes";
 import {generatePipes} from "./phases/generate_pipes";
 import {constCollection} from "./phases/consts_collection";
+import {specializeBindings} from "./phases/specialized_bindings";
 
 const RENDER_FLAGS = "rf";
 const CONTEXT_NAME = "ctx";
@@ -110,6 +111,7 @@ function maybeGenerateRfBlock(flag: number, statements: o.Statement[]): o.Statem
 }
 
 const phases = [
+    { kind: CompilationJobKind.Tmpl, fn: specializeBindings },
     { kind: CompilationJobKind.Tmpl, fn: extractAttributes },
     { kind: CompilationJobKind.Tmpl, fn: generateConditionals },
     { kind: CompilationJobKind.Tmpl, fn: generatePipes },

@@ -3,6 +3,10 @@ import {ExpressionVisitor} from "./visitor";
 import {Token, TokenType} from "../html_parser/expression_parser/tokens";
 import {AstExpression} from "../html_parser/ast/ast-impl";
 
+export function literalArr(attrArray: Expression[]) {
+    return new ArrayLiteralExpr(attrArray);
+}
+
 export function variable(value: string | number) {
     return new ReadVariable(value);
 }

@@ -30,7 +30,7 @@ import * as o from "../ir/output_ast"
 import {LiteralExpr} from "../ir/output_ast";
 
 export function ingestComponent(componentName: string, nodes: ChildNode[], constantPool: ConstantPool) {
-    const job = new ComponentCompilationJob(componentName, constantPool)
+    const job = new ComponentCompilationJob(componentName, constantPool, ir.CompatibilityMode.TemplateDefinitionBuilder)
     ingestNodes(job.root, nodes);
     return job
 }
