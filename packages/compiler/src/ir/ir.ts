@@ -119,6 +119,15 @@ export function transformExpressionsInOp(
                 op.expression = transformExpressionsInExpression(op.expression, transform, flags);
             }
             break;
+        case OpKind.Property:
+        // case OpKind.DomProperty:
+        case OpKind.Attribute:
+            if (op.expression instanceof Interpolation) {
+                transformExpressionsInInterpolation(op.expression, transform, flags);
+            } else {
+                op.expression = transformExpressionsInExpression(op.expression, transform, flags);
+            }
+            break;
         case OpKind.ListEnd:
             break;
         case OpKind.RepeaterCreate:
@@ -155,7 +164,7 @@ export function transformExpressionsInOp(
         case OpKind.Listener:
             break;
         default:
-            console.error(op);
+            console.log(op);
             throw new Error(`AssertionError: transformExpressionsInOp doesn't handle ` + op);
     }
 }
@@ -396,7 +405,8 @@ export type UpdateOp =
     | InterpolateTextOp
     | BindingOp
     | ConditionalOp
-    | AttributeOp;
+    | AttributeOp
+    | PropertyOp;
 
 export interface ElementOp extends ElementOpBase {
     kind: OpKind.Element;
@@ -945,4 +955,44 @@ const elementContainerOpKinds = new Set([
 
 export function isElementOrContainerOp(op: CreateOp): op is ElementOrContainerOps {
     return elementContainerOpKinds.has(op.kind);
+}
+
+export interface PropertyOp extends Op<UpdateOp>, ConsumesVars, DependsOnSlot {
+
+    kind: OpKind.Property;
+
+    target: XrefId;
+
+    name: string;
+
+    expression: o.Expression | Interpolation;
+
+    bindingKind: BindingKind;
+
+    isStructuralTemplateAttribute: boolean;
+
+    templateKind: TemplateKind | null;
+
+}
+
+export function createPropertyOp(
+    target: XrefId,
+    name: string,
+    expression: o.Expression | Interpolation,
+    bindingKind: BindingKind.Property,
+    isStructuralTemplateAttribute: boolean,
+    templateKind: TemplateKind
+): PropertyOp {
+    return {
+        kind: OpKind.Property,
+        target,
+        name,
+        expression,
+        bindingKind,
+        isStructuralTemplateAttribute,
+        templateKind,
+        ...TRAIT_DEPENDS_ON_SLOT_CONTEXT,
+        ...TRAIT_CONSUMES_VARS,
+        ...NEW_OP
+    };
 }
