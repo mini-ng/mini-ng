@@ -34,10 +34,11 @@ export function advance(delta: number) {
 }
 
 
-export function elementStart(slot: number, tag: string) {
+export function elementStart(slot: number, tag: string, constIndex: number) {
     const args = [
         o.literal(slot, undefined, LiteralAstType.NUMBER),
         o.literal(tag, undefined, LiteralAstType.STRING),
+        o.literal(constIndex, undefined, LiteralAstType.NUMBER),
     ]
     return call(Identifiers.elementStart, args);
 }

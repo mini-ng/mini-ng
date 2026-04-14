@@ -153,7 +153,7 @@ function reifyCreateOperations(unit: CompilationUnit, ops: ir.OpList<ir.CreateOp
             }
 
             case ir.OpKind.ElementStart: {
-                ir.OpList.replace(op, ng.elementStart(op.handle.slot!, op.tag));
+                ir.OpList.replace(op, ng.elementStart(op.handle.slot!, op.tag, op.attributes));
                 break
             }
 

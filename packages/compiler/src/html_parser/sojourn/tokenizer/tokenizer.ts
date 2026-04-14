@@ -71,14 +71,12 @@ export class Tokenizer {
             const startPosition = this.createSourcePosition()
             this.advance(char);
 
-            // COMMENT START
             if (!openTag && !comment && this.html.startsWith("<!--", index)) {
                 comment = true;
                 index += 3;
                 continue;
             }
 
-            // COMMENT BODY
             if (comment) {
                 if (this.html.startsWith("-->", index)) {
                     comment = false;
@@ -87,7 +85,6 @@ export class Tokenizer {
                 continue;
             }
 
-            // DOCTYPE
             if (!openTag && this.html.startsWith("<!DOCTYPE", index)) {
                 DOCTYPE = true;
                 index += 8;
@@ -101,7 +98,6 @@ export class Tokenizer {
                 continue;
             }
 
-            // TAG OPEN
             if (char === chars.LT && !openTag && !isExpression) {
 
                 if (textBuffer.length) {
@@ -118,7 +114,6 @@ export class Tokenizer {
                 continue;
             }
 
-            // TAG PARSING
             if (openTag) {
 
                 elementBuffer += char;
@@ -392,14 +387,12 @@ export class Tokenizer {
                 continue
             }
 
-            // TEXT
             if (char !== "\n") {
                 textBuffer += char;
             }
 
         }
 
-        // push remaining text
         if (textBuffer.length) {
             tokens.push({
                 name: textBuffer,
