@@ -237,7 +237,7 @@ function reifyUpdateOperations(unit: CompilationUnit, ops: ir.OpList<ir.UpdateOp
             }
 
             case ir.OpKind.Property: {
-                ir.OpList.replace(op, ng.property())
+                ir.OpList.replace(op, ng.property(op.name, op.expression))
                 break;
             }
         }

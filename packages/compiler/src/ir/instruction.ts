@@ -2,8 +2,10 @@ import * as ir from './ir';
 import * as o from "./output_ast"
 import {LiteralAstType} from "../html_parser/ast/ast";
 
-export function property() {
-    return call(Identifiers.property, []);
+export function property(name: string, expr: o.Expression | ir.Interpolation) {
+    return call(Identifiers.property, [
+        o.literal(name),
+    ]);
 }
 
 export function conditional(processed: o.Expression, contextValue: o.Expression) {
