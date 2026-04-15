@@ -2,6 +2,10 @@ import * as ir from './ir';
 import * as o from "./output_ast"
 import {LiteralAstType} from "../html_parser/ast/ast";
 
+export function property() {
+    return call(Identifiers.property, []);
+}
+
 export function conditional(processed: o.Expression, contextValue: o.Expression) {
     return call(Identifiers.conditional, [processed]);
 }
@@ -100,6 +104,11 @@ export class Identifiers {
         name: 'ɵɵconditional',
         moduleName: CORE,
     }
+
+    static property: o.ExternalReference = {
+        name: 'ɵɵproperty',
+        moduleName: CORE,
+    };
 
 }
 

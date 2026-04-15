@@ -42,7 +42,6 @@ export class Sojourn {
 
             if (token.type === "EOF") break;
 
-            // TEXT NODE
             if (token.type === "text") {
 
                 const textNode = cloneNode(new Text(token.name));
@@ -269,7 +268,6 @@ export class Sojourn {
 
             }
 
-            // ELEMENT NODE
             if (token.type === "node" && token.startTag) {
 
                 const attribs: Record<string, string> = {};
@@ -379,14 +377,12 @@ export class Sojourn {
                 continue;
             }
 
-            // same nested tag
             if (current.startTag && current.name === name) {
                 depth++;
                 children.push(current);
                 continue;
             }
 
-            // closing tag
             if (current.endTag && current.name === name) {
 
                 if (depth === 0) {
@@ -432,14 +428,12 @@ export class Sojourn {
                 continue;
             }
 
-            // same nested tag
             if (current.startTag && current.name === name) {
                 depth++;
                 children.push(current);
                 continue;
             }
 
-            // closing tag
             if (current.endTag && current.name === name) {
 
                 if (depth === 0) {

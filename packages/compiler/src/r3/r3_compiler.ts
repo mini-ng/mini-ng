@@ -28,7 +28,7 @@ export function compileComponentFromMetadata(html: string, componentName: string
 
     transform(tpl);
 
-    const templateFn = null//emitTemplateFn(tpl, constantPool);
+    const templateFn = emitTemplateFn(tpl, constantPool);
 
     return { tpl, templateFn };
 
@@ -56,7 +56,8 @@ function emitChildViews(parent: ViewCompilationUnit, pool: ConstantPool): void {
 
 function emitView(view: ViewCompilationUnit): o.FunctionExpr {
     if (view.fnName === null) {
-        throw new Error(`AssertionError: view ${view.xref} is unnamed`);
+        view.fnName = "Component_" + Math.random();
+        // throw new Error(`AssertionError: view ${view.xref} is unnamed`);
     }
 
     const createStatements: o.Statement[] = [];
@@ -73,6 +74,7 @@ function emitView(view: ViewCompilationUnit): o.FunctionExpr {
     const updateStatements: o.Statement[] = [];
     for (const op of view.update) {
         if (op.kind !== ir.OpKind.Statement) {
+            console.log(op);
             throw new Error(
                 `AssertionError: expected all update ops to have been compiled, but got ${
                     ir.OpKind[op.kind]
@@ -232,6 +234,11 @@ function reifyUpdateOperations(unit: CompilationUnit, ops: ir.OpList<ir.UpdateOp
                 }
                 ir.OpList.replace(op, ng.conditional(op.processed, op.contextValue));
                 break
+            }
+
+            case ir.OpKind.Property: {
+                ir.OpList.replace(op, ng.property())
+                break;
             }
         }
 

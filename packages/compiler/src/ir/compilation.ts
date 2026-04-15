@@ -8,7 +8,7 @@ export enum CompilationJobKind {
 }
 
 export class ConstantPool {
-    statements: o.Statement[];
+    statements: o.Statement[] = [];
 }
 
 export abstract class CompilationJob {
